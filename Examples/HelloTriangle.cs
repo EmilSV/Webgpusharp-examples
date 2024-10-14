@@ -13,15 +13,12 @@ static class HelloTriangle
         var p = vec2f(0.0, 0.0);
         if (in_vertex_index == 0u) {
             p = vec2f(-0.5, -0.5);
-    } else if (in_vertex_index == 1u)
-    {
-        p = vec2f(0.5, -0.5);
-    }
-    else
-    {
-        p = vec2f(0.0, 0.5);
-    }
-    return vec4f(p, 0.0, 1.0);
+        } else if (in_vertex_index == 1u) {
+            p = vec2f(0.5, -0.5);
+        } else {
+            p = vec2f(0.0, 0.5);
+        }
+        return vec4f(p, 0.0, 1.0);
     }
 
     @fragment
@@ -40,7 +37,7 @@ static class HelloTriangle
         }
 
         SDL_WindowFlags windowFlags = 0;
-        var window = SDL_CreateWindow("Learn WebGPU", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, windowFlags);
+        var window = SDL_CreateWindow("Hello Triangle", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, windowFlags);
 
         var instance = WebGPU.CreateInstance()!;
 
@@ -54,8 +51,6 @@ static class HelloTriangle
         var device = (await adapter.RequestDeviceAsync(new()
         {
             Label = "My Device",
-            RequiredFeatures = new(),
-            RequiredLimits = null,
             DefaultQueue = new()
             {
                 Label = "The default queue"
@@ -64,7 +59,12 @@ static class HelloTriangle
             {
                 var messageString = Encoding.UTF8.GetString(message);
                 Console.Error.WriteLine($"Uncaptured error: {type} {messageString}");
-            }
+            },
+            DeviceLostCallback = (reason, message) =>
+            {
+                var messageString = Encoding.UTF8.GetString(message);
+                Console.Error.WriteLine($"Device lost: {reason} {messageString}");
+            },
         }))!;
 
         var queue = device.GetQueue();
@@ -79,9 +79,9 @@ static class HelloTriangle
             Height = 480,
             Usage = TextureUsage.RenderAttachment,
             Format = surfaceFormat,
+            Device = device,
             PresentMode = PresentMode.Fifo,
             AlphaMode = CompositeAlphaMode.Auto,
-            Device = device
         });
 
         ShaderModule CreateShaderModule()
@@ -132,7 +132,7 @@ static class HelloTriangle
                         {
                             Color = new()
                             {
-                                SrcFactor = BlendFactor.Src1Alpha,
+                                SrcFactor = BlendFactor.SrcAlpha,
                                 DstFactor = BlendFactor.OneMinusSrcAlpha,
                                 Operation = BlendOperation.Add
                             },
@@ -147,6 +147,7 @@ static class HelloTriangle
                     }
                   ]
             },
+            DepthStencil = null,
             Multisample = ref multisample
         });
 
@@ -226,7 +227,7 @@ static class HelloTriangle
 
             CommandBuffer commandBuffer = encoder.Finish(new()
             {
-                label = "My command buffer"
+                Label = "My command buffer"
             });
 
             queue!.Submit([
