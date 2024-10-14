@@ -1,0 +1,3 @@
+[submodule "WebGPUSharp"]
+	path = WebGPUSharp
+	url = git@github.com:EmilSV/WebGPUSharp.git
