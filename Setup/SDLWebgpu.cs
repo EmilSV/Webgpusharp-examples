@@ -1,9 +1,9 @@
 using WebGpuSharp;
 using static SDL2.SDL;
 
-static class SDLWebgpu
+internal static class SDLWebgpu
 {
-    public static unsafe Surface? SDL_GetWGPUSurface(Instance instance, nint window)
+    internal static unsafe Surface? SDL_GetWGPUSurface(Instance instance, nint window)
     {
         SDL_SysWMinfo windowWMInfo = new();
         SDL_VERSION(out windowWMInfo.version);
