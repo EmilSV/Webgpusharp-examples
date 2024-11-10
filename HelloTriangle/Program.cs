@@ -119,5 +119,11 @@ return Run("Hello Triangle", async (instance, surface, onFrame) =>
 
         queue.Submit([commandEncoder.Finish()]);
         surface.Present();
+
+        var activeHandleCount = WebGpuSharp.Internal.WebGpuSafeHandle.GetTotalActiveHandles();
+        if (activeHandleCount > 300)
+        { 
+            GC.Collect();
+        }
     });
 });

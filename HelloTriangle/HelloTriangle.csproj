@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,5 +18,4 @@
     <ProjectReference Include="..\WebGPUSharp\WebGpuSharp.csproj" />
     <ProjectReference Include="..\Setup\Setup.csproj" />
   </ItemGroup>
-
 </Project>
