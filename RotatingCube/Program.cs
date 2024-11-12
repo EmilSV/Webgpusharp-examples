@@ -169,11 +169,13 @@ return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
     Matrix4x4 getTransformationMatrix()
     {
         float now = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
-        var translationMatix = Matrix4x4.CreateTranslation(0, 0, -4);
+        var translationMatrix = Matrix4x4.CreateTranslation(0, 0, -4);
         var rotationMatrix = Matrix4x4.CreateFromAxisAngle(new(MathF.Sin(now), MathF.Cos(now), 0), 1);
 
-        var viewMatrix = rotationMatrix;
-        viewMatrix.Translation = translationMatix.Translation;
+        var viewMatrix = rotationMatrix with
+        {
+            Translation = translationMatrix.Translation
+        };
 
         return Matrix4x4.Multiply(viewMatrix, projectionMatrix);
     }
