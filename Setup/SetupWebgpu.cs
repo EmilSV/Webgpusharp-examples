@@ -6,7 +6,7 @@ namespace Setup;
 
 public class SetupWebGPU
 {
-    public static int Run(string name, Func<Instance, Surface, Action<Action>, Task> callback) =>
+    public static int Run(string name,int width, int height, Func<Instance, Surface, Action<Action>, Task> callback) =>
         //To allow async event though SDL2 by only using the same thread as the call 
         AsyncContext.Run(async () =>
         {
@@ -18,7 +18,7 @@ public class SetupWebGPU
             }
 
             SDL_WindowFlags windowFlags = 0;
-            var window = SDL_CreateWindow(name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, windowFlags);
+            var window = SDL_CreateWindow(name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, windowFlags);
 
             var instance = WebGPU.CreateInstance()!;
 

@@ -9,9 +9,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Examples/bin/Debug/net8.0/Webgpusharp_examples.dll",
+            "program": "${workspaceFolder}/RotatingCube/bin/Debug/net8.0/RotatingCube.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/Examples",
+            "cwd": "${workspaceFolder}/RotatingCube",
             "console": "internalConsole",
             "stopAtEntry": false
         },

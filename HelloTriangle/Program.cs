@@ -2,7 +2,10 @@
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
-return Run("Hello Triangle", async (instance, surface, onFrame) =>
+const int WIDTH = 640;
+const int HEIGHT = 480;
+
+return Run("Hello Triangle", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 {
     const string TriangleVertShaderSource =
     """
@@ -54,8 +57,8 @@ return Run("Hello Triangle", async (instance, surface, onFrame) =>
 
     surface.Configure(new()
     {
-        Width = 640,
-        Height = 480,
+        Width = WIDTH,
+        Height = HEIGHT,
         Usage = TextureUsage.RenderAttachment,
         Format = surfaceFormat,
         Device = device,
@@ -122,7 +125,7 @@ return Run("Hello Triangle", async (instance, surface, onFrame) =>
 
         var activeHandleCount = WebGpuSharp.Internal.WebGpuSafeHandle.GetTotalActiveHandles();
         if (activeHandleCount > 300)
-        { 
+        {
             GC.Collect();
         }
     });

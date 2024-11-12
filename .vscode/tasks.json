@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/Examples/Webgpusharp_examples.csproj",
+                "${workspaceFolder}/RotatingCube/RotatingCube.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/Examples/Webgpusharp_examples.csproj",
+                "${workspaceFolder}/RotatingCube/RotatingCube.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
@@ -33,7 +33,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/Examples/Webgpusharp_examples.csproj"
+                "${workspaceFolder}/RotatingCube/RotatingCube.csproj"
             ],
             "problemMatcher": "$msCompile"
         }
