@@ -5,32 +5,31 @@ using System.Runtime.InteropServices;
 using System.Text;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
+using static WebGpuSharp.WebGpuUtil;
 
 static byte[] ToByteArray(Stream input)
 {
-    using (MemoryStream ms = new MemoryStream())
-    {
-        input.CopyTo(ms);
-        return ms.ToArray();
-    }
+    using MemoryStream ms = new();
+    input.CopyTo(ms);
+    return ms.ToArray();
 }
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
+return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 {
     var startTimeStamp = Stopwatch.GetTimestamp();
     var executingAssembly = Assembly.GetExecutingAssembly();
-    var basicVertWgsl = ToByteArray(executingAssembly.GetManifestResourceStream("RotatingCube.basic.vert.wgsl")!);
-    var vertexPositionColorWgsl = ToByteArray(executingAssembly.GetManifestResourceStream("RotatingCube.vertexPositionColor.frag.wgsl")!);
+    var basicVertWgsl = ToByteArray(executingAssembly.GetManifestResourceStream("TwoCubes.basic.vert.wgsl")!);
+    var vertexPositionColorWgsl = ToByteArray(executingAssembly.GetManifestResourceStream("TwoCubes.vertexPositionColor.frag.wgsl")!);
 
-    var adapter = (await instance.RequestAdapterAsync(new()
+    var adapter = await instance.RequestAdapterAsync(new()
     {
         CompatibleSurface = surface
-    }))!;
+    });
 
-    var device = (await adapter.RequestDeviceAsync(new()
+    var device = await adapter.RequestDeviceAsync(new()
     {
         UncapturedErrorCallback = (type, message) =>
         {
@@ -42,11 +41,22 @@ return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
             var messageString = Encoding.UTF8.GetString(message);
             Console.Error.WriteLine($"Device lost: {reason} {messageString}");
         },
-    }))!;
+    });
 
-    var queue = device.GetQueue()!;
+    var queue = device.GetQueue();
     var surfaceCapabilities = surface.GetCapabilities(adapter)!;
     var surfaceFormat = surfaceCapabilities.Formats[0];
+
+    surface.Configure(new()
+    {
+        Width = WIDTH,
+        Height = HEIGHT,
+        Usage = TextureUsage.RenderAttachment,
+        Format = surfaceFormat,
+        Device = device,
+        PresentMode = PresentMode.Fifo,
+        AlphaMode = CompositeAlphaMode.Auto,
+    });
 
     var verticesBuffer = device.CreateBuffer(new()
     {
@@ -62,55 +72,44 @@ return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
     });
     verticesBuffer.Unmap();
 
-    surface.Configure(new()
-    {
-        Width = WIDTH,
-        Height = HEIGHT,
-        Usage = TextureUsage.RenderAttachment,
-        Format = surfaceFormat,
-        Device = device,
-        PresentMode = PresentMode.Fifo,
-        AlphaMode = CompositeAlphaMode.Auto,
-    });
-
-    VertexState vertexState = new()
-    {
-        Module = device!.CreateShaderModuleWGSL(new()
-        {
-            Code = basicVertWgsl
-        })!,
-        Buffers = [
-            new()
-            {
-                ArrayStride = Cube.CubeVertexSize,
-                Attributes = [
-                    new()
-                    {
-                        ShaderLocation = 0,
-                        Offset = Cube.CubePositionOffset,
-                        Format = VertexFormat.Float32x4,
-                    },
-                    new()
-                    {
-                        ShaderLocation = 1,
-                        Offset = Cube.CubeUVOffset,
-                        Format = VertexFormat.Float32x2,
-                    }
-                ],
-            }
-        ]
-    };
-
     var pipeline = device.CreateRenderPipeline(new()
     {
         Layout = null!,
-        Vertex = ref vertexState,
+        Vertex = ref InlineInit(new VertexState()
+        {
+            Module = device.CreateShaderModuleWGSL(new()
+            {
+                Code = basicVertWgsl
+            }),
+            Buffers = [
+                new()
+                {
+                    ArrayStride = Cube.CubeVertexSize,
+                    Attributes = [
+                        new()
+                        {
+                            // position
+                            ShaderLocation = 0,
+                            Offset = Cube.CubePositionOffset,
+                            Format = VertexFormat.Float32x4,
+                        },
+                        new()
+                        {
+                            // uv
+                            ShaderLocation = 1,
+                            Offset = Cube.CubeUVOffset,
+                            Format = VertexFormat.Float32x2,
+                        }
+                    ],
+                }
+            ]
+        }),
         Fragment = new FragmentState()
         {
-            Module = device!.CreateShaderModuleWGSL(new()
+            Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = vertexPositionColorWgsl
-            })!,
+            }),
             Targets = [
                 new()
                 {
@@ -141,9 +140,12 @@ return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         Size = new(WIDTH, HEIGHT),
         Format = TextureFormat.Depth24Plus,
         Usage = TextureUsage.RenderAttachment,
-    })!;
+    });
 
-    const int uniformBufferSize = 4 * 16; // 4x4 matrix
+    const int matrixSize = 4 * 16; // 4x4 matrix
+    const int offset = 256; // uniformBindGroup offset must be 256-byte aligned
+    const int uniformBufferSize = offset + matrixSize;
+
     var uniformBuffer = device.CreateBuffer(new()
     {
         Label = "Uniform Buffer",
@@ -151,35 +153,62 @@ return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
 
-    var uniformBindGroup = device.CreateBindGroup(new()
+    var uniformBindGroup1 = device.CreateBindGroup(new()
     {
-        Layout = pipeline.GetBindGroupLayout(0)!,
+        Layout = pipeline.GetBindGroupLayout(0),
         Entries = [
             new BindGroupEntry()
             {
                 Binding = 0,
-                Buffer = uniformBuffer!
+                Buffer = uniformBuffer!,
+                Size = matrixSize,
             }
         ]
-    })!;
+    });
+
+    var uniformBindGroup2 = device.CreateBindGroup(new()
+    {
+        Layout = pipeline.GetBindGroupLayout(0),
+        Entries = [
+            new BindGroupEntry()
+            {
+                Binding = 0,
+                Buffer = uniformBuffer,
+                Offset = offset,
+                Size = matrixSize,
+            }
+        ],
+    });
 
     const float aspect = WIDTH / (float)HEIGHT;
-    var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView((float)(2.0f * Math.PI / 5.0f), aspect, 1f, 100.0f);
+    var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView((float)(2.0 * Math.PI / 5.0), aspect, 1f, 100.0f);
+    var viewMatrix = Matrix4x4.CreateTranslation(new(0, 0, -7));
 
-    Matrix4x4 getTransformationMatrix()
+    (Matrix4x4, Matrix4x4) getModelMatrixes()
     {
         float now = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
-        var viewMatrix = Matrix4x4.CreateFromAxisAngle(new(MathF.Sin(now), MathF.Cos(now), 0), 1) with
+
+        var modelMatrix1 = Matrix4x4.CreateFromAxisAngle(new(MathF.Sin(now), MathF.Cos(now), 0), 1) with
         {
-            Translation = new(0, 0, -4)
+            Translation = new(-2, 0, 0)
         };
-        return viewMatrix * projectionMatrix;
+
+        var modelMatrix2 = Matrix4x4.CreateFromAxisAngle(new(MathF.Cos(now), MathF.Sin(now), 0), 1) with
+        {
+            Translation = new(2, 0, 0)
+        };
+
+        modelMatrix1 *= viewMatrix * projectionMatrix;
+        modelMatrix2 *= viewMatrix * projectionMatrix;
+
+        return (modelMatrix1, modelMatrix2);
     }
 
     onFrame(() =>
     {
-        var transformationMatrix = getTransformationMatrix();
-        queue.WriteBuffer(uniformBuffer!, 0, transformationMatrix);
+        var (modelMatrix1, modelMatrix2) = getModelMatrixes();
+        queue.WriteBuffer(uniformBuffer, 0, modelMatrix1);
+        queue.WriteBuffer(uniformBuffer, offset, modelMatrix2);
 
         var texture = surface.GetCurrentTexture().Texture!;
         var textureView = texture.CreateView()!;
@@ -205,9 +234,16 @@ return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
             }
         });
         passEncoder.SetPipeline(pipeline);
-        passEncoder.SetBindGroup(0, uniformBindGroup);
         passEncoder.SetVertexBuffer(0, verticesBuffer);
+
+        // Bind the bind group (with the transformation matrix) for
+        // each cube, and draw.
+        passEncoder.SetBindGroup(0, uniformBindGroup1);
         passEncoder.Draw(Cube.CubeVertexCount);
+
+        passEncoder.SetBindGroup(0, uniformBindGroup2);
+        passEncoder.Draw(Cube.CubeVertexCount);
+
         passEncoder.End();
         queue.Submit([commandEncoder.Finish()]);
 

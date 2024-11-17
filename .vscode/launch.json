@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/RotatingCube/bin/Debug/net8.0/RotatingCube.dll",
+            "program": "${workspaceFolder}/TwoCubes/bin/Debug/net9.0/TwoCubes.dll",
             "args": [],
             "cwd": "${workspaceFolder}/RotatingCube",
             "console": "internalConsole",
