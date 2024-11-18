@@ -1,8 +1,11 @@
 {
     "cSpell.words": [
+        "Backface",
         "Multisample",
+        "Skia",
         "Uncaptured",
         "Unmap",
+        "Unorm",
         "WGSL"
     ]
 }

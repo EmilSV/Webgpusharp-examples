@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
@@ -18,12 +19,12 @@ static byte[] ToByteArray(Stream input)
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
+return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 {
     var startTimeStamp = Stopwatch.GetTimestamp();
     var executingAssembly = Assembly.GetExecutingAssembly();
-    var basicVertWgsl = ToByteArray(executingAssembly.GetManifestResourceStream("RotatingCube.basic.vert.wgsl")!);
-    var vertexPositionColorWgsl = ToByteArray(executingAssembly.GetManifestResourceStream("RotatingCube.vertexPositionColor.frag.wgsl")!);
+    var basicVertWgsl = ToByteArray(executingAssembly.GetManifestResourceStream("TexturedCube.basic.vert.wgsl")!);
+    var sampleTextureMixColor = ToByteArray(executingAssembly.GetManifestResourceStream("TexturedCube.sampleTextureMixColor.frag.wgsl")!);
 
     var adapter = (await instance.RequestAdapterAsync(new()
     {
@@ -36,6 +37,7 @@ return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         {
             var messageString = Encoding.UTF8.GetString(message);
             Console.Error.WriteLine($"Uncaptured error: {type} {messageString}");
+            Debugger.Break();
         },
         DeviceLostCallback = (reason, message) =>
         {
@@ -109,7 +111,7 @@ return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         {
             Module = device!.CreateShaderModuleWGSL(new()
             {
-                Code = vertexPositionColorWgsl
+                Code = sampleTextureMixColor
             })!,
             Targets = [
                 new()
@@ -151,15 +153,63 @@ return Run("Rotating Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
 
+    Texture cubeTexture;
+    {
+        var imageData = ImageUtils.LoadPng(
+            executingAssembly.GetManifestResourceStream("TexturedCube.assets.Di-3d.png")!,
+            out var width,
+            out var height
+        );
+        var textureSize = new Extent3D((uint)width, (uint)height);
+        cubeTexture = device.CreateTexture(new()
+        {
+            Size = textureSize,
+            Format = TextureFormat.RGBA8Unorm,
+            Usage = TextureUsage.TextureBinding | TextureUsage.CopyDst | TextureUsage.RenderAttachment,
+        });
+
+        queue.WriteTexture(
+            destination: new()
+            {
+                Texture = cubeTexture,
+
+            },
+            data: imageData,
+            dataLayout: new()
+            {
+                BytesPerRow = 4 * textureSize.Width,
+                RowsPerImage = textureSize.Height,
+            },
+            writeSize: textureSize
+        );
+    }
+
+    // Create a sampler with linear filtering for smooth interpolation.
+    var sampler = device.CreateSampler(new()
+    {
+        MagFilter = FilterMode.Linear,
+        MinFilter = FilterMode.Linear,
+    });
+
     var uniformBindGroup = device.CreateBindGroup(new()
     {
-        Layout = pipeline.GetBindGroupLayout(0)!,
+        Layout = pipeline.GetBindGroupLayout(0),
         Entries = [
-            new BindGroupEntry()
+            new()
             {
                 Binding = 0,
-                Buffer = uniformBuffer!
-            }
+                Buffer = uniformBuffer
+            },
+            new()
+            {
+                Binding = 1,
+                Sampler = sampler
+            },
+            new()
+            {
+                Binding = 2,
+                TextureView = cubeTexture.CreateView()
+            },
         ]
     })!;
 

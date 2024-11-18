@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2" />
     <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
   </ItemGroup>
 
   <ItemGroup>

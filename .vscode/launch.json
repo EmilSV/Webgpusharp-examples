@@ -9,9 +9,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/TwoCubes/bin/Debug/net9.0/TwoCubes.dll",
+            "program": "${workspaceFolder}/TexturedCube/bin/Debug/net9.0/TexturedCube.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/RotatingCube",
+            "cwd": "${workspaceFolder}/TexturedCube",
             "console": "internalConsole",
             "stopAtEntry": false
         },

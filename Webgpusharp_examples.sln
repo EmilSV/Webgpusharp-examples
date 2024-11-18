@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RotatingCube", "RotatingCub
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwoCubes", "TwoCubes\TwoCubes.csproj", "{84DE250B-EAA9-4880-875E-8BEF940BC0E0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TexturedCube", "TexturedCube\TexturedCube.csproj", "{0B962759-6349-47CF-9364-A34941FF1BCD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{84DE250B-EAA9-4880-875E-8BEF940BC0E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{84DE250B-EAA9-4880-875E-8BEF940BC0E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{84DE250B-EAA9-4880-875E-8BEF940BC0E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B962759-6349-47CF-9364-A34941FF1BCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B962759-6349-47CF-9364-A34941FF1BCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B962759-6349-47CF-9364-A34941FF1BCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B962759-6349-47CF-9364-A34941FF1BCD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
