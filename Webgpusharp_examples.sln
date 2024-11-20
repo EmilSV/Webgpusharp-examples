@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TexturedCube", "TexturedCub
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InstancedCube", "InstancedCube\InstancedCube.csproj", "{7BCF180C-53E9-42BA-8439-29992C9BB867}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FractalCube", "FractalCube\FractalCube.csproj", "{4EDBFB41-3C67-4D2D-A519-98B07ADF9070}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{7BCF180C-53E9-42BA-8439-29992C9BB867}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7BCF180C-53E9-42BA-8439-29992C9BB867}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7BCF180C-53E9-42BA-8439-29992C9BB867}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4EDBFB41-3C67-4D2D-A519-98B07ADF9070}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4EDBFB41-3C67-4D2D-A519-98B07ADF9070}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4EDBFB41-3C67-4D2D-A519-98B07ADF9070}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4EDBFB41-3C67-4D2D-A519-98B07ADF9070}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
