@@ -1,7 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
+using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 using static WebGpuSharp.WebGpuUtil;
@@ -13,46 +16,45 @@ static byte[] ToByteArray(Stream input)
     return ms.ToArray();
 }
 
-const int WIDTH = 640;
-const int HEIGHT = 480;
-const float ASPECT = WIDTH / (float)HEIGHT;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 
 return Run(
-    name: "Fractal Cube",
-    width: WIDTH,
-    height: HEIGHT,
-    callback: async (instance, surface, onFrame) =>
+    "Cubemap",
+    WIDTH,
+    HEIGHT,
+    async (instance, surface, onFrame) =>
     {
         var startTimeStamp = Stopwatch.GetTimestamp();
+
         var executingAssembly = Assembly.GetExecutingAssembly();
-        var basicVertWgsl = ToByteArray(
-            executingAssembly.GetManifestResourceStream("FractalCube.basic.vert.wgsl")!
+        var basicVertWGSL = ToByteArray(
+            executingAssembly.GetManifestResourceStream("Cubemap.basic.vert.wgsl")!
         );
-        var vertexPositionColorWgsl = ToByteArray(
-            executingAssembly.GetManifestResourceStream("FractalCube.sampleSelf.frag.wgsl")!
+        var sampleCubemapWGSL = ToByteArray(
+            executingAssembly.GetManifestResourceStream("Cubemap.sampleCubemap.frag.wgsl")!
         );
 
         var adapter = (await instance.RequestAdapterAsync(new() { CompatibleSurface = surface }))!;
 
-        var device = (
-            await adapter.RequestDeviceAsync(
-                new()
+        var device = await adapter.RequestDeviceAsync(
+            new()
+            {
+                UncapturedErrorCallback = (type, message) =>
                 {
-                    UncapturedErrorCallback = (type, message) =>
-                    {
-                        var messageString = Encoding.UTF8.GetString(message);
-                        Console.Error.WriteLine($"Uncaptured error: {type} {messageString}");
-                    },
-                    DeviceLostCallback = (reason, message) =>
-                    {
-                        var messageString = Encoding.UTF8.GetString(message);
-                        Console.Error.WriteLine($"Device lost: {reason} {messageString}");
-                    },
-                }
-            )
-        )!;
+                    var messageString = Encoding.UTF8.GetString(message);
+                    Console.Error.WriteLine($"Uncaptured error: {type} {messageString}");
+                    Environment.Exit(1);
+                },
+                DeviceLostCallback = (reason, message) =>
+                {
+                    var messageString = Encoding.UTF8.GetString(message);
+                    Console.Error.WriteLine($"Device lost: {reason} {messageString}");
+                },
+            }
+        );
 
-        var queue = device.GetQueue();
+        var queue = device.GetQueue()!;
         var surfaceCapabilities = surface.GetCapabilities(adapter)!;
         var surfaceFormat = surfaceCapabilities.Formats[0];
 
@@ -61,7 +63,7 @@ return Run(
             {
                 Width = WIDTH,
                 Height = HEIGHT,
-                Usage = TextureUsage.RenderAttachment | TextureUsage.CopySrc,
+                Usage = TextureUsage.RenderAttachment,
                 Format = surfaceFormat,
                 Device = device,
                 PresentMode = PresentMode.Fifo,
@@ -72,15 +74,16 @@ return Run(
         var verticesBuffer = device.CreateBuffer(
             new()
             {
+                Label = "Vertices Buffer",
                 Size = (ulong)System.Buffer.ByteLength(Cube.CubeVertices),
                 Usage = BufferUsage.Vertex,
                 MappedAtCreation = true,
             }
         )!;
 
-        verticesBuffer.GetMappedRange<float>(static data =>
+        verticesBuffer.GetMappedRange<float>(data =>
         {
-            Cube.CubeVertices.CopyTo(data);
+            Cube.CubeVertices.AsSpan().CopyTo(data);
         });
         verticesBuffer.Unmap();
 
@@ -91,7 +94,7 @@ return Run(
                 Vertex = ref InlineInit(
                     new VertexState()
                     {
-                        Module = device.CreateShaderModuleWGSL(new() { Code = basicVertWgsl }),
+                        Module = device!.CreateShaderModuleWGSL(new() { Code = basicVertWGSL })!,
                         Buffers =
                         [
                             new()
@@ -118,7 +121,7 @@ return Run(
                 ),
                 Fragment = new FragmentState()
                 {
-                    Module = device!.CreateShaderModuleWGSL(new() { Code = vertexPositionColorWgsl })!,
+                    Module = device!.CreateShaderModuleWGSL(new() { Code = sampleCubemapWGSL })!,
                     Targets = [new() { Format = surfaceFormat }],
                 },
                 Primitive = new()
@@ -128,7 +131,7 @@ return Run(
                     // Backface culling since the cube is solid piece of geometry.
                     // Faces pointing away from the camera will be occluded by faces
                     // pointing toward the camera.
-                    CullMode = CullMode.Back,
+                    CullMode = CullMode.None,
                 },
 
                 DepthStencil = new DepthStencilState()
@@ -149,6 +152,54 @@ return Run(
             }
         )!;
 
+        Texture cubemapTexture;
+        {
+            string[] imgSrcs =
+            [
+                "Cubemap.cubemap.posx.jpg",
+                "Cubemap.cubemap.negx.jpg",
+                "Cubemap.cubemap.posy.jpg",
+                "Cubemap.cubemap.negy.jpg",
+                "Cubemap.cubemap.posz.jpg",
+                "Cubemap.cubemap.negz.jpg",
+            ];
+
+            var imgTasks = imgSrcs
+                .Select(imagePath =>
+                {
+                    var stream = executingAssembly.GetManifestResourceStream(imagePath)!;
+                    var bytes = ImageUtils.LoadImage(stream, out var width, out var height);
+                    return (width, height, bytes);
+                })
+                .ToArray();
+
+            var (width, height, _) = imgTasks[0];
+
+            cubemapTexture = device.CreateTexture(
+                new()
+                {
+                    Dimension = TextureDimension.D2,
+                    Size = new Extent3D((uint)width, (uint)height, (uint)imgTasks.Length),
+                    Format = TextureFormat.RGBA8Unorm,
+                    Usage =
+                        TextureUsage.TextureBinding
+                        | TextureUsage.CopyDst
+                        | TextureUsage.RenderAttachment,
+                }
+            );
+
+            for (int i = 0; i < imgTasks.Length; i++)
+            {
+                var bytes = imgTasks[i].bytes;
+                queue.WriteTexture(
+                    destination: new() { Texture = cubemapTexture, Origin = new(0, 0, (uint)i) },
+                    data: bytes,
+                    dataLayout: new() { BytesPerRow = 4 * (uint)width, RowsPerImage = (uint)height },
+                    writeSize: new((uint)width, (uint)height)
+                );
+            }
+        }
+
         const int uniformBufferSize = 4 * 16; // 4x4 matrix
         var uniformBuffer = device.CreateBuffer(
             new()
@@ -159,16 +210,6 @@ return Run(
             }
         );
 
-        var cubeTexture = device.CreateTexture(
-            new()
-            {
-                Label = "Cube Texture",
-                Size = new(WIDTH, HEIGHT),
-                Format = surfaceFormat,
-                Usage = TextureUsage.TextureBinding | TextureUsage.CopyDst,
-            }
-        );
-
         var sampler = device.CreateSampler(
             new() { MagFilter = FilterMode.Linear, MinFilter = FilterMode.Linear }
         );
@@ -176,41 +217,51 @@ return Run(
         var uniformBindGroup = device.CreateBindGroup(
             new()
             {
-                Layout = pipeline.GetBindGroupLayout(0),
+                Layout = pipeline.GetBindGroupLayout(0)!,
                 Entries =
                 [
-                    new() { Binding = 0, Buffer = uniformBuffer },
-                    new() { Binding = 1, Sampler = sampler },
-                    new() { Binding = 2, TextureView = cubeTexture.CreateView()! },
+                    new() { Binding = 0, Buffer = uniformBuffer! },
+                    new() { Binding = 1, Sampler = sampler! },
+                    new()
+                    {
+                        Binding = 2,
+                        TextureView = cubemapTexture.CreateView(
+                            new() { 
+                                Dimension = TextureViewDimension.Cube }
+                        ),
+                    },
                 ],
             }
-        );
+        )!;
 
+        const float aspect = WIDTH / (float)HEIGHT;
         var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
-            fieldOfView: (float)(2.0f * Math.PI / 5.0f),
-            aspectRatio: ASPECT,
-            nearPlaneDistance: 1f,
-            farPlaneDistance: 100.0f
+            (float)(2.0f * Math.PI / 5.0f),
+            aspect,
+            1f,
+            3000
         );
 
-        Matrix4x4 getTransformationMatrix()
+        var modelMatrix = Matrix4x4.CreateScale(1000);
+
+        Matrix4x4 getModelViewProjectionMatrix()
         {
             float now = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
             var viewMatrix = Matrix4x4.CreateFromAxisAngle(
-                axis: new(MathF.Sin(now), MathF.Cos(now), 0),
-                angle: 1
+                axis: new(1, 0, 0),
+                angle: MathF.PI / 10 * MathF.Sin(now)
             );
-            viewMatrix.Translation = new(0, 0, -4);
-            return viewMatrix * projectionMatrix;
+            viewMatrix.Rotate(new(0, 1, 0), now * 0.2f);
+            return viewMatrix * modelMatrix * projectionMatrix;
         }
 
         onFrame(() =>
         {
-            var transformationMatrix = getTransformationMatrix();
-            queue.WriteBuffer(uniformBuffer, 0, transformationMatrix);
+            var modelViewProjectionMatrix = getModelViewProjectionMatrix();
+            queue.WriteBuffer(uniformBuffer, 0, modelViewProjectionMatrix);
 
-            var swapChainTexture = surface.GetCurrentTexture().Texture!;
-            var swapChainTextureView = swapChainTexture.CreateView()!;
+            var texture = surface.GetCurrentTexture().Texture!;
+            var textureView = texture.CreateView();
 
             var commandEncoder = device.CreateCommandEncoder(new());
             var passEncoder = commandEncoder.BeginRenderPass(
@@ -220,8 +271,7 @@ return Run(
                     [
                         new()
                         {
-                            View = swapChainTextureView,
-                            ClearValue = new(0.5, 0.5, 0.5, 1.0),
+                            View = textureView,
                             LoadOp = LoadOp.Clear,
                             StoreOp = StoreOp.Store,
                         },
@@ -240,14 +290,7 @@ return Run(
             passEncoder.SetVertexBuffer(0, verticesBuffer);
             passEncoder.Draw(Cube.CubeVertexCount);
             passEncoder.End();
-
-            commandEncoder.CopyTextureToTexture(
-                new() { Texture = swapChainTexture },
-                new() { Texture = cubeTexture },
-                new(WIDTH, HEIGHT)
-            );
-
-            queue.Submit(commandEncoder.Finish());
+            queue.Submit([commandEncoder.Finish()]);
 
             surface.Present();
 

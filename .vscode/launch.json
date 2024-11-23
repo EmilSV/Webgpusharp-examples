@@ -9,9 +9,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/TexturedCube/bin/Debug/net9.0/TexturedCube.dll",
+            "program": "${workspaceFolder}/Cubemap/bin/Debug/net9.0/Cubemap.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/TexturedCube",
+            "cwd": "${workspaceFolder}/Cubemap",
             "console": "internalConsole",
             "stopAtEntry": false
         },

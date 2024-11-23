@@ -155,7 +155,7 @@ return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 
     Texture cubeTexture;
     {
-        var imageData = ImageUtils.LoadPng(
+        var imageData = ImageUtils.LoadImage(
             executingAssembly.GetManifestResourceStream("TexturedCube.assets.Di-3d.png")!,
             out var width,
             out var height
