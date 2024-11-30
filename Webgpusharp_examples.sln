@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloTriangleMSAA", "HelloT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cubemap", "Cubemap\Cubemap.csproj", "{AAF23916-7997-42B8-915B-68C9873D6928}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReversedZ", "ReversedZ\ReversedZ.csproj", "{7F4C5192-CC69-457C-A0C1-788104917835}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,10 @@ Global
 		{AAF23916-7997-42B8-915B-68C9873D6928}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AAF23916-7997-42B8-915B-68C9873D6928}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AAF23916-7997-42B8-915B-68C9873D6928}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F4C5192-CC69-457C-A0C1-788104917835}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F4C5192-CC69-457C-A0C1-788104917835}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F4C5192-CC69-457C-A0C1-788104917835}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F4C5192-CC69-457C-A0C1-788104917835}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

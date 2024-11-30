@@ -19,7 +19,7 @@ return Run(
     "Hello Triangle",
     WIDTH,
     HEIGHT,
-    async (instance, surface, onFrame) =>
+    async (instance, surface, guiContext, onFrame) =>
     {
         var executingAssembly = Assembly.GetExecutingAssembly();
         var triangleVertShaderWgsl = ToByteArray(

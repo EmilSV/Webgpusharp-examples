@@ -15,7 +15,7 @@ static byte[] ToByteArray(Stream input)
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-return Run("Instanced Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
+return Run("Instanced Cube", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
 {
     var startTimeStamp = Stopwatch.GetTimestamp();
     var executingAssembly = Assembly.GetExecutingAssembly();
@@ -169,7 +169,7 @@ return Run("Instanced Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =
     })!;
 
     const float aspect = WIDTH / (float)HEIGHT;
-    
+
     var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView((float)(2.0f * Math.PI / 5.0f), aspect, 1f, 100.0f);
     var viewMatrix = Matrix4x4.CreateTranslation(0, 0, -12);
 

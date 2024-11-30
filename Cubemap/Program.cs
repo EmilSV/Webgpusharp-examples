@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
@@ -23,7 +24,7 @@ return Run(
     "Cubemap",
     WIDTH,
     HEIGHT,
-    async (instance, surface, onFrame) =>
+    async (instance, surface, guiContext, onFrame) =>
     {
         var startTimeStamp = Stopwatch.GetTimestamp();
 
@@ -54,9 +55,12 @@ return Run(
             }
         );
 
+
         var queue = device.GetQueue()!;
         var surfaceCapabilities = surface.GetCapabilities(adapter)!;
         var surfaceFormat = surfaceCapabilities.Formats[0];
+
+        guiContext.SetupIMGUI(device, surfaceFormat);
 
         surface.Configure(
             new()
@@ -226,7 +230,7 @@ return Run(
                     {
                         Binding = 2,
                         TextureView = cubemapTexture.CreateView(
-                            new() { 
+                            new() {
                                 Dimension = TextureViewDimension.Cube }
                         ),
                     },
@@ -244,6 +248,8 @@ return Run(
 
         var modelMatrix = Matrix4x4.CreateScale(1000);
 
+        Controls controls = new();
+
         Matrix4x4 getModelViewProjectionMatrix()
         {
             float now = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
@@ -251,7 +257,7 @@ return Run(
                 axis: new(1, 0, 0),
                 angle: MathF.PI / 10 * MathF.Sin(now)
             );
-            viewMatrix.Rotate(new(0, 1, 0), now * 0.2f);
+            viewMatrix.Rotate(new(0, 1, 0), now * controls.Speed);
             return viewMatrix * modelMatrix * projectionMatrix;
         }
 
@@ -289,8 +295,17 @@ return Run(
             passEncoder.SetBindGroup(0, uniformBindGroup);
             passEncoder.SetVertexBuffer(0, verticesBuffer);
             passEncoder.Draw(Cube.CubeVertexCount);
+
+            guiContext.NewFrame();
+
+            controls.Draw();
+
+            guiContext.EndFrame();
+
+            var guiCommandBuffer = guiContext.Render(surface)!.Value;
+
             passEncoder.End();
-            queue.Submit([commandEncoder.Finish()]);
+            queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
 
             surface.Present();
 
@@ -302,3 +317,23 @@ return Run(
         });
     }
 );
+
+
+class Controls
+{
+    public float Speed = 0.2f;
+
+    public void Draw()
+    {
+        ImGui.SetNextWindowPos(new(400, 0), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(new(200, 100), ImGuiCond.Always);
+        ImGui.SetNextWindowBgAlpha(0.3f);
+        ImGui.Begin("Controls",
+            ImGuiWindowFlags.NoMove |
+            ImGuiWindowFlags.NoResize |
+            ImGuiWindowFlags.NoCollapse
+        );
+        ImGui.InputFloat("Speed", ref Speed);
+        ImGui.End();
+    }
+}

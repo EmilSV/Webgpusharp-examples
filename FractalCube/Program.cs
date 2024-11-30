@@ -21,7 +21,7 @@ return Run(
     name: "Fractal Cube",
     width: WIDTH,
     height: HEIGHT,
-    callback: async (instance, surface, onFrame) =>
+    callback: async (instance, surface,guiContext, onFrame) =>
     {
         var startTimeStamp = Stopwatch.GetTimestamp();
         var executingAssembly = Assembly.GetExecutingAssembly();

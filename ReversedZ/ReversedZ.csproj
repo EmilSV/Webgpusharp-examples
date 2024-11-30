@@ -7,13 +7,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+
   <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.91.0.1" />
     <ProjectReference Include="..\WebGPUSharp\WebGpuSharp.csproj" />
     <ProjectReference Include="..\Setup\Setup.csproj" />
-    <EmbeddedResource Include="cubemap\*.jpg" />
-    <EmbeddedResource Include="sampleCubemap.frag.wgsl" />
-    <EmbeddedResource Include="basic.vert.wgsl" />
+    <EmbeddedResource Include="shaders\*.wgsl" />
   </ItemGroup>
 
 </Project>

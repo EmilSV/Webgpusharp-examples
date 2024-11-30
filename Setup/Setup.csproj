@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ImGui.NET" Version="1.91.0.1" />
     <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2" />
     <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
     <PackageReference Include="SkiaSharp" Version="2.88.9" />
