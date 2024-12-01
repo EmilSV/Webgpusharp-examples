@@ -47,7 +47,8 @@ const depthRangeRemapMatrix = mat4.identity();
 depthRangeRemapMatrix[10] = -1;
 depthRangeRemapMatrix[14] = 1;
 
-enum DepthBufferMode {
+enum DepthBufferMode
+{
   Default = 0,
   Reversed,
 }
@@ -485,8 +486,10 @@ const modelMatrices = new Array<Mat4>(numInstances);
 const mvpMatricesData = new Float32Array(matrixFloatCount * numInstances);
 
 let m = 0;
-for (let x = 0; x < xCount; x++) {
-  for (let y = 0; y < yCount; y++) {
+for (let x = 0; x < xCount; x++)
+{
+  for (let y = 0; y < yCount; y++)
+  {
     const z = -800 * m;
     const s = 1 + 50 * m;
 
@@ -525,10 +528,12 @@ device.queue.writeBuffer(
 );
 
 const tmpMat4 = mat4.create();
-function updateTransformationMatrix() {
+function updateTransformationMatrix()
+{
   const now = Date.now() / 1000;
 
-  for (let i = 0, m = 0; i < numInstances; i++, m += matrixFloatCount) {
+  for (let i = 0, m = 0; i < numInstances; i++, m += matrixFloatCount)
+  {
     mat4.rotate(
       modelMatrices[i],
       vec3.fromValues(Math.sin(now), Math.cos(now), 0),
@@ -545,7 +550,8 @@ const settings = {
 const gui = new GUI();
 gui.add(settings, 'mode', ['color', 'precision-error', 'depth-texture']);
 
-function frame() {
+function frame()
+{
   updateTransformationMatrix();
   device.queue.writeBuffer(
     uniformBuffer,
@@ -557,8 +563,10 @@ function frame() {
 
   const attachment = context.getCurrentTexture().createView();
   const commandEncoder = device.createCommandEncoder();
-  if (settings.mode === 'color') {
-    for (const m of depthBufferModes) {
+  if (settings.mode === 'color')
+  {
+    for (const m of depthBufferModes)
+    {
       drawPassDescriptors[m].colorAttachments[0].view = attachment;
       drawPassDescriptors[m].depthStencilAttachment.depthClearValue =
         depthClearValues[m];
@@ -577,8 +585,10 @@ function frame() {
       colorPass.draw(geometryDrawCount, numInstances, 0, 0);
       colorPass.end();
     }
-  } else if (settings.mode === 'precision-error') {
-    for (const m of depthBufferModes) {
+  } else if (settings.mode === 'precision-error')
+  {
+    for (const m of depthBufferModes)
+    {
       {
         depthPrePassDescriptor.depthStencilAttachment.depthClearValue =
           depthClearValues[m];
@@ -622,9 +632,11 @@ function frame() {
         precisionErrorPass.end();
       }
     }
-  } else {
+  } else
+  {
     // depth texture quad
-    for (const m of depthBufferModes) {
+    for (const m of depthBufferModes)
+    {
       {
         depthPrePassDescriptor.depthStencilAttachment.depthClearValue =
           depthClearValues[m];
