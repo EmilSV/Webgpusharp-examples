@@ -54,4 +54,7 @@ public class SetupWebGPU
 
             return 0;
         });
+
+    public static int Run(string name, int width, int height, Func<Instance, Surface, Action<Action>, Task> callback) =>
+        Run(name, width, height, (instance, surface, guiContext, onFrame) => callback(instance, surface, onFrame));
 }

@@ -57,4 +57,20 @@ public static class MatrixExtension
         matrix.M33 = r20 * m02 + r21 * m12 + r22 * m22;
         matrix.M34 = r20 * m03 + r21 * m13 + r22 * m23;
     }
+
+    public static void Scale(this ref Matrix4x4 matrix, Vector3 scale)
+    {
+        matrix.M11 *= scale.X;
+        matrix.M12 *= scale.X;
+        matrix.M13 *= scale.X;
+        matrix.M14 *= scale.X;
+        matrix.M21 *= scale.Y;
+        matrix.M22 *= scale.Y;
+        matrix.M23 *= scale.Y;
+        matrix.M24 *= scale.Y;
+        matrix.M31 *= scale.Z;
+        matrix.M32 *= scale.Z;
+        matrix.M33 *= scale.Z;
+        matrix.M34 *= scale.Z;
+    }
 }

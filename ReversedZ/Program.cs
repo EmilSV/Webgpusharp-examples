@@ -67,7 +67,7 @@ const int HEIGHT = 600;
 return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
 {
     var startTimeStamp = Stopwatch.GetTimestamp();
-    byte[] vertexWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertex.wgsl");
+    var vertexWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertex.wgsl");
     var fragmentWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragment.wgsl");
     var vertexDepthPrePassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexDepthPrePass.wgsl");
     var vertexTextureQuadWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexTextureQuad.wgsl");
@@ -75,7 +75,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
     var vertexPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexPrecisionErrorPass.wgsl");
     var fragmentPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragmentPrecisionErrorPass.wgsl");
 
-    var adapter = (await instance.RequestAdapterAsync(new() { CompatibleSurface = surface }))!;
+    var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
 
     var device = await adapter.RequestDeviceAsync(
         new()
@@ -125,6 +125,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
     {
         geometryVertexArray.CopyTo(data);
     });
+    verticesBuffer.Unmap();
 
     const TextureFormat depthBufferFormat = TextureFormat.Depth32Float;
 
@@ -550,7 +551,6 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
 
 
     var modelMatrices = new Matrix4x4[numInstances];
-    var mvpMatricesData = new float[matrixFloatCount * numInstances];
 
     int m = 0;
     for (int x = 0; x < xCount; x++)
@@ -566,8 +566,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
                     z
                 )
             );
-            newMatrix *= Matrix4x4.CreateScale(s, s, s);
-
+            newMatrix.Scale(new(s, s, s));
             modelMatrices[m] = newMatrix;
             m++;
         }
@@ -595,13 +594,86 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
         reversedRangeViewProjectionMatrix
     );
 
-    void UpdateTransformationMatrix()
+    BindGroup GetUniformBindGroup(DepthBufferMode depthBufferMode) =>
+        depthBufferMode switch
+        {
+            DepthBufferMode.Default => uniformBindGroupDefault!,
+            DepthBufferMode.Reversed => uniformBindGroupReversed!,
+            _ => throw new ArgumentOutOfRangeException(nameof(depthBufferMode), depthBufferMode, null)
+        };
+
+    RenderPassEncoder BeginDepthPrePass(CommandEncoder commandEncoder, DepthBufferMode depthBufferMode) =>
+        commandEncoder.BeginRenderPass(new()
+        {
+            ColorAttachments = [],
+            DepthStencilAttachment = new RenderPassDepthStencilAttachment()
+            {
+                View = depthTextureView!,
+                DepthClearValue = depthClearValues![depthBufferMode],
+                DepthLoadOp = LoadOp.Clear,
+                DepthStoreOp = StoreOp.Store,
+            }
+        });
+    RenderPassEncoder BeginDrawPass(CommandEncoder commandEncoder, DepthBufferMode depthBufferMode, TextureView attachment) =>
+        commandEncoder.BeginRenderPass(new()
+        {
+            ColorAttachments =
+            [
+                new RenderPassColorAttachment()
+                {
+                    View = attachment,
+                    LoadOp = depthBufferMode switch {
+                        DepthBufferMode.Default => LoadOp.Clear,
+                        DepthBufferMode.Reversed => LoadOp.Load,
+                        _ => throw new ArgumentOutOfRangeException(nameof(depthBufferMode), depthBufferMode, null)
+                    },
+                    ClearValue = depthBufferMode switch {
+                        DepthBufferMode.Default => new(0.0, 0.0, 0.5, 1.0),
+                        DepthBufferMode.Reversed => default,
+                        _ => throw new ArgumentOutOfRangeException(nameof(depthBufferMode), depthBufferMode, null)
+                    },
+                    StoreOp = StoreOp.Store,
+                }
+            ],
+            DepthStencilAttachment = new RenderPassDepthStencilAttachment()
+            {
+                View = depthTextureView!,
+                DepthClearValue = depthClearValues![depthBufferMode],
+                DepthLoadOp = LoadOp.Clear,
+                DepthStoreOp = StoreOp.Store,
+            }
+        });
+    RenderPassEncoder BeginTextureQuadPass(
+        CommandEncoder commandEncoder, DepthBufferMode depthBufferMode,
+        TextureView attachment) =>
+        commandEncoder.BeginRenderPass(new()
+        {
+            ColorAttachments = [
+                new RenderPassColorAttachment()
+                {
+                    View = attachment,
+                    ClearValue=  depthBufferMode switch {
+                        DepthBufferMode.Default => new(0.0, 0.0, 0.5, 1.0),
+                        DepthBufferMode.Reversed => default,
+                        _ => throw new ArgumentOutOfRangeException(nameof(depthBufferMode), depthBufferMode, null)
+                    },
+                    LoadOp = depthBufferMode switch {
+                        DepthBufferMode.Default => LoadOp.Clear,
+                        DepthBufferMode.Reversed => LoadOp.Load,
+                        _ => throw new ArgumentOutOfRangeException(nameof(depthBufferMode), depthBufferMode, null)
+                    },
+                    StoreOp = StoreOp.Store,
+                }
+            ],
+        });
+
+    void UpdateTransformationMatrix(Span<Matrix4x4> matrices)
     {
         float now = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
 
         for (int i = 0; i < numInstances; i++)
         {
-            ref var modelMatrix = ref modelMatrices![i];
+            ref var modelMatrix = ref matrices![i];
             modelMatrix.Rotate(new(MathF.Sin(now), MathF.Cos(now), 0), MathF.PI / 180 * 30);
         }
     }
@@ -613,8 +685,10 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
 
     onFrame(() =>
     {
-        UpdateTransformationMatrix();
-        queue.WriteBuffer(uniformBuffer, 0, mvpMatricesData);
+        Span<Matrix4x4> matrixOutput = stackalloc Matrix4x4[numInstances];
+        modelMatrices.CopyTo(matrixOutput);
+        UpdateTransformationMatrix(matrixOutput);
+        queue.WriteBuffer(uniformBuffer, 0, matrixOutput);
 
         var attachment = surface.GetCurrentTexture().Texture!.CreateView();
         var commandEncoder = device.CreateCommandEncoder();
@@ -624,38 +698,9 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
             for (var m = 0; m < depthBufferModes.Length; m++)
             {
                 var depthBufferMode = depthBufferModes[m];
-                var colorPass = commandEncoder.BeginRenderPass(new()
-                {
-                    ColorAttachments = [
-                        new RenderPassColorAttachment()
-                        {
-                            View = attachment,
-                            LoadOp = depthBufferMode switch {
-                                DepthBufferMode.Default => LoadOp.Clear,
-                                DepthBufferMode.Reversed => LoadOp.Load
-                            },
-                            ClearValue = depthBufferMode switch {
-                                DepthBufferMode.Default => new(0.0, 0.0, 0.5, 1.0),
-                                DepthBufferMode.Reversed => default
-                            },
-                            StoreOp = StoreOp.Store,
-                        }
-                    ],
-                    DepthStencilAttachment = new RenderPassDepthStencilAttachment()
-                    {
-                        View = depthTextureView,
-                        DepthClearValue = depthClearValues[depthBufferMode],
-                        DepthLoadOp = LoadOp.Clear,
-                        DepthStoreOp = StoreOp.Store,
-                    }
-                });
-
+                var colorPass = BeginDrawPass(commandEncoder, depthBufferMode, attachment);
                 colorPass.SetPipeline(colorPassPipelines[depthBufferMode]);
-                colorPass.SetBindGroup(0, depthBufferMode switch
-                {
-                    DepthBufferMode.Default => uniformBindGroupDefault,
-                    DepthBufferMode.Reversed => uniformBindGroupReversed
-                });
+                colorPass.SetBindGroup(0, GetUniformBindGroup(depthBufferMode));
                 colorPass.SetVertexBuffer(0, verticesBuffer);
                 colorPass.SetViewport(
                     x: (uint)(WIDTH * m / 2),
@@ -675,23 +720,9 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
             {
                 var depthBufferMode = depthBufferModes[m];
                 {
-                    var depthPrePass = commandEncoder.BeginRenderPass(new()
-                    {
-                        ColorAttachments = [],
-                        DepthStencilAttachment = new RenderPassDepthStencilAttachment()
-                        {
-                            View = depthTextureView,
-                            DepthClearValue = depthClearValues[depthBufferMode],
-                            DepthLoadOp = LoadOp.Clear,
-                            DepthStoreOp = StoreOp.Store,
-                        }
-                    });
+                    var depthPrePass = BeginDepthPrePass(commandEncoder, depthBufferMode);
                     depthPrePass.SetPipeline(depthPrePassPipelines[depthBufferMode]);
-                    depthPrePass.SetBindGroup(0, depthBufferMode switch
-                    {
-                        DepthBufferMode.Default => uniformBindGroupDefault,
-                        DepthBufferMode.Reversed => uniformBindGroupReversed
-                    });
+                    depthPrePass.SetBindGroup(0, GetUniformBindGroup(depthBufferMode));
                     depthPrePass.SetVertexBuffer(0, verticesBuffer);
                     depthPrePass.SetViewport(
                         x: (uint)(WIDTH * m / 2),
@@ -701,40 +732,13 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
                         minDepth: 0,
                         maxDepth: 1
                     );
+                    depthPrePass.Draw(geometryDrawCount, numInstances, 0, 0);
+
                 }
                 {
-                    var precisionErrorPass = commandEncoder.BeginRenderPass(new()
-                    {
-                        ColorAttachments = [
-                        new RenderPassColorAttachment()
-                        {
-                            View = attachment,
-                            LoadOp = depthBufferMode switch {
-                                DepthBufferMode.Default => LoadOp.Clear,
-                                DepthBufferMode.Reversed => LoadOp.Load
-                            },
-                            ClearValue = depthBufferMode switch {
-                                DepthBufferMode.Default => new(0.0, 0.0, 0.5, 1.0),
-                                DepthBufferMode.Reversed => default
-                            },
-                            StoreOp = StoreOp.Store,
-                        }
-                    ],
-                        DepthStencilAttachment = new RenderPassDepthStencilAttachment()
-                        {
-                            View = depthTextureView,
-                            DepthClearValue = depthClearValues[depthBufferMode],
-                            DepthLoadOp = LoadOp.Clear,
-                            DepthStoreOp = StoreOp.Store,
-                        }
-                    });
-
+                    var precisionErrorPass = BeginDrawPass(commandEncoder, depthBufferMode, attachment);
                     precisionErrorPass.SetPipeline(precisionPassPipelines[depthBufferMode]);
-                    precisionErrorPass.SetBindGroup(0, depthBufferMode switch
-                    {
-                        DepthBufferMode.Default => uniformBindGroupDefault,
-                        DepthBufferMode.Reversed => uniformBindGroupReversed
-                    });
+                    precisionErrorPass.SetBindGroup(0, GetUniformBindGroup(depthBufferMode));
                     precisionErrorPass.SetBindGroup(1, depthTextureBindGroup);
                     precisionErrorPass.SetVertexBuffer(0, verticesBuffer);
                     precisionErrorPass.SetViewport(
@@ -756,7 +760,45 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
             for (var m = 0; m < depthBufferModes.Length; m++)
             {
                 var depthBufferMode = depthBufferModes[m];
+                {
+                    var depthPrePass = BeginDepthPrePass(commandEncoder, depthBufferMode);
+                    depthPrePass.SetPipeline(depthPrePassPipelines[depthBufferMode]);
+                    depthPrePass.SetBindGroup(0, GetUniformBindGroup(depthBufferMode));
+                    depthPrePass.SetVertexBuffer(0, verticesBuffer);
+                    depthPrePass.SetViewport(
+                        x: (uint)(WIDTH * m / 2),
+                        y: 0,
+                        width: WIDTH / 2,
+                        height: HEIGHT,
+                        minDepth: 0,
+                        maxDepth: 1
+                    );
+                    depthPrePass.Draw(geometryDrawCount, numInstances, 0, 0);
+                    depthPrePass.End();
+                }
+                {
+                    var depthTextureQuadPass = BeginTextureQuadPass(commandEncoder, depthBufferMode, attachment);
+                    depthTextureQuadPass.SetPipeline(textureQuadPassPipline);
+                    depthTextureQuadPass.SetBindGroup(0, depthTextureBindGroup);
+                    depthTextureQuadPass.SetViewport(
+                        x: (uint)(WIDTH * m / 2),
+                        y: 0,
+                        width: WIDTH / 2,
+                        height: HEIGHT,
+                        minDepth: 0,
+                        maxDepth: 1
+                    );
+                    depthTextureQuadPass.Draw(6);
+                    depthTextureQuadPass.End();
+                }
+            }
         }
+
+        // draw the gui
+        var guiBuffer = settings.DrawGUI(guiContext, surface);
+
+        queue.Submit([commandEncoder.Finish(), guiBuffer]);
+        surface.Present();
     });
 });
 
@@ -780,7 +822,7 @@ sealed class Settings
     public CommandBuffer DrawGUI(GuiContext guiContext, Surface surface)
     {
         guiContext.NewFrame();
-        ImGui.SetNextWindowPos(new(400, 0));
+        ImGui.SetNextWindowPos(new(400, 500));
         ImGui.SetNextWindowSize(new(200, 100));
         ImGui.SetNextWindowBgAlpha(0.3f);
         ImGui.Begin("Settings",

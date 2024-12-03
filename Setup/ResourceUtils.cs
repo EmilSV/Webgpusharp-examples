@@ -13,7 +13,7 @@ public static class ResourceUtils
 
     public static byte[] GetEmbeddedResource(string resourceName)
     {
-        var executingAssembly = Assembly.GetExecutingAssembly();
+        var executingAssembly = Assembly.GetCallingAssembly();
         return ToByteArray(executingAssembly.GetManifestResourceStream(resourceName)!)!;
     }
 }

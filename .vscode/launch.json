@@ -9,9 +9,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Cubemap/bin/Debug/net9.0/Cubemap.dll",
+            "program": "${workspaceFolder}/ReversedZ/bin/Debug/net9.0/ReversedZ.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/Cubemap",
+            "cwd": "${workspaceFolder}/ReversedZ",
             "console": "internalConsole",
             "stopAtEntry": false
         },
