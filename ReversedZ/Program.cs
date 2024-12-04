@@ -467,6 +467,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
 
     var depthTexture = device.CreateTexture(new()
     {
+        Label = "Depth Texture",
         Size = new(WIDTH, HEIGHT),
         Format = depthBufferFormat,
         Usage = TextureUsage.RenderAttachment | TextureUsage.TextureBinding,
@@ -476,6 +477,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
 
     var defaultDepthTexture = device.CreateTexture(new()
     {
+        Label = "Default Depth Texture",
         Size = new(WIDTH, HEIGHT),
         Format = depthBufferFormat,
         Usage = TextureUsage.RenderAttachment,
@@ -637,7 +639,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
             ],
             DepthStencilAttachment = new RenderPassDepthStencilAttachment()
             {
-                View = depthTextureView!,
+                View = defaultDepthTextureView!,
                 DepthClearValue = depthClearValues![depthBufferMode],
                 DepthLoadOp = LoadOp.Clear,
                 DepthStoreOp = StoreOp.Store,
@@ -678,6 +680,32 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
         }
     }
 
+    void UpdateCameraMatrix()
+    {
+        var viewMatrix = Matrix4x4.CreateTranslation(new(0, 0, -12));
+
+        var aspect = (0.5f * WIDTH) / HEIGHT;
+
+        var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
+            2.0f * MathF.PI / 5.0f,
+            aspect,
+            5.0f,
+            9999.0f
+        );
+
+        var viewProjectionMatrix = viewMatrix * projectionMatrix;
+
+        var reversedRangeViewProjectionMatrix = viewProjectionMatrix * depthRangeRemapMatrix;
+
+        queue.WriteBuffer(cameraMatrixBuffer, 0, viewProjectionMatrix);
+        queue.WriteBuffer(
+            cameraMatrixReversedDepthBuffer,
+            0,
+            reversedRangeViewProjectionMatrix
+        );
+
+    }
+
     var settings = new Settings()
     {
         Mode = Settings.ModeType.Color
@@ -685,6 +713,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
 
     onFrame(() =>
     {
+        UpdateCameraMatrix();
         Span<Matrix4x4> matrixOutput = stackalloc Matrix4x4[numInstances];
         modelMatrices.CopyTo(matrixOutput);
         UpdateTransformationMatrix(matrixOutput);
@@ -733,7 +762,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
                         maxDepth: 1
                     );
                     depthPrePass.Draw(geometryDrawCount, numInstances, 0, 0);
-
+                    depthPrePass.End();
                 }
                 {
                     var precisionErrorPass = BeginDrawPass(commandEncoder, depthBufferMode, attachment);

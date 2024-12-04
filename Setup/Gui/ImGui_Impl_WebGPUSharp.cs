@@ -352,7 +352,7 @@ public static class ImGui_Impl_WebGPUSharp
 
                 fragmentState = new FragmentState()
                 {
-                    Module = bd.device.CreateShaderModule(new ShaderModuleDescriptor(ref fragmentDescriptor))!,
+                    Module = bd.device.CreateShaderModule(new ShaderModuleDescriptor(in fragmentDescriptor))!,
                     Targets =
                     [
                         new ColorTargetState()
