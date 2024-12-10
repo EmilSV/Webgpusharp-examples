@@ -15,7 +15,7 @@ static byte[] ToByteArray(Stream input)
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-return Run("Instanced Cube", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
+return Run("Instanced Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 {
     var startTimeStamp = Stopwatch.GetTimestamp();
     var executingAssembly = Assembly.GetExecutingAssembly();

@@ -22,7 +22,7 @@ return Run(
     "Rotating Cube",
     WIDTH,
     HEIGHT,
-    async (instance, surface, guiContext, onFrame) =>
+    async (instance, surface, onFrame) =>
     {
         var startTimeStamp = Stopwatch.GetTimestamp();
         var executingAssembly = Assembly.GetExecutingAssembly();

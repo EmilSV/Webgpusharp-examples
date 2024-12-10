@@ -5,7 +5,7 @@ using static Setup.SetupWebGPU;
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-return Run("Hello Triangle", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
+return Run("Hello Triangle", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 {
     const string TriangleVertShaderSource =
     """
