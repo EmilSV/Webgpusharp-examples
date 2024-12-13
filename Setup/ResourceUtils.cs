@@ -11,9 +11,22 @@ public static class ResourceUtils
         return ms.ToArray();
     }
 
-    public static byte[] GetEmbeddedResource(string resourceName)
+    static async Task<byte[]> ToByteArrayAsync(Stream input)
     {
-        var executingAssembly = Assembly.GetCallingAssembly();
+        using MemoryStream ms = new();
+        await input.CopyToAsync(ms);
+        return ms.ToArray();
+    }
+
+    public static byte[] GetEmbeddedResource(string resourceName, Assembly? assembly = null)
+    {
+        var executingAssembly = assembly ?? Assembly.GetCallingAssembly();
         return ToByteArray(executingAssembly.GetManifestResourceStream(resourceName)!)!;
+    }
+
+    public static async Task<byte[]> GetEmbeddedResourceAsync(string resourceName, Assembly? assembly = null)
+    {
+        var executingAssembly = assembly ?? Assembly.GetCallingAssembly();
+        return await ToByteArrayAsync(executingAssembly.GetManifestResourceStream(resourceName)!);
     }
 }

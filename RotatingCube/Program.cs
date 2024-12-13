@@ -8,11 +8,9 @@ using static Setup.SetupWebGPU;
 
 static byte[] ToByteArray(Stream input)
 {
-    using (MemoryStream ms = new MemoryStream())
-    {
-        input.CopyTo(ms);
-        return ms.ToArray();
-    }
+    using MemoryStream ms = new();
+    input.CopyTo(ms);
+    return ms.ToArray();
 }
 
 const int WIDTH = 640;
@@ -217,12 +215,6 @@ return Run(
             queue.Submit([commandEncoder.Finish()]);
 
             surface.Present();
-
-            var activeHandleCount = WebGpuSharp.Internal.WebGpuSafeHandle.GetTotalActiveHandles();
-            if (activeHandleCount > 300)
-            {
-                // GC.Collect();
-            }
         });
     }
 );

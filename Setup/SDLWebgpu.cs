@@ -13,16 +13,13 @@ namespace Setup
 
             if (windowWMInfo.subsystem == SDL_SYSWM_TYPE.SDL_SYSWM_WINDOWS)
             {
-                var wsDescriptor = new WebGpuSharp.FFI.SurfaceDescriptorFromWindowsHWNDFFI()
+                var wsDescriptor = new WebGpuSharp.FFI.SurfaceSourceWindowsHWNDFFI()
                 {
-                    Value = new WebGpuSharp.FFI.SurfaceSourceWindowsHWNDFFI()
+                    Hinstance = (void*)windowWMInfo.info.win.hinstance,
+                    Hwnd = (void*)windowWMInfo.info.win.window,
+                    Chain = new()
                     {
-                        Hinstance = (void*)windowWMInfo.info.win.hinstance,
-                        Hwnd = (void*)windowWMInfo.info.win.window,
-                        Chain = new()
-                        {
-                            SType = SType.SurfaceSourceWindowsHWND
-                        }
+                        SType = SType.SurfaceSourceWindowsHWND
                     }
                 };
 
