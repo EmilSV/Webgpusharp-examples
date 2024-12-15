@@ -41,8 +41,8 @@ return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
             var messageString = Encoding.UTF8.GetString(message);
             Console.Error.WriteLine($"Device lost: {reason} {messageString}");
         },
-    });
-
+    }) ?? throw new Exception("Could not create device");
+    
     var queue = device.GetQueue();
     var surfaceCapabilities = surface.GetCapabilities(adapter)!;
     var surfaceFormat = surfaceCapabilities.Formats[0];
@@ -248,11 +248,5 @@ return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         queue.Submit([commandEncoder.Finish()]);
 
         surface.Present();
-
-        var activeHandleCount = WebGpuSharp.Internal.WebGpuSafeHandle.GetTotalActiveHandles();
-        if (activeHandleCount > 300)
-        {
-            // GC.Collect();
-        }
     });
 });

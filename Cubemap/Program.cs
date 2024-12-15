@@ -308,12 +308,6 @@ return Run(
             queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
 
             surface.Present();
-
-            var activeHandleCount = WebGpuSharp.Internal.WebGpuSafeHandle.GetTotalActiveHandles();
-            if (activeHandleCount > 300)
-            {
-                // GC.Collect();
-            }
         });
     }
 );

@@ -45,7 +45,7 @@ return Run(
                     Console.Error.WriteLine($"Device lost: {reason} {messageString}");
                 },
             }
-        );
+        ) ?? throw new Exception("Could not create device");
 
         var queue = device.GetQueue();
         var surfaceCapabilities = surface.GetCapabilities(adapter)!;
@@ -125,12 +125,6 @@ return Run(
 
             queue.Submit(commandEncoder.Finish());
             surface.Present();
-
-            var activeHandleCount = WebGpuSharp.Internal.WebGpuSafeHandle.GetTotalActiveHandles();
-            if (activeHandleCount > 300)
-            {
-                //GC.Collect();
-            }
         });
     }
 );

@@ -45,7 +45,7 @@ return Run(
                     Console.Error.WriteLine($"Device lost: {reason} {messageString}");
                 },
             }
-        );
+        ) ?? throw new Exception("Could not create device");
 
         var queue = device.GetQueue()!;
         var surfaceCapabilities = surface.GetCapabilities(adapter)!;
