@@ -31,6 +31,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Basic_Graphics", "Basic_Gra
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WebGPU_Features", "WebGPU_Features", "{2B5FD651-3753-4122-A950-AF517AA8FB8A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenderBundles", "RenderBundles\RenderBundles.csproj", "{3EF321D0-1995-4AD6-A1D8-1DE01927748C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,6 +83,10 @@ Global
 		{7F4C5192-CC69-457C-A0C1-788104917835}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F4C5192-CC69-457C-A0C1-788104917835}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F4C5192-CC69-457C-A0C1-788104917835}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3EF321D0-1995-4AD6-A1D8-1DE01927748C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EF321D0-1995-4AD6-A1D8-1DE01927748C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EF321D0-1995-4AD6-A1D8-1DE01927748C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EF321D0-1995-4AD6-A1D8-1DE01927748C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
