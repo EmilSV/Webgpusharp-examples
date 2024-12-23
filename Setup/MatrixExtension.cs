@@ -123,4 +123,33 @@ public static class MatrixExtension
         matrix.M33 *= scale.Z;
         matrix.M34 *= scale.Z;
     }
+
+    public static void Translate(this ref Matrix4x4 matrix, Vector3 vec3)
+    {
+        var v0 = vec3.X;
+        var v1 = vec3.Y;
+        var v2 = vec3.Z;
+
+        var m11 = matrix.M11;
+        var m12 = matrix.M12;
+        var m13 = matrix.M13;
+        var m14 = matrix.M14;
+        var m21 = matrix.M21;
+        var m22 = matrix.M22;
+        var m23 = matrix.M23;
+        var m24 = matrix.M24;
+        var m31 = matrix.M31;
+        var m32 = matrix.M32;
+        var m33 = matrix.M33;
+        var M34 = matrix.M34;
+        var m41 = matrix.M41;
+        var m42 = matrix.M42;
+        var m43 = matrix.M43;
+        var m44 = matrix.M44;
+
+        matrix.M41 = m11 * v0 + m21 * v1 + m31 * v2 + m41;
+        matrix.M42 = m12 * v0 + m22 * v1 + m32 * v2 + m42;
+        matrix.M43 = m13 * v0 + m23 * v1 + m33 * v2 + m43;
+        matrix.M44 = m14 * v0 + m24 * v1 + M34 * v2 + m44;
+    }
 }

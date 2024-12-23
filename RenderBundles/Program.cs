@@ -317,15 +317,15 @@ return Run(
         var planet = CreateSphereRenderable(1.0f);
         planet.BindGroup = CreateSphereBindGroup(planetTexture, transform);
 
-         List<Renderable> asteroids = [
-            CreateSphereRenderable(0.01f, 8, 6, 0.15f),
+        List<Renderable> asteroids = [
+           CreateSphereRenderable(0.01f, 8, 6, 0.15f),
             CreateSphereRenderable(0.013f, 8, 6, 0.15f),
             CreateSphereRenderable(0.017f, 8, 6, 0.15f),
             CreateSphereRenderable(0.02f, 8, 6, 0.15f),
             CreateSphereRenderable(0.03f, 16, 8, 0.15f),
         ];
 
-        List<Renderable> renderables = [planet]; 
+        List<Renderable> renderables = [planet];
 
         void EnsureEnoughAsteroids()
         {
@@ -333,23 +333,28 @@ return Run(
             {
                 // Place copies of the asteroid in a ring.
                 var radius = Random.Shared.NextSingle() * 1.7f + 1.25f;
-                var angle = Random.Shared.NextSingle() * MathF.PI * 2;
+                var angle = Random.Shared.NextSingle() * MathF.PI * 2.0f;
                 var x = MathF.Sin(angle) * radius;
                 var y = (Random.Shared.NextSingle() - 0.5f) * 0.015f;
                 var z = MathF.Cos(angle) * radius;
 
                 var transform = Matrix4x4.Identity;
-                var transform = Matrix4x4.CreateTranslation(new(x, y, z));
-                var rotateAndProjectMatrix = Matrix4x4.CreateFromAxisAngle(
-                    axis: new(1, 0, 0),
-                    angle: MathF.PI / 10 * MathF.Sin(DateTime.Now.Second)
-                );
-                transform *= rotateAndProjectMatrix;
-                transform *= Matrix4x4.CreateScale(1000);
-
-                renderables.Add(asteroids[i % asteroids.Count]);
+                transform.Translate(new(x, y, z));
+                transform.RotateX(MathF.PI * Random.Shared.NextSingle());
+                transform.RotateY(MathF.PI * Random.Shared.NextSingle());
+                var asteroid = asteroids[i % asteroids.Count];
+                renderables.Add(new()
+                {
+                    Vertices = asteroid.Vertices,
+                    Indices = asteroid.Indices,
+                    IndexCount = asteroid.IndexCount,
+                    BindGroup = CreateSphereBindGroup(moonTexture, transform)
+                });
             }
-        } 
+        }
+        EnsureEnoughAsteroids();
+
+        
     }
 );
 
