@@ -4,6 +4,7 @@
         "Convs",
         "Cubemap",
         "Multisample",
+        "renderables",
         "Skia",
         "Uncaptured",
         "Unmap",

@@ -11,5 +11,6 @@
     <ProjectReference Include="..\WebGPUSharp\WebGpuSharp.csproj" />
     <ProjectReference Include="..\Setup\Setup.csproj" />
     <EmbeddedResource Include="shaders\*.wgsl" />
+    <EmbeddedResource Include="assets\**\*.*" />
   </ItemGroup>
 </Project>
