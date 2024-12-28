@@ -3,6 +3,7 @@
         "Backface",
         "Convs",
         "Cubemap",
+        "IGPU",
         "Multisample",
         "renderables",
         "Skia",

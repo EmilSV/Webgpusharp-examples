@@ -4,6 +4,7 @@ namespace Setup;
 
 public static class MatrixExtension
 {
+
     public static void Rotate(this ref Matrix4x4 matrix, Vector3 axis, float angle)
     {
         var normalizeAxis = Vector3.Normalize(axis);
@@ -76,12 +77,12 @@ public static class MatrixExtension
         matrix.M22 = c * m22 + s * m32;
         matrix.M23 = c * m23 + s * m33;
         matrix.M24 = c * m24 + s * m34;
+
         matrix.M31 = c * m31 - s * m21;
         matrix.M32 = c * m32 - s * m22;
         matrix.M33 = c * m33 - s * m23;
         matrix.M34 = c * m34 - s * m24;
     }
-
 
     public static void RotateY(this ref Matrix4x4 matrix, float angleInRadians)
     {
@@ -107,6 +108,31 @@ public static class MatrixExtension
         matrix.M34 = c * m34 + s * m14;
     }
 
+    public static void RotateZ(this ref Matrix4x4 matrix, float angleInRadians)
+    {
+        var m11 = matrix.M11;
+        var m12 = matrix.M12;
+        var m13 = matrix.M13;
+        var m14 = matrix.M14;
+
+        var m21 = matrix.M21;
+        var m22 = matrix.M22;
+        var m23 = matrix.M23;
+        var m24 = matrix.M24;
+
+        var c = MathF.Cos(angleInRadians);
+        var s = MathF.Sin(angleInRadians);
+
+        matrix.M11 = c * m11 + s * m21;
+        matrix.M12 = c * m12 + s * m22;
+        matrix.M13 = c * m13 + s * m23;
+        matrix.M14 = c * m14 + s * m24;
+
+        matrix.M21 = c * m21 - s * m11;
+        matrix.M22 = c * m22 - s * m12;
+        matrix.M23 = c * m23 - s * m13;
+        matrix.M24 = c * m24 - s * m14;
+    }
 
     public static void Scale(this ref Matrix4x4 matrix, Vector3 scale)
     {

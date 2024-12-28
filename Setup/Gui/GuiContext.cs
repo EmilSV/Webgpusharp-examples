@@ -20,7 +20,11 @@ public class GuiContext
 
         var io = ImGui.GetIO();
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-
+        unsafe
+        {
+            io.NativePtr->IniFilename = null;
+        }
+        
         var initInfo = new ImGui_Impl_WebGPUSharp.ImGui_ImplWGPU_InitInfo()
         {
             device = device,

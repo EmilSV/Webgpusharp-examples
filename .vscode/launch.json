@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/ReversedZ/bin/Debug/net9.0/ReversedZ.dll",
+            "program": "${workspaceFolder}/RenderBundles/bin/Debug/net9.0/RenderBundles.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/ReversedZ",
+            "cwd": "${workspaceFolder}/RenderBundles",
             "console": "internalConsole",
             "stopAtEntry": false
         },
