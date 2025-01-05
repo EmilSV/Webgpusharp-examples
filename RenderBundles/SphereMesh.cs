@@ -16,7 +16,7 @@ struct SphereMesh
     }
 
     public Vertex[] Vertices;
-    public uint[] Indices;
+    public ushort[] Indices;
 
     public static SphereMesh Create(
         float radius,
@@ -41,22 +41,22 @@ struct SphereMesh
         for (int iy = 0; iy <= heightSegments; iy++)
         {
             var verticesRow = new List<int>();
-            var v = iy / (double)heightSegments;
+            var v = iy / (float)heightSegments;
 
             // special case for the poles
-            double uOffset = 0;
+            float uOffset = 0;
             if (iy == 0)
             {
-                uOffset = 0.5 / (double)widthSegments;
+                uOffset = 0.5f / widthSegments;
             }
             else if (iy == heightSegments)
             {
-                uOffset = -0.5 / (double)widthSegments;
+                uOffset = -0.5f / widthSegments;
             }
 
             for (int ix = 0; ix <= widthSegments; ix++)
             {
-                var u = ix / (double)widthSegments;
+                var u = ix / (float)widthSegments;
 
                 // Poles should just use the same position all the way around.
                 if (ix == widthSegments)
@@ -65,12 +65,12 @@ struct SphereMesh
                 }
                 else if (ix == 0 || (iy != 0 && iy != heightSegments))
                 {
-                    var rr = radius + (randomGen.NextSingle() - 0.5) * 2.0 * randomness * radius;
+                    var rr = radius + (randomGen.NextSingle() - 0.5f) * 2.0f * randomness * radius;
 
                     // vertex
-                    vertex.X = (float)(-rr * Math.Cos(u * Math.PI * 2.0) * Math.Sin(v * Math.PI));
-                    vertex.Y = (float)(rr * Math.Cos(v * Math.PI));
-                    vertex.Z = (float)(rr * Math.Sin(u * Math.PI * 2.0) * Math.Sin(v * Math.PI));
+                    vertex.X = -rr * MathF.Cos(u * MathF.PI * 2.0f) * MathF.Sin(v * MathF.PI);
+                    vertex.Y = rr * MathF.Cos(v * MathF.PI);
+                    vertex.Z = rr * MathF.Sin(u * MathF.PI * 2.0f) * MathF.Sin(v * MathF.PI);
 
                     if (ix == 0)
                     {
@@ -82,7 +82,7 @@ struct SphereMesh
                 {
                     Position = vertex,
                     Normal = Vector3.Normalize(vertex),
-                    Uv = new((float)(u + uOffset), (float)(1.0 - v)),
+                    Uv = new(u + uOffset, 1.0f - v),
                 });
                 verticesRow.Add(index++);
             }

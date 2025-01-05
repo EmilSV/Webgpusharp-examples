@@ -10,34 +10,45 @@ using static Setup.SetupWebGPU;
 using static WebGpuSharp.WebGpuUtil;
 using System.Runtime.InteropServices;
 
-static byte[] ToByteArray(Stream input)
-{
-    using MemoryStream ms = new();
-    input.CopyTo(ms);
-    return ms.ToArray();
-}
-
-const int WIDTH = 640;
-const int HEIGHT = 480;
+const int WIDTH = 1280;
+const int HEIGHT = 720;
 const float ASPECT = WIDTH / (float)HEIGHT;
 
 bool useRenderBundles = true;
 int asteroidCount = 100;
 
-double lastFrameTimeStamp = 0;
-double fps = 0;
+FpsTimer fpsTimer = new()
+{
+    MinMeasurementTimeSeconds = 0.1f
+};
+
+FrameTimeStats frameTimeStats = new()
+{
+    FrameHistoryLengthSeconds = 3.0f,
+    MaxMeasurementTimeMilliseconds = 60f,
+    MinMeasurementTimeMilliseconds = 0f,
+};
 
 CommandBuffer DrawGUI(GuiContext guiContext, Surface surface, out bool asteroidCountChanged)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.3f);
     ImGui.Begin("Settings",
-        ImGuiWindowFlags.NoResize |
         ImGuiWindowFlags.NoCollapse
     );
-    ImGui.Text($"FPS: {fps:F2}");
+    ImGui.Text($"FPS: {fpsTimer.Fps ?? 0:F0}");
     ImGui.Checkbox(nameof(useRenderBundles), ref useRenderBundles);
+    var lastAstroidCount = asteroidCount;
+    ImGui.PushItemWidth(100);
     asteroidCountChanged = ImGui.SliderInt(nameof(asteroidCount), ref asteroidCount, 1000, 50000);
+    if (asteroidCountChanged)
+    {
+        asteroidCount = (asteroidCount / 1000) * 1000;
+    }
+    asteroidCountChanged = asteroidCount != lastAstroidCount;
+
+    frameTimeStats.DrawGUI();
+
     ImGui.End();
     guiContext.EndFrame();
 
@@ -52,7 +63,12 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
 
     var meshWGSL = ResourceUtils.GetEmbeddedResource("RenderBundles.shaders.mesh.wgsl", executingAssembly);
 
-    var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
+    var adapter = await instance.RequestAdapterAsync(new()
+    {
+        CompatibleSurface = surface,
+        BackendType = BackendType.Vulkan,
+        PowerPreference = PowerPreference.HighPerformance,
+    });
     var device = (
         await adapter.RequestDeviceAsync(
             new()
@@ -84,7 +100,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
         Usage = TextureUsage.RenderAttachment | TextureUsage.CopySrc,
         Format = surfaceFormat,
         Device = device,
-        PresentMode = PresentMode.Fifo,
+        PresentMode = PresentMode.Immediate,
         AlphaMode = CompositeAlphaMode.Auto,
     });
 
@@ -258,7 +274,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
             Usage = BufferUsage.Index,
             MappedAtCreation = true,
         });
-        indices.GetMappedRange<uint>(data =>
+        indices.GetMappedRange<ushort>(data =>
         {
             sphereMesh.Indices.AsSpan().CopyTo(data);
         });
@@ -316,7 +332,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
     planet.BindGroup = CreateSphereBindGroup(planetTexture, transform);
 
     List<Renderable> asteroids = [
-       CreateSphereRenderable(0.01f, 8, 6, 0.15f),
+            CreateSphereRenderable(0.01f, 8, 6, 0.15f),
             CreateSphereRenderable(0.013f, 8, 6, 0.15f),
             CreateSphereRenderable(0.017f, 8, 6, 0.15f),
             CreateSphereRenderable(0.02f, 8, 6, 0.15f),
@@ -327,6 +343,10 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
 
     void EnsureEnoughAsteroids()
     {
+        if(renderables.Capacity < asteroidCount)
+        {
+            renderables.Capacity = asteroidCount;
+        }
         for (int i = renderables.Count; i <= asteroidCount; ++i)
         {
             // Place copies of the asteroid in a ring.
@@ -405,7 +425,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
         {
             passEncoder.SetBindGroup(1, renderable.BindGroup!);
             passEncoder.SetVertexBuffer(0, renderable.Vertices);
-            passEncoder.SetIndexBuffer(renderable.Indices, IndexFormat.Uint32);
+            passEncoder.SetIndexBuffer(renderable.Indices, IndexFormat.Uint16);
             passEncoder.DrawIndexed((uint)renderable.IndexCount);
 
             if (++count > asteroidCount)
@@ -439,6 +459,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
     }
     UpdateRenderBundle();
 
+    fpsTimer.BeginRecording();
     onFrame(() =>
     {
         var transformationMatrix = GetTransformationMatrix();
@@ -491,11 +512,8 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
         device.GetQueue().Submit([commandEncoder.Finish(), guiCommanderBuffer]);
         surface.Present();
 
-        var currentFrameTimeStamp = Stopwatch.GetElapsedTime(startTimeStamp).TotalMilliseconds;
-
-        fps = 1000.0 / (currentFrameTimeStamp - lastFrameTimeStamp);
-
-        lastFrameTimeStamp = currentFrameTimeStamp;
+        fpsTimer.FrameEnd();
+        frameTimeStats.EndFrame();
     });
 });
 

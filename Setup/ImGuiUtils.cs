@@ -1,4 +1,7 @@
 using System.Collections.Frozen;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using ImGuiNET;
 
@@ -35,4 +38,12 @@ public static partial class ImGuiUtils
         }
     }
 
+    public static void PlotLines(
+        ReadOnlySpan<char> label,
+        ReadOnlySpan<float> values,
+        int valuesOffset,
+        ReadOnlySpan<char> overlayText, float scaleMin, float scaleMax, Vector2 graphSize)
+    {
+        ImGui.PlotLines(label, ref MemoryMarshal.GetReference(values), values.Length, valuesOffset, overlayText, scaleMin, scaleMax, graphSize);
+    }
 }
