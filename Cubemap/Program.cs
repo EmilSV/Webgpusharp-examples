@@ -269,7 +269,7 @@ return Run(
             var texture = surface.GetCurrentTexture().Texture!;
             var textureView = texture.CreateView();
 
-            var commandEncoder = device.CreateCommandEncoder(new());
+            var commandEncoder = device.CreateCommandEncoder();
             var passEncoder = commandEncoder.BeginRenderPass(
                 new()
                 {
