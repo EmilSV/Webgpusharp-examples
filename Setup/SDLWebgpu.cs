@@ -1,3 +1,4 @@
+using Setup.Macos;
 using WebGpuSharp;
 using static SDL2.SDL;
 
@@ -24,6 +25,31 @@ namespace Setup
                 };
 
                 SurfaceDescriptor descriptor_surface = new(ref wsDescriptor);
+                return instance.CreateSurface(descriptor_surface);
+            }
+            else if (windowWMInfo.subsystem == SDL_SYSWM_TYPE.SDL_SYSWM_COCOA)
+            {
+                // Based on the Veldrid Metal bindings implementation:
+                // https://github.com/veldrid/veldrid/tree/master/src/Veldrid.MetalBindings
+
+                var cocoa = windowWMInfo.info.cocoa.window;
+                CAMetalLayer metalLayer = CAMetalLayer.New();
+                NSWindow nsWindow = new(cocoa);
+                var contentView = nsWindow.contentView;
+                contentView.wantsLayer = 1;
+                contentView.layer = metalLayer.NativePtr;
+
+                var cocoaDescriptor = new WebGpuSharp.FFI.SurfaceSourceMetalLayerFFI
+                {
+                    Chain = new ChainedStruct
+                    {
+                        Next = null,
+                        SType = SType.SurfaceSourceMetalLayer
+                    },
+                    Layer = (void*)metalLayer.NativePtr
+                };
+
+                SurfaceDescriptor descriptor_surface = new(ref cocoaDescriptor);
                 return instance.CreateSurface(descriptor_surface);
             }
 
