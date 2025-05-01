@@ -66,7 +66,6 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
     var adapter = await instance.RequestAdapterAsync(new()
     {
         CompatibleSurface = surface,
-        BackendType = BackendType.Vulkan,
         PowerPreference = PowerPreference.HighPerformance,
     });
     var device = (
