@@ -496,7 +496,7 @@ public static class ImGui_Impl_WebGPUSharp
             bd.renderResources.FontTextureView = bd.renderResources.FontTexture.CreateView(textureViewDescriptor)!;
 
 
-            ImageCopyTexture destination = new()
+            TexelCopyTextureInfo destination = new()
             {
                 Texture = bd.renderResources.FontTexture,
                 MipLevel = 0,
@@ -504,7 +504,7 @@ public static class ImGui_Impl_WebGPUSharp
                 Aspect = TextureAspect.All
             };
 
-            TextureDataLayout layout = new()
+            TexelCopyBufferLayout layout = new()
             {
                 Offset = 0,
                 BytesPerRow = (uint)width * (uint)bytesPerPixel,

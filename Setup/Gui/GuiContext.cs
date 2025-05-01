@@ -57,7 +57,7 @@ public class GuiContext
         // Perform rendering
         SurfaceTexture surfaceTexture = surface.GetCurrentTexture();
         // Failed to get the surface texture. TODO handle
-        if (surfaceTexture.Status != SurfaceGetCurrentTextureStatus.Success)
+        if (surfaceTexture.Status is not (SurfaceGetCurrentTextureStatus.SuccessOptimal or SurfaceGetCurrentTextureStatus.SuccessSuboptimal))
             return null;
 
         TextureViewDescriptor viewdescriptor = new()
