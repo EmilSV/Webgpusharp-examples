@@ -99,7 +99,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
         Usage = TextureUsage.RenderAttachment | TextureUsage.CopySrc,
         Format = surfaceFormat,
         Device = device,
-        PresentMode = PresentMode.Immediate,
+        PresentMode = PresentMode.Fifo,
         AlphaMode = CompositeAlphaMode.Auto,
     });
 
