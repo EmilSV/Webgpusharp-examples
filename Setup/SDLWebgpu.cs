@@ -27,6 +27,36 @@ namespace Setup
                 SurfaceDescriptor descriptor_surface = new(ref wsDescriptor);
                 return instance.CreateSurface(descriptor_surface);
             }
+            else if (windowWMInfo.info.wl.surface != 0 && windowWMInfo.subsystem == SDL_SYSWM_TYPE.SDL_SYSWM_WAYLAND)
+            {
+                var wlDescriptor = new WebGpuSharp.FFI.SurfaceSourceWaylandSurfaceFFI
+                {
+                    Chain = new ChainedStruct
+                    {
+                        Next = null,
+                        SType = SType.SurfaceSourceWaylandSurface
+                    },
+                    Display = (void*)windowWMInfo.info.wl.display,
+                    Surface = (void*)windowWMInfo.info.wl.surface
+                };
+                SurfaceDescriptor descriptor_surface = new(ref wlDescriptor);
+                return instance.CreateSurface(descriptor_surface);
+            }
+            else if (windowWMInfo.info.x11.window != 0 && windowWMInfo.subsystem == SDL_SYSWM_TYPE.SDL_SYSWM_X11)
+            {
+                var xlibDescriptor = new WebGpuSharp.FFI.SurfaceSourceXlibWindowFFI
+                {
+                    Chain = new ChainedStruct
+                    {
+                        Next = null,
+                        SType = SType.SurfaceSourceXlibWindow
+                    },
+                    Display = (void*)windowWMInfo.info.x11.display,
+                    Window = (uint)windowWMInfo.info.x11.window
+                };
+                SurfaceDescriptor descriptor_surface = new(ref xlibDescriptor);
+                return instance.CreateSurface(descriptor_surface);
+            }
             else if (windowWMInfo.subsystem == SDL_SYSWM_TYPE.SDL_SYSWM_COCOA)
             {
                 // Based on the Veldrid Metal bindings implementation:
