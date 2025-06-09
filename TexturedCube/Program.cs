@@ -155,10 +155,8 @@ return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 
     Texture cubeTexture;
     {
-        var imageData = ImageUtils.LoadImage(
-            executingAssembly.GetManifestResourceStream("TexturedCube.assets.Di-3d.png")!,
-            out var width,
-            out var height
+        var (data, width, height) = ResourceUtils.LoadImage(
+            executingAssembly.GetManifestResourceStream("TexturedCube.assets.Di-3d.png")!
         );
         var textureSize = new Extent3D((uint)width, (uint)height);
         cubeTexture = device.CreateTexture(new()
@@ -174,7 +172,7 @@ return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
                 Texture = cubeTexture,
 
             },
-            data: imageData,
+            data: data,
             dataLayout: new()
             {
                 BytesPerRow = 4 * textureSize.Width,

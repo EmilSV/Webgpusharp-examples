@@ -1,5 +1,4 @@
 using System.Reflection;
-using SkiaSharp;
 using WebGpuSharp;
 
 namespace Setup;
@@ -40,33 +39,15 @@ public static class ResourceUtils
 
     public static ImageData LoadImage(Stream stream)
     {
-        uint width;
-        uint height;
-
-        // Is kind of overkill to use skia for png loading but it is simple and works
-        // Decode the image from the stream
-        using var bitmap = SKBitmap.Decode(stream);
-        // Convert to RGBA if necessary
-        if (bitmap.ColorType != SKColorType.Rgba8888)
-        {
-            using var rgbaBitmap = new SKBitmap(
-                width: bitmap.Width,
-                height: bitmap.Height,
-                colorType: SKColorType.Rgba8888,
-                alphaType: bitmap.AlphaType
-            );
-            bitmap.CopyTo(rgbaBitmap, SKColorType.Rgba8888);
-
-            width = (uint)bitmap.Width;
-            height = (uint)bitmap.Height;
-
-            return new(rgbaBitmap.Bytes, width, height);
-        }
-
-        width = (uint)bitmap.Width;
-        height = (uint)bitmap.Height;
-        // Return byte array
-        return new(bitmap.Bytes, width, height);
+        //Loading image using ImageSharp
+        // we are using version 2 as it have the open source license
+        // should be remove in the future when we have a better solution
+        using var image = SixLabors.ImageSharp.Image.Load(stream);
+        using var rgba32Image = image.CloneAs<SixLabors.ImageSharp.PixelFormats.Rgba32>();
+        int size = rgba32Image.Width * rgba32Image.Height * 4;
+        byte[] data = new byte[size];
+        rgba32Image.CopyPixelDataTo(data);
+        return new ImageData(data, (uint)rgba32Image.Width, (uint)rgba32Image.Height);
     }
 
     public static void CopyExternalImageToTexture(

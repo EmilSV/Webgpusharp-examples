@@ -172,8 +172,8 @@ return Run(
                 .Select(imagePath =>
                 {
                     var stream = executingAssembly.GetManifestResourceStream(imagePath)!;
-                    var bytes = ImageUtils.LoadImage(stream, out var width, out var height);
-                    return (width, height, bytes);
+                    var data = ResourceUtils.LoadImage(stream);
+                    return (width: data.Width, height: data.Height, data: data.Data);
                 })
                 .ToArray();
 
