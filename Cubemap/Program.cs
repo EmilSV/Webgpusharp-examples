@@ -173,7 +173,7 @@ return Run(
                 {
                     var stream = executingAssembly.GetManifestResourceStream(imagePath)!;
                     var data = ResourceUtils.LoadImage(stream);
-                    return (width: data.Width, height: data.Height, data: data.Data);
+                    return (width: data.Width, height: data.Height, bytes: data.Data);
                 })
                 .ToArray();
 
