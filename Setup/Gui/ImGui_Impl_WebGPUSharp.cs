@@ -7,7 +7,8 @@ using ImGuiNET;
 using WebGpuSharp;
 using WebGpuSharp.FFI;
 
-using ImDrawIdx = ushort; // figure out what size index buffer imgui uses
+using ImDrawIdx = ushort;
+using WebGpuSharp.Marshalling; // figure out what size index buffer imgui uses
 
 
 delegate void UserCallbackDelegate(ImDrawListPtr parent_list, ImDrawCmdPtr cmd);
