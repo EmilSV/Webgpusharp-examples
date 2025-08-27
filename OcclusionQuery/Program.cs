@@ -61,7 +61,7 @@ ushort[] indices = [
 
 
 bool settingsIsAnimated = true;
-List<Vector4> cubeVisibility = new();
+List<Vector4> cubeVisibility = [];
 
 static byte[] ToBytes(Stream s)
 {
@@ -149,7 +149,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContex
             var messageString = Encoding.UTF8.GetString(message);
             Console.Error.WriteLine($"Device lost: {reason} {messageString}");
         },
-    }) ?? throw new("Failed to create device");
+    });
 
     var queue = device.GetQueue();
     var surfaceCaps = surface.GetCapabilities(adapter)!;
@@ -252,7 +252,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContex
 
         return new ObjectInfos()
         {
-            Position = new Vector3(position.X * 10, position.Y * 10, position.Z * 10),
+            Position = position * 10,
             BindGroup = bindGroup,
             UniformBuffer = uniformBuffer,
             Uniforms = uniform
