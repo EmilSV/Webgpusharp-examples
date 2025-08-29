@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/OcclusionQuery/bin/Debug/net9.0/OcclusionQuery.dll",
+            "program": "${workspaceFolder}/SamplerParameters/bin/Debug/net9.0/SamplerParameters.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/OcclusionQuery",
+            "cwd": "${workspaceFolder}/SamplerParameters",
             "console": "internalConsole",
             "stopAtEntry": false
         },

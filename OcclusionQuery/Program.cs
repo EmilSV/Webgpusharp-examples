@@ -379,7 +379,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContex
                 WorldInverseTranspose = Matrix4x4.Transpose(worldInverse),
             };
 
-            device.GetQueue().WriteBuffer(objectInfo.UniformBuffer, 0, objectInfo.Uniforms);
+            queue.WriteBuffer(objectInfo.UniformBuffer, 0, objectInfo.Uniforms);
 
             pass.SetBindGroup(0, objectInfo.BindGroup);
             pass.BeginOcclusionQuery((uint)i);
@@ -396,7 +396,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContex
 
         var guiCommanderBuffer = DrawGui(guiContext, surface);
 
-        device.GetQueue().Submit([encoder.Finish(), guiCommanderBuffer]);
+        queue.Submit([encoder.Finish(), guiCommanderBuffer]);
         surface.Present();
 
         if (resultBuf.GetMapState() == BufferMapState.Unmapped)
