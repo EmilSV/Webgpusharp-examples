@@ -77,10 +77,10 @@ Matrix4x4[] matrices = [
     Scale(Matrix4x4.CreateRotationX(MathF.PI * 0.3f), new(2,2,1)),
     Scale(Matrix4x4.CreateRotationX(MathF.PI * 0.42f), new(2,2,1)),
     // Row 2: scale by 1
-    Scale(Matrix4x4.CreateRotationZ(MathF.PI / 16f), new(1,1,1)),
+    Matrix4x4.CreateRotationZ(MathF.PI / 16f),
     Matrix4x4.Identity,
-    Scale(Matrix4x4.CreateRotationX(-MathF.PI * 0.3f), new(1,1,1)),
-    Scale(Matrix4x4.CreateRotationX(-MathF.PI * 0.42f), new(1,1,1)),
+    Matrix4x4.CreateRotationX(-MathF.PI * 0.3f),
+    Matrix4x4.CreateRotationX(-MathF.PI * 0.42f),
     // Row 3: Scale by 0.9
     Scale(Matrix4x4.CreateRotationZ(MathF.PI / 16f), new(0.9f,0.9f,1)),
     Scale(Matrix4x4.Identity, new(0.9f,0.9f,1)),
@@ -118,8 +118,8 @@ return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surf
 
     surface.Configure(new()
     {
-        Width = VIEWPORT_SIZE,
-        Height = VIEWPORT_SIZE,
+        Width = WINDOW_SIZE,
+        Height = WINDOW_SIZE,
 
         Usage = TextureUsage.RenderAttachment,
         Format = surfaceFormat,
@@ -127,6 +127,8 @@ return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surf
         PresentMode = PresentMode.Fifo,
         AlphaMode = CompositeAlphaMode.Auto,
     });
+
+
 
     var lowResTexture = device.CreateTexture(new()
     {
@@ -136,6 +138,41 @@ return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surf
     });
     var lowResView = lowResTexture.CreateView();
 
+    var pixelBlitWGSL = ToBytes(asm.GetManifestResourceStream("SamplerParameters.shaders.pixelBlitNearest.wgsl")!);
+    var pixelBlitModule = device.CreateShaderModuleWGSL(new() { Code = pixelBlitWGSL });
+
+    var blitPipeline = device.CreateRenderPipeline(new()
+    {
+        Layout = null,
+        Vertex = ref InlineInit(new VertexState
+        {
+            Module = pixelBlitModule,
+            EntryPoint = "vs"
+        }),
+        Fragment = new FragmentState
+        {
+            Module = pixelBlitModule,
+            EntryPoint = "fs",
+            Targets = [new() { Format = surfaceFormat }]
+        },
+        Primitive = new() { Topology = PrimitiveTopology.TriangleList },
+    });
+
+    var nearestSampler = device.CreateSampler(new()
+    {
+        MagFilter = FilterMode.Nearest,
+        MinFilter = FilterMode.Nearest,
+        MipmapFilter = MipmapFilterMode.Nearest,
+    });
+
+    var blitBindGroup = device.CreateBindGroup(new()
+    {
+        Layout = blitPipeline.GetBindGroupLayout(0),
+        Entries = [
+            new(){ Binding = 0, Sampler = nearestSampler },
+        new(){ Binding = 1, TextureView = lowResView },
+    ]
+    });
 
 
     // Set up a texture with 4 mip levels, each containing a differently-colored
@@ -377,48 +414,67 @@ return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surf
             ]
         });
 
-        var textureView = surface.GetCurrentTexture().Texture!.CreateView();
-
         var commandEncoder = device.CreateCommandEncoder();
-
-        var renderPassDescriptor = new RenderPassDescriptor
+        // FIRST PASS: render scene into lowResView (200x200)
         {
-            ColorAttachments = [
-                new()
-                {
-                    View = textureView,
-                    ClearValue = new(0.2f, 0.2f, 0.2f, 1.0f),
-                    LoadOp = LoadOp.Clear,
-                    StoreOp = StoreOp.Store,
-                }
-            ]
-        };
-
-        var pass = commandEncoder.BeginRenderPass(renderPassDescriptor);
-        // Draw test squares
-        pass.SetPipeline(texturedSquarePipeline);
-        pass.SetBindGroup(0, bindGroup);
-        for (uint i = 0; i < Math.Pow(VIEWPORT_GRID_SIZE, 2) - 1; ++i)
-        {
-            uint vpX = (uint)(viewportGridStride * (i % VIEWPORT_GRID_SIZE) + 1);
-            uint vpY = (uint)(viewportGridStride * Math.Floor(i / VIEWPORT_GRID_SIZE) + 1);
-            pass.SetViewport(vpX, vpY, viewportSize, viewportSize, 0, 1);
-            pass.Draw(6, 1, 0, i);
+            var renderPassDescriptor = new RenderPassDescriptor
+            {
+                ColorAttachments = [
+                    new()
+                    {
+                        View = lowResView,
+                        ClearValue = new(0.2f, 0.2f, 0.2f, 1.0f),
+                        LoadOp = LoadOp.Clear,
+                        StoreOp = StoreOp.Store,
+                    }
+                ]
+            };
+            var pass = commandEncoder.BeginRenderPass(renderPassDescriptor);
+            pass.SetPipeline(texturedSquarePipeline);
+            pass.SetBindGroup(0, bindGroup);
+            for (uint i = 0; i < Math.Pow(VIEWPORT_GRID_SIZE, 2) - 1; ++i)
+            {
+                uint vpX = (uint)(viewportGridStride * (i % VIEWPORT_GRID_SIZE) + 1);
+                uint vpY = (uint)(viewportGridStride * Math.Floor(i / VIEWPORT_GRID_SIZE) + 1);
+                pass.SetViewport(vpX, vpY, viewportSize, viewportSize, 0, 1);
+                pass.Draw(6, 1, 0, i);
+            }
+            // Show texture contents
+            pass.SetPipeline(showTexturePipeline);
+            pass.SetBindGroup(0, showTextureBG);
+            uint lastViewport = (uint)((VIEWPORT_GRID_SIZE - 1) * viewportGridStride + 1);
+            pass.SetViewport(lastViewport, lastViewport, 32, 32, 0, 1);
+            pass.Draw(6, 1, 0, 0);
+            pass.SetViewport(lastViewport + 32, lastViewport, 16, 16, 0, 1);
+            pass.Draw(6, 1, 0, 1);
+            pass.SetViewport(lastViewport + 32, lastViewport + 16, 8, 8, 0, 1);
+            pass.Draw(6, 1, 0, 2);
+            pass.SetViewport(lastViewport + 32, lastViewport + 24, 4, 4, 0, 1);
+            pass.Draw(6, 1, 0, 3);
+            pass.End();
         }
-        // Show texture contents
-        pass.SetPipeline(showTexturePipeline);
-        pass.SetBindGroup(0, showTextureBG);
-        uint lastViewport = (uint)((VIEWPORT_GRID_SIZE - 1) * viewportGridStride + 1);
-        pass.SetViewport(lastViewport, lastViewport, 32, 32, 0, 1);
-        pass.Draw(6, 1, 0, 0);
-        pass.SetViewport(lastViewport + 32, lastViewport, 16, 16, 0, 1);
-        pass.Draw(6, 1, 0, 1);
-        pass.SetViewport(lastViewport + 32, lastViewport + 16, 8, 8, 0, 1);
-        pass.Draw(6, 1, 0, 2);
-        pass.SetViewport(lastViewport + 32, lastViewport + 24, 4, 4, 0, 1);
-        pass.Draw(6, 1, 0, 3);
-        pass.End();
-
+        // SECOND PASS: upscale to window (600x600) without smoothing (nearest / texel fetch)
+        var swapView = surface.GetCurrentTexture().Texture!.CreateView();
+        {
+            var rp2 = new RenderPassDescriptor
+            {
+                ColorAttachments = [
+                    new()
+            {
+                View = swapView,
+                ClearValue = new(0,0,0,1),
+                LoadOp = LoadOp.Clear,
+                StoreOp = StoreOp.Store,
+            }
+                ]
+            };
+            var pass2 = commandEncoder.BeginRenderPass(rp2);
+            pass2.SetPipeline(blitPipeline);
+            pass2.SetBindGroup(0, blitBindGroup);
+            pass2.Draw(6, 1, 0, 0);
+            pass2.End();
+        }
+        // Submit
         queue.Submit([commandEncoder.Finish()]);
         surface.Present();
     });
