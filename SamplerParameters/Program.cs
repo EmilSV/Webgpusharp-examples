@@ -15,7 +15,9 @@ const double VIEWPORT_GRID_SIZE = 4;
 double viewportGridStride = Math.Floor(VIEWPORT_SIZE / VIEWPORT_GRID_SIZE);
 uint viewportSize = (uint)(viewportGridStride - 2);
 
-const int WINDOW_SIZE = 600;
+const int WINDOW_WIDTH = 900;
+const int WINDOW_HEIGHT = 600;
+
 
 static Matrix4x4 Scale(Matrix4x4 m, Vector3 s)
 {
@@ -74,8 +76,8 @@ Matrix4x4[] matrices = [
     // Row 1: Scale by 2
     Scale(Matrix4x4.CreateRotationZ(MathF.PI / 16f), new(2,2,1)),
     Scale(Matrix4x4.Identity, new(2,2,1)),
-    Scale(Matrix4x4.CreateRotationX(MathF.PI * 0.3f), new(2,2,1)),
-    Scale(Matrix4x4.CreateRotationX(MathF.PI * 0.42f), new(2,2,1)),
+    Scale(Matrix4x4.CreateRotationX(-MathF.PI * 0.3f), new(2,2,1)),
+    Scale(Matrix4x4.CreateRotationX(-MathF.PI * 0.42f), new(2,2,1)),
     // Row 2: scale by 1
     Matrix4x4.CreateRotationZ(MathF.PI / 16f),
     Matrix4x4.Identity,
@@ -96,7 +98,7 @@ var asm = Assembly.GetExecutingAssembly();
 var showTextureWGSL = ToBytes(asm.GetManifestResourceStream("SamplerParameters.shaders.showTexture.wgsl")!);
 var texturedSquareWGSL = ToBytes(asm.GetManifestResourceStream("SamplerParameters.shaders.texturedSquare.wgsl")!);
 
-return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surface, onFrame) =>
+return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, surface, onFrame) =>
 {
     var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
     var device = await adapter.RequestDeviceAsync(new()
@@ -118,8 +120,8 @@ return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surf
 
     surface.Configure(new()
     {
-        Width = WINDOW_SIZE,
-        Height = WINDOW_SIZE,
+        Width = WINDOW_WIDTH,
+        Height = WINDOW_HEIGHT,
 
         Usage = TextureUsage.RenderAttachment,
         Format = surfaceFormat,
@@ -170,8 +172,8 @@ return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surf
         Layout = blitPipeline.GetBindGroupLayout(0),
         Entries = [
             new(){ Binding = 0, Sampler = nearestSampler },
-        new(){ Binding = 1, TextureView = lowResView },
-    ]
+            new(){ Binding = 1, TextureView = lowResView },
+        ]
     });
 
 
@@ -194,25 +196,26 @@ return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surf
     });
     var checkerboardView = checkerboard.CreateView();
 
-    byte[][] colorForLevel = [
-        [ 255, 255, 255, 255 ], // white
-        [30, 136, 229, 255], // blue
-        [255, 193, 7, 255], // yellow
-        [216, 27, 96, 255], // pink
+    (byte r, byte g, byte b, byte a)[] colorForLevel = [
+        (255, 255, 255, 255), // white
+        (30, 136, 229, 255), // blue
+        (255, 193, 7, 255), // yellow
+        (216, 27, 96, 255), // pink
     ];
+
+    (byte r, byte g, byte b, byte a) defaultColor = (0, 0, 0, 255);
 
     for (uint mipLevel = 0; mipLevel < TEXTURE_MIP_LEVELS; ++mipLevel)
     {
         var size = (uint)Math.Pow(2, TEXTURE_MIP_LEVELS - mipLevel); // 16, 8, 4, 2
-        var data = new byte[size * size * 4];
+        var data = new (byte r, byte g, byte b, byte a)[size * size];
         for (int y = 0; y < size; ++y)
         {
             for (int x = 0; x < size; ++x)
             {
-                data[(y * size + x) * 4 + 0] = ((x + y) % 2) != 0 ? colorForLevel[mipLevel][0] : (byte)0;
-                data[(y * size + x) * 4 + 1] = ((x + y) % 2) != 0 ? colorForLevel[mipLevel][1] : (byte)0;
-                data[(y * size + x) * 4 + 2] = ((x + y) % 2) != 0 ? colorForLevel[mipLevel][2] : (byte)0;
-                data[(y * size + x) * 4 + 3] = ((x + y) % 2) != 0 ? colorForLevel[mipLevel][3] : (byte)255;
+                data[y * size + x] = ((x + y) % 2) != 0 ?
+                    colorForLevel[mipLevel] :
+                    defaultColor;
             }
         }
 
@@ -345,8 +348,8 @@ return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surf
 
     const float cameraDist = 3;
     Matrix4x4 viewProj = Matrix4x4.CreatePerspectiveFieldOfView(
-        fieldOfView: 2 * MathF.Atan(1 / cameraDist),
-        aspectRatio: 1,
+        fieldOfView: 2f * MathF.Atan(1f / cameraDist),
+        aspectRatio: 1f,
         nearPlaneDistance: 0.1f,
         farPlaneDistance: 100f
     );
@@ -460,17 +463,18 @@ return Run("Sampler Parameters", WINDOW_SIZE, WINDOW_SIZE, async (instance, surf
             {
                 ColorAttachments = [
                     new()
-            {
-                View = swapView,
-                ClearValue = new(0,0,0,1),
-                LoadOp = LoadOp.Clear,
-                StoreOp = StoreOp.Store,
-            }
+                    {
+                        View = swapView,
+                        ClearValue = new(0.2f, 0.2f, 0.2f, 1.0f),
+                        LoadOp = LoadOp.Clear,
+                        StoreOp = StoreOp.Store,
+                    }
                 ]
             };
             var pass2 = commandEncoder.BeginRenderPass(rp2);
             pass2.SetPipeline(blitPipeline);
             pass2.SetBindGroup(0, blitBindGroup);
+            pass2.SetViewport(0, 0, 600, 600, 0, 1);
             pass2.Draw(6, 1, 0, 0);
             pass2.End();
         }
