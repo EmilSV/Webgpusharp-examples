@@ -1,7 +1,10 @@
+using System;
+using System.Buffers;
 using System.Collections.Frozen;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using ImGuiNET;
 
@@ -26,6 +29,10 @@ public static partial class ImGuiUtils
         public static readonly T[] Values = Enum.GetValues<T>();
         public static readonly FrozenDictionary<T, int> ValueToIndex =
             FrozenDictionary.ToFrozenDictionary(Values.Select((value, index) => KeyValuePair.Create(value, index)));
+
+        public static readonly FrozenDictionary<T, string> ValueToName =
+            FrozenDictionary.ToFrozenDictionary(Values.Select((value, index) => KeyValuePair.Create(value, Names[index])));
+
     }
 
     public static void EnumDropdown<T>(ReadOnlySpan<char> label, ref T current)
@@ -37,6 +44,35 @@ public static partial class ImGuiUtils
             current = EnumTypeStore<T>.Values[index];
         }
     }
+
+    public static void EnumDropdown<T>(ReadOnlySpan<char> label, ref T current, ReadOnlySpan<T> values)
+        where T : unmanaged, Enum
+    {
+        var comparer = EqualityComparer<T>.Default;
+        int index = 0;
+        for (; index < values.Length; index++)
+        {
+            if (comparer.Equals(values[index], current))
+            {
+                break;
+            }
+        }
+        if (index == -1)
+        {
+            index = 0;
+        }
+
+        var array = new string[values.Length];
+        for (int i = 0; i < values.Length; i++)
+        {
+            array[i] = EnumTypeStore<T>.ValueToName[values[i]];
+        }
+        if (ImGui.Combo(label, ref index, array, values.Length))
+        {
+            current = values[index];
+        }
+    }
+
 
     public static void PlotLines(
         ReadOnlySpan<char> label,

@@ -15,8 +15,10 @@ const double VIEWPORT_GRID_SIZE = 4;
 double viewportGridStride = Math.Floor(VIEWPORT_SIZE / VIEWPORT_GRID_SIZE);
 uint viewportSize = (uint)(viewportGridStride - 2);
 
-const int WINDOW_WIDTH = 900;
+const int WINDOW_WIDTH = 1100;
 const int WINDOW_HEIGHT = 600;
+
+FilterMode[] filterModes = [FilterMode.Nearest, FilterMode.Linear];
 
 
 static Matrix4x4 Scale(Matrix4x4 m, Vector3 s)
@@ -58,14 +60,94 @@ static byte[] ToBytes(Stream s)
 CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
-    ImGui.Begin("Sampler Parameters");
-    ImGui.BeginMenu("Presets");
+
+    ImGui.SetNextWindowPos(new(600, 0));
+    ImGui.SetNextWindowSize(new(500, 600));
+    ImGui.Begin("Sampler Parameters",
+        ImGuiWindowFlags.NoMove |
+        ImGuiWindowFlags.NoResize |
+        ImGuiWindowFlags.NoCollapse
+    );
+
+    if (ImGui.TreeNode("Presets"))
     {
-        ImGui.Button("Initial");
+        if (ImGui.Button("Reset to Initial"))
+        {
+            config = initConfig;
+            samplerDescriptor = initSamplerDescriptor;
+        }
+
+        if (ImGui.Button("Checkered floor"))
+        {
+            config.FlangeLogSize = 10f;
+            samplerDescriptor.AddressModeU = AddressMode.Repeat;
+            samplerDescriptor.AddressModeV = AddressMode.Repeat;
+        }
+
+        if (ImGui.Button("Smooth (linear)"))
+        {
+            samplerDescriptor.MagFilter = FilterMode.Linear;
+            samplerDescriptor.MinFilter = FilterMode.Linear;
+            samplerDescriptor.MipmapFilter = MipmapFilterMode.Linear;
+        }
+
+        if (ImGui.Button("Crunchy (nearest)"))
+        {
+            samplerDescriptor.MagFilter = FilterMode.Nearest;
+            samplerDescriptor.MinFilter = FilterMode.Nearest;
+            samplerDescriptor.MipmapFilter = MipmapFilterMode.Nearest;
+        }
+        ImGui.TreePop();
     }
-    ImGui.EndMenu();
 
+    if (ImGui.TreeNode("Plane settings"))
+    {
+        ImGui.SliderFloat("size = 2**", ref config.FlangeLogSize, 0f, 10.0f);
+        ImGui.Checkbox("Highlight Flange", ref config.HighlightFlange);
+        ImGui.SliderFloat("Animation", ref config.Animation, 0f, 0.5f);
+        ImGui.TreePop();
+    }
 
+    if (ImGui.TreeNode("GPUSamplerDescriptor"))
+    {
+        ReadOnlySpan<AddressMode> addressModes = [AddressMode.ClampToEdge, AddressMode.Repeat, AddressMode.MirrorRepeat];
+        ImGuiUtils.EnumDropdown("Address Mode U", ref samplerDescriptor.AddressModeU, addressModes);
+        ImGuiUtils.EnumDropdown("Address Mode V", ref samplerDescriptor.AddressModeV, addressModes);
+
+        ReadOnlySpan<FilterMode> filterModes = [FilterMode.Nearest, FilterMode.Linear];
+        ImGuiUtils.EnumDropdown("Mag Filter", ref samplerDescriptor.MagFilter, filterModes);
+        ImGuiUtils.EnumDropdown("Min Filter", ref samplerDescriptor.MinFilter, filterModes);
+        ReadOnlySpan<MipmapFilterMode> mipmapFilterModes = [MipmapFilterMode.Nearest, MipmapFilterMode.Linear];
+        ImGuiUtils.EnumDropdown("Mipmap Filter", ref samplerDescriptor.MipmapFilter, mipmapFilterModes);
+
+        if (ImGui.SliderFloat("Lod Min Clamp", ref samplerDescriptor.LodMinClamp, 0f, 4f))
+        {
+            if (samplerDescriptor.LodMaxClamp < samplerDescriptor.LodMinClamp)
+            {
+                samplerDescriptor.LodMaxClamp = samplerDescriptor.LodMinClamp;
+            }
+        }
+
+        if (ImGui.SliderFloat("Lod Max Clamp", ref samplerDescriptor.LodMaxClamp, 0f, 4f))
+        {
+            if (samplerDescriptor.LodMinClamp > samplerDescriptor.LodMaxClamp)
+            {
+                samplerDescriptor.LodMinClamp = samplerDescriptor.LodMaxClamp;
+            }
+        }
+
+        if (ImGui.TreeNode("Max Anisotropy (set only if all \"linear\")"))
+        {
+            int maxAnisotropy = samplerDescriptor.MaxAnisotropy;
+            const int MaxAnisotropy = 16;
+            if (ImGui.SliderInt("Max Anisotropy", ref maxAnisotropy, 1, MaxAnisotropy))
+            {
+                samplerDescriptor.MaxAnisotropy = (ushort)maxAnisotropy;
+            }
+            ImGui.TreePop();
+        }
+    }
+    ImGui.End();
 
     guiContext.EndFrame();
     return guiContext.Render(surface)!.Value!;
@@ -98,7 +180,7 @@ var asm = Assembly.GetExecutingAssembly();
 var showTextureWGSL = ToBytes(asm.GetManifestResourceStream("SamplerParameters.shaders.showTexture.wgsl")!);
 var texturedSquareWGSL = ToBytes(asm.GetManifestResourceStream("SamplerParameters.shaders.texturedSquare.wgsl")!);
 
-return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, surface, onFrame) =>
+return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, surface, guiContext, onFrame) =>
 {
     var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
     var device = await adapter.RequestDeviceAsync(new()
@@ -117,6 +199,8 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
     var queue = device.GetQueue();
     var surfaceCaps = surface.GetCapabilities(adapter)!;
     var surfaceFormat = surfaceCaps.Formats[0];
+
+    guiContext.SetupIMGUI(device, surfaceFormat);
 
     surface.Configure(new()
     {
@@ -478,8 +562,11 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
             pass2.Draw(6, 1, 0, 0);
             pass2.End();
         }
+
+        var guiCommandBuffer = DrawGui(guiContext, surface);
+
         // Submit
-        queue.Submit([commandEncoder.Finish()]);
+        queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
         surface.Present();
     });
 });
