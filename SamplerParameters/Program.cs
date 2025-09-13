@@ -6,7 +6,6 @@ using System.Text;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
-using WebGpuSharp.FFI;
 using static Setup.SetupWebGPU;
 using static WebGpuSharp.WebGpuUtil;
 
@@ -313,7 +312,6 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
             data: data,
             dataLayout: new()
             {
-                RowsPerImage = WebGPU_FFI.COPY_STRIDE_UNDEFINED,
                 BytesPerRow = size * 4,
             },
             writeSize: new Extent3D(size, size)
