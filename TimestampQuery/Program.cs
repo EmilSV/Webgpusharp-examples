@@ -2,6 +2,8 @@
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
+using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
@@ -25,7 +27,34 @@ var asm = Assembly.GetExecutingAssembly();
 var basicVertWGSL = ToBytes(asm.GetManifestResourceStream("TimestampQuery.shaders.basic.vert.wgsl")!);
 var blackFragWGSL = ToBytes(asm.GetManifestResourceStream("TimestampQuery.shaders.black.frag.wgsl")!);
 
-return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
+CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
+{
+    guiContext.NewFrame();
+
+    ImGui.SetNextWindowPos(new(0, 0));
+    ImGui.SetNextWindowSize(new(350, 50));
+    ImGui.Begin("Timestamp Query",
+        ImGuiWindowFlags.NoMove |
+        ImGuiWindowFlags.NoResize |
+        ImGuiWindowFlags.NoCollapse |
+        ImGuiWindowFlags.NoBackground |
+        ImGuiWindowFlags.NoTitleBar
+    );
+    if (perfText != null)
+    {
+        ImGui.TextColored(new Vector4(0, 0, 0, 1), perfText);
+    }
+    else
+    {
+        ImGui.Text("no data");
+    }
+    ImGui.End();
+
+    guiContext.EndFrame();
+    return guiContext.Render(surface)!.Value!;
+}
+
+return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
 {
     var adapter = await instance.RequestAdapterAsync(new()
     {
@@ -42,11 +71,23 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, onFrame) 
     var device = await adapter.RequestDeviceAsync(new()
     {
         RequiredFeatures = supportsTimestampQueries ? [FeatureName.TimestampQuery] : [],
+        UncapturedErrorCallback = (type, message) =>
+        {
+            var messageString = Encoding.UTF8.GetString(message);
+            Console.Error.WriteLine($"Uncaptured error: {type} {messageString}");
+        },
+        DeviceLostCallback = (reason, message) =>
+        {
+            var messageString = Encoding.UTF8.GetString(message);
+            Console.Error.WriteLine($"Device lost: {reason} {messageString}");
+        },
     });
 
     var queue = device.GetQueue();
     var surfaceCaps = surface.GetCapabilities(adapter)!;
     var surfaceFormat = surfaceCaps.Formats[0];
+
+    guiContext.SetupIMGUI(device, surfaceFormat);
 
     surface.Configure(new()
     {
@@ -70,8 +111,8 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, onFrame) 
     {
         double elapsedMs = elapsedNs * 1e-6;
         renderPassDurationCounter.AddSample(elapsedMs);
-        perfText = $"Render Pass duration: ${renderPassDurationCounter
-            .GetAverage():F3} ms ± ${renderPassDurationCounter.GetStddev():F3} ms";
+        perfText = $"Render Pass duration: {renderPassDurationCounter
+            .GetAverage():F3} ms ± {renderPassDurationCounter.GetStddev():F3} ms";
     });
 
     var verticesBuffer = device.CreateBuffer(new()
@@ -116,7 +157,7 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, onFrame) 
                 ],
             }],
         }),
-        Fragment = new FragmentState()
+        Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new() { Code = blackFragWGSL }),
             Targets = [new() { Format = surfaceFormat }],
@@ -131,11 +172,11 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, onFrame) 
         },
         // Enable depth testing so that the fragment closest to the camera
         // is rendered in front.
-        DepthStencil = new DepthStencilState()
+        DepthStencil = new()
         {
             DepthWriteEnabled = OptionalBool.True,
             DepthCompare = CompareFunction.Less,
-            Format = TextureFormat.Depth24PlusStencil8,
+            Format = TextureFormat.Depth24Plus,
         },
     });
 
@@ -220,9 +261,13 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, onFrame) 
         // a GPU-side buffer.
         timestampQueryManager.Resolve(commandEncoder);
 
-        queue.Submit([commandEncoder.Finish()]);
+        var guiCommandBuffer = DrawGui(guiContext, surface);
+
+        queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
 
         // Try to download the time stamp.
         timestampQueryManager.TryInitiateTimestampDownload();
+
+        surface.Present();
     });
 });

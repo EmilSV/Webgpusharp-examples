@@ -1,4 +1,5 @@
 // Regroups all timestamp-related operations and resources.
+using System.Diagnostics.CodeAnalysis;
 using WebGpuSharp;
 
 using GPUBuffer = WebGpuSharp.Buffer;
@@ -17,17 +18,16 @@ public class TimestampQueryManager
 
     // The query objects. This is meant to be used in a ComputePassDescriptor's
     // or RenderPassDescriptor's 'timestampWrites' field.
-    public QuerySet TimestampQuerySet;
+    public QuerySet? TimestampQuerySet;
 
     // A buffer where to store query results
-    public GPUBuffer TimestampBuffer;
+    public GPUBuffer? TimestampBuffer;
 
     // A buffer to map this result back to CPU
-    public GPUBuffer TimestampMapBuffer;
+    public GPUBuffer? TimestampMapBuffer;
 
     // Callback to call when results are available.
-    public Action<double> Callback;
-
+    public Action<double>? Callback;
 
     public TimestampQueryManager(
         Device device,
@@ -47,10 +47,9 @@ public class TimestampQueryManager
         });
 
         // Create a buffer where to store the result of GPU queries
-        const ulong timestampByteSize = 8;
         TimestampBuffer = device.CreateBuffer(new()
         {
-            Size = TimestampQuerySet.GetCount() * timestampByteSize,
+            Size = TimestampQuerySet.GetCount() * sizeof(ulong),
             Usage = BufferUsage.CopySrc | BufferUsage.QueryResolve,
         });
 
@@ -70,7 +69,7 @@ public class TimestampQueryManager
             // We instruct the render pass to write to the timestamp query before/after
             passDescriptor.TimestampWrites = new()
             {
-                QuerySet = TimestampQuerySet,
+                QuerySet = TimestampQuerySet!,
                 BeginningOfPassWriteIndex = 0,
                 EndOfPassWriteIndex = 1
             };
@@ -87,18 +86,18 @@ public class TimestampQueryManager
         // After the end of the measured render pass, we resolve queries into a
         // dedicated buffer.
         commandEncoder.ResolveQuerySet(
-            querySet: TimestampQuerySet,
+            querySet: TimestampQuerySet!,
             firstQuery: 0 /* firstQuery */,
-            queryCount: TimestampQuerySet.GetCount() /* queryCount */,
-            destination: TimestampBuffer,
+            queryCount: TimestampQuerySet!.GetCount() /* queryCount */,
+            destination: TimestampBuffer!,
             destinationOffset: 0 /* destinationOffset */
         );
 
-        if (TimestampMapBuffer.GetMapState() == BufferMapState.Unmapped)
+        if (TimestampMapBuffer!.GetMapState() == BufferMapState.Unmapped)
         {
             // Copy values to the mappable buffer
             commandEncoder.CopyBufferToBuffer(
-                TimestampBuffer,
+                TimestampBuffer!,
                 TimestampMapBuffer
             );
         }
@@ -106,31 +105,28 @@ public class TimestampQueryManager
 
 
     // Read the values of timestamps.
-    public void TryInitiateTimestampDownload()
+    public async void TryInitiateTimestampDownload()
     {
         if (!TimestampSupported) return;
-        if (TimestampMapBuffer.GetMapState() != BufferMapState.Unmapped) return;
+        if (TimestampMapBuffer!.GetMapState() != BufferMapState.Unmapped) return;
 
         var buffer = TimestampMapBuffer;
-        buffer.MapAsync(MapMode.Read).ContinueWith(state =>
+        var mapState = await buffer.MapAsync(MapMode.Read);
+        ulong elapsedNs = 0;
+        buffer.GetConstMappedRange<ulong, MappedRangeState>(static (timeStamps, state) =>
         {
-            ulong elapsedNs = 0;
-            buffer.GetMappedRange<ulong, MappedRangeState>(0, (nuint)buffer.GetSize(), (timeStamps, state) =>
-            {
-                // Subtract the begin time from the end time.
-                // Cast into number. Number can be 9007199254740991 as max integer
-                // which is 109 days of nano seconds.
-                state.ElapsedNs = timeStamps[1] - timeStamps[0];
-            }, new MappedRangeState { ElapsedNs = ref elapsedNs });
+            // Subtract the begin time from the end time.
+            // Cast into number. Number can be 9007199254740991 as max integer
+            state.ElapsedNs = timeStamps[1] - timeStamps[0];
+        }, new MappedRangeState() { ElapsedNs = ref elapsedNs });
 
-            // It's possible elapsedNs is negative which means it's invalid
-            // (see spec https://gpuweb.github.io/gpuweb/#timestamp)
-            if (elapsedNs >= 0)
-            {
-                Callback(elapsedNs);
-            }
+        // It's possible elapsedNs is negative which means it's invalid
+        // (see spec https://gpuweb.github.io/gpuweb/#timestamp)
+        if (elapsedNs >= 0)
+        {
+            Callback!(elapsedNs);
+        }
 
-            buffer.Unmap();
-        });
+        buffer.Unmap();
     }
 }

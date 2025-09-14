@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/SamplerParameters/bin/Debug/net9.0/SamplerParameters.dll",
+            "program": "${workspaceFolder}/TimestampQuery/bin/Debug/net9.0/TimestampQuery.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/SamplerParameters",
+            "cwd": "${workspaceFolder}/TimestampQuery",
             "console": "internalConsole",
             "stopAtEntry": false
         },
