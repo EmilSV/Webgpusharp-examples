@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/TimestampQuery/bin/Debug/net9.0/TimestampQuery.dll",
+            "program": "${workspaceFolder}/ComputeBoids/bin/Debug/net9.0/ComputeBoids.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/TimestampQuery",
+            "cwd": "${workspaceFolder}/ComputeBoids",
             "console": "internalConsole",
             "stopAtEntry": false
         },
