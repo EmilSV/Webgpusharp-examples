@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/ComputeBoids/bin/Debug/net9.0/ComputeBoids.dll",
+            "program": "${workspaceFolder}/ConwaysGameOfLife/bin/Debug/net9.0/ConwaysGameOfLife.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/ComputeBoids",
+            "cwd": "${workspaceFolder}/ConwaysGameOfLife",
             "console": "internalConsole",
             "stopAtEntry": false
         },
