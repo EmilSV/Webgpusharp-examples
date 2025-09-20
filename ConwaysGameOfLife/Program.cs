@@ -239,10 +239,12 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
     };
 
     int wholeTime = 0;
-    int loopTimes = 0;
-    GPUBuffer? buffer0 = null;
-    GPUBuffer? buffer1 = null;
-    Action? render = null;
+    int currentIndex = 0;
+    (GPUBuffer? Buffer, BindGroup? BindGroup)[] bufferAndBindGroups = [
+        (null, null),
+        (null, null)
+    ];
+    Action<bool> render = null;
 
     void ResetGameData()
     {
@@ -285,7 +287,7 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
             cells[i] = Random.Shared.NextDouble() < 0.25 ? 1u : 0u;
         }
 
-        buffer0 = device.CreateBuffer(new()
+        var buffer0 = device.CreateBuffer(new()
         {
             Size = cells.GetSizeInBytes(),
             Usage =
@@ -297,7 +299,7 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
         buffer0.GetMappedRange<uint>(data => ((ReadOnlySpan<uint>)cells).CopyTo(data));
         buffer0.Unmap();
 
-        buffer1 = device.CreateBuffer(new()
+        var buffer1 = device.CreateBuffer(new()
         {
             Size = cells.GetSizeInBytes(),
             Usage =
@@ -349,6 +351,9 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
             ]
         });
 
+        bufferAndBindGroups[0] = (buffer0, bindGroup0);
+        bufferAndBindGroups[1] = (buffer1, bindGroup1);
+
         var renderPipeline = device.CreateRenderPipeline(new()
         {
             Layout = device.CreatePipelineLayout(new()
@@ -390,9 +395,9 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
             ]
         });
 
-        loopTimes = 0;
+        currentIndex = 0;
 
-        render = () =>
+        render = (bool doCompute) =>
         {
             var view = surface.GetCurrentTexture().Texture!.CreateView();
             var renderPass = new RenderPassDescriptor
@@ -408,19 +413,23 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
             };
             commandEncoder = device.CreateCommandEncoder();
 
-            // compute
-            var passEncoderCompute = commandEncoder.BeginComputePass();
-            passEncoderCompute.SetPipeline(computePipeline);
-            passEncoderCompute.SetBindGroup(0, loopTimes != 0 ? bindGroup1 : bindGroup0);
-            passEncoderCompute.DispatchWorkgroups(
-                gameOptions.Width / gameOptions.WorkgroupSize,
-                gameOptions.Height / gameOptions.WorkgroupSize
-            );
-            passEncoderCompute.End();
+            if (doCompute)
+            {
+                // compute
+                var passEncoderCompute = commandEncoder.BeginComputePass();
+                passEncoderCompute.SetPipeline(computePipeline);
+                passEncoderCompute.SetBindGroup(0, bufferAndBindGroups[currentIndex].BindGroup!);
+                passEncoderCompute.DispatchWorkgroups(
+                    gameOptions.Width / gameOptions.WorkgroupSize,
+                    gameOptions.Height / gameOptions.WorkgroupSize
+                );
+                passEncoderCompute.End();
+                currentIndex ^= 1;
+            }
             // render 
             var passEncoderRender = commandEncoder.BeginRenderPass(renderPass);
             passEncoderRender.SetPipeline(renderPipeline);
-            passEncoderRender.SetVertexBuffer(0, loopTimes != 0 ? buffer1 : buffer0);
+            passEncoderRender.SetVertexBuffer(0, bufferAndBindGroups[currentIndex].Buffer!);
             passEncoderRender.SetVertexBuffer(1, squareBuffer);
             passEncoderRender.SetBindGroup(0, uniformBindGroup);
             passEncoderRender.Draw(4, length);
@@ -441,18 +450,20 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
         {
             ResetGameData();
             shouldResetGameState = false;
+            wholeTime = (int)gameOptions.TimeStep;
         }
 
+        bool doCompute = false;
         if (gameOptions.TimeStep != 0)
         {
             wholeTime++;
             if (wholeTime >= gameOptions.TimeStep)
             {
-                render?.Invoke();
+                doCompute = true;
                 wholeTime -= (int)gameOptions.TimeStep;
-                loopTimes = 1 - loopTimes;
             }
         }
+        render?.Invoke(doCompute);
     });
 });
 
