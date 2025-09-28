@@ -5,7 +5,7 @@ namespace Setup;
 public static class MatrixExtension
 {
 
-    public static void Rotate(this ref Matrix4x4 matrix, Vector3 axis, float angle)
+    public static ref Matrix4x4 Rotate(this ref Matrix4x4 matrix, Vector3 axis, float angle)
     {
         var normalizeAxis = Vector3.Normalize(axis);
 
@@ -57,9 +57,11 @@ public static class MatrixExtension
         matrix.M32 = r20 * m01 + r21 * m11 + r22 * m21;
         matrix.M33 = r20 * m02 + r21 * m12 + r22 * m22;
         matrix.M34 = r20 * m03 + r21 * m13 + r22 * m23;
+
+        return ref matrix;
     }
 
-    public static void RotateX(this ref Matrix4x4 matrix, float angleInRadians)
+    public static ref Matrix4x4 RotateX(this ref Matrix4x4 matrix, float angleInRadians)
     {
         var m21 = matrix.M21;
         var m22 = matrix.M22;
@@ -82,9 +84,10 @@ public static class MatrixExtension
         matrix.M32 = c * m32 - s * m22;
         matrix.M33 = c * m33 - s * m23;
         matrix.M34 = c * m34 - s * m24;
+        return ref matrix;
     }
 
-    public static void RotateY(this ref Matrix4x4 matrix, float angleInRadians)
+    public static ref Matrix4x4 RotateY(this ref Matrix4x4 matrix, float angleInRadians)
     {
         var m11 = matrix.M11;
         var m12 = matrix.M12;
@@ -106,9 +109,10 @@ public static class MatrixExtension
         matrix.M32 = c * m32 + s * m12;
         matrix.M33 = c * m33 + s * m13;
         matrix.M34 = c * m34 + s * m14;
+        return ref matrix;
     }
 
-    public static void RotateZ(this ref Matrix4x4 matrix, float angleInRadians)
+    public static ref Matrix4x4 RotateZ(this ref Matrix4x4 matrix, float angleInRadians)
     {
         var m11 = matrix.M11;
         var m12 = matrix.M12;
@@ -132,9 +136,10 @@ public static class MatrixExtension
         matrix.M22 = c * m22 - s * m12;
         matrix.M23 = c * m23 - s * m13;
         matrix.M24 = c * m24 - s * m14;
+        return ref matrix;
     }
 
-    public static void Scale(this ref Matrix4x4 matrix, Vector3 scale)
+    public static ref Matrix4x4 Scale(this ref Matrix4x4 matrix, Vector3 scale)
     {
         matrix.M11 *= scale.X;
         matrix.M12 *= scale.X;
@@ -148,9 +153,10 @@ public static class MatrixExtension
         matrix.M32 *= scale.Z;
         matrix.M33 *= scale.Z;
         matrix.M34 *= scale.Z;
+        return ref matrix;
     }
 
-    public static void Translate(this ref Matrix4x4 matrix, Vector3 vec3)
+    public static ref Matrix4x4 Translate(this ref Matrix4x4 matrix, Vector3 vec3)
     {
         var v0 = vec3.X;
         var v1 = vec3.Y;
@@ -177,5 +183,6 @@ public static class MatrixExtension
         matrix.M42 = m12 * v0 + m22 * v1 + m32 * v2 + m42;
         matrix.M43 = m13 * v0 + m23 * v1 + m33 * v2 + m43;
         matrix.M44 = m14 * v0 + m24 * v1 + M34 * v2 + m44;
+        return ref matrix;
     }
 }
