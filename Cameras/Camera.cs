@@ -3,7 +3,7 @@ using System.Numerics;
 using Setup;
 
 // Common interface for camera implementations
-interface Camera
+interface ICamera
 {
     // update updates the camera using the user-input and returns the view matrix.
     ref readonly Matrix4x4 Update(float deltaTime, Input input);
@@ -16,16 +16,16 @@ interface Camera
     ref readonly Matrix4x4 View { get; }
 
     // Alias to column vector 0 of the camera matrix.
-    Vector4 Right { get; set; }
+    Vector3 Right { get; set; }
     // Alias to column vector 1 of the camera matrix.
-    Vector4 Up { get; set; }
+    Vector3 Up { get; set; }
     // Alias to column vector 2 of the camera matrix.
-    Vector4 Back { get; set; }
+    Vector3 Back { get; set; }
     // Alias to column vector 3 of the camera matrix.
-    Vector4 Position { get; set; }
+    Vector3 Position { get; set; }
 }
 
-abstract class BaseCamera : Camera
+abstract class BaseCamera : ICamera
 {
     // The camera matrix
     private Matrix4x4 _matrix = new(
@@ -59,29 +59,29 @@ abstract class BaseCamera : Camera
     }
 
     // Returns column vector 0 of the camera matrix
-    public Vector4 Right
+    public Vector3 Right
     {
-        get => new(_matrix.M11, _matrix.M12, _matrix.M13, _matrix.M14);
-        set => (_matrix.M11, _matrix.M12, _matrix.M13, _matrix.M14) = (value.X, value.Y, value.Z, value.W);
+        get => new(_matrix.M11, _matrix.M12, _matrix.M13);
+        set => (_matrix.M11, _matrix.M12, _matrix.M13) = (value.X, value.Y, value.Z);
     }
 
     // Returns column vector 1 of the camera matrix
-    public Vector4 Up
+    public Vector3 Up
     {
-        get => new(_matrix.M21, _matrix.M22, _matrix.M23, _matrix.M24);
-        set => (_matrix.M21, _matrix.M22, _matrix.M23, _matrix.M24) = (value.X, value.Y, value.Z, value.W);
+        get => new(_matrix.M21, _matrix.M22, _matrix.M23);
+        set => (_matrix.M21, _matrix.M22, _matrix.M23) = (value.X, value.Y, value.Z);
     }
     // Returns column vector 2 of the camera matrix
-    public Vector4 Back
+    public Vector3 Back
     {
-        get => new(_matrix.M31, _matrix.M32, _matrix.M33, _matrix.M34);
-        set => (_matrix.M31, _matrix.M32, _matrix.M33, _matrix.M34) = (value.X, value.Y, value.Z, value.W);
+        get => new(_matrix.M31, _matrix.M32, _matrix.M33);
+        set => (_matrix.M31, _matrix.M32, _matrix.M33) = (value.X, value.Y, value.Z);
     }
     // Returns column vector 3 of the camera matrix
-    public Vector4 Position
+    public Vector3 Position
     {
-        get => new(_matrix.M41, _matrix.M42, _matrix.M43, _matrix.M44);
-        set => (_matrix.M41, _matrix.M42, _matrix.M43, _matrix.M44) = (value.X, value.Y, value.Z, value.W);
+        get => new(_matrix.M41, _matrix.M42, _matrix.M43);
+        set => (_matrix.M41, _matrix.M42, _matrix.M43) = (value.X, value.Y, value.Z);
     }
 
     public abstract ref readonly Matrix4x4 Update(float deltaTime, Input input);
@@ -146,14 +146,14 @@ class WASDCamera : BaseCamera
             Vector3 targetVar = target ?? new Vector3(0, 0, 0);
             Vector3 back = Vector3.Normalize(positionVar - targetVar);
             RecalculateAngles(back);
-            Position = new Vector4(positionVar, 1);
+            Position = positionVar;
         }
     }
 
     public override ref readonly Matrix4x4 SetMatrix(in Matrix4x4 matrix)
     {
         ref readonly var result = ref base.SetMatrix(matrix);
-        RecalculateAngles(Back.AsVector3());
+        RecalculateAngles(Back);
         return ref result;
     }
 
@@ -172,7 +172,7 @@ class WASDCamera : BaseCamera
         // Clamp pitch between [-90° .. +90°] to prevent somersaults.
         _pitch = Clamp(_pitch, -MathF.PI / 2, MathF.PI / 2);
         // Save the current position, as we're about to rebuild the camera matrix.
-        Vector3 position = Position.AsVector3();
+        Vector3 position = Position;
 
         // Reconstruct the camera's rotation, and store into the camera matrix.
         var matrix = Matrix4x4.CreateRotationY(_yaw);
@@ -184,16 +184,16 @@ class WASDCamera : BaseCamera
         var deltaUp = Sign(digital.Up, digital.Down);
         var targetVelocity = new Vector3();
         var deltaBack = Sign(digital.Forward, digital.Backward);
-        targetVelocity += Right.AsVector3() * deltaRight;
-        targetVelocity += Up.AsVector3() * deltaUp;
-        targetVelocity += Back.AsVector3() * deltaBack;
+        targetVelocity += Right * deltaRight;
+        targetVelocity += Up * deltaUp;
+        targetVelocity += Back * deltaBack;
         targetVelocity = Vector3.Normalize(targetVelocity);
         targetVelocity *= MovementSpeed;
 
         // Mix new target velocity
         Velocity = Lerp(targetVelocity, Velocity, MathF.Pow(1 - FrictionCoefficient, deltaTime));
 
-        Position = new Vector4(Position.AsVector3() + Velocity * deltaTime, 1);
+        Position = position + Velocity * deltaTime;
 
         _view = Matrix4x4.Invert(GetMatrix(), out var result) ? result : Matrix4x4.Identity;
         return ref _view;
@@ -205,5 +205,120 @@ class WASDCamera : BaseCamera
     {
         _yaw = MathF.Atan2(dir.X, dir.Z);
         _pitch = -MathF.Asin(dir.Y);
+    }
+}
+
+// ArcballCamera implements a basic orbiting camera around the world origin
+class ArcballCamera : BaseCamera
+{
+    // The camera distance from the target
+    private float _distance;
+    // The current angular velocity
+    private float _angularVelocity = 0;
+
+    // The current rotation axis
+    public Vector3 Axis = new Vector3();
+
+
+    // Speed multiplier for camera rotation
+    public float RotationSpeed = 1f;
+
+    // Speed multiplier for camera zoom
+    public float ZoomSpeed = 0.1f;
+
+    // Rotation velocity drag coeffient [0 .. 1]
+    // 0: Spins forever
+    // 1: Instantly stops spinning
+    public float frictionCoefficient = 0.999f;
+
+    public ArcballCamera(Vector3? position)
+    {
+        if (position.HasValue)
+        {
+            Position = position.Value;
+            _distance = Position.Length();
+            Back = Vector3.Normalize(Position);
+            RecalculateRight();
+            RecalculateUp();
+        }
+    }
+
+    public override ref readonly Matrix4x4 SetMatrix(in Matrix4x4 matrix)
+    {
+        ref readonly var result = ref base.SetMatrix(matrix);
+        _distance = Position.Length();
+        return ref result;
+    }
+
+
+    public override ref readonly Matrix4x4 Update(float deltaTime, Input input)
+    {
+        const float EPSILON = 0.0000001f;
+        if (input.Analog.Touching)
+        {
+            // Currently being dragged.
+            _angularVelocity = 0;
+        }
+        else
+        {
+            // Dampen any existing angular velocity
+            _angularVelocity *= MathF.Pow(1 - frictionCoefficient, deltaTime);
+        }
+
+        // Calculate the movement vector
+        var movement = new Vector3();
+        movement += Right * input.Analog.X;
+        movement += Up * -input.Analog.Y;
+
+        // Cross the movement vector with the view direction to calculate the rotation axis x magnitude
+        var crossProduct = Vector3.Cross(movement, Back);
+
+        // Calculate the magnitude of the drag
+        var magnitude = crossProduct.Length();
+
+        if (magnitude > EPSILON)
+        {
+            // Normalize the crossProduct to get the rotation axis
+            Axis = crossProduct * 1 / magnitude;
+
+            // Remember the current angular velocity. This is used when the touch is released for a fling.
+            _angularVelocity = magnitude * RotationSpeed;
+        }
+
+        // The rotation around this.axis to apply to the camera matrix this update 
+        var rotationAngle = _angularVelocity * deltaTime;
+        if (rotationAngle > EPSILON)
+        {
+            // Rotate the matrix around axis
+            // Note: The rotation is not done as a matrix-matrix multiply as the repeated multiplications
+            // will quickly introduce substantial error into the matrix.
+            Back = Vector3.Normalize(Rotate(Back, Axis, rotationAngle));
+            RecalculateRight();
+            RecalculateUp();
+        }
+
+        // recalculate `this.position` from `this.back` considering zoom
+        if (input.Analog.Zoom != 0)
+        {
+            _distance *= 1 + input.Analog.Zoom * ZoomSpeed;
+        }
+        Position = Back * _distance;
+
+        // Invert the camera matrix to build the view matrix
+        _view = Matrix4x4.Invert(GetMatrix(), out var result) ? result : Matrix4x4.Identity;
+        return ref _view;
+    }
+
+
+    // Assigns `Right` with the cross product of `Up` and `Back`
+    public void RecalculateRight()
+    {
+        Right = Vector3.Normalize(Vector3.Cross(Up, Back));
+    }
+
+    // Assigns `Up` with the cross product of `Back` and `Right`
+    public void RecalculateUp()
+    {
+        Up = Vector3.Normalize(Vector3.Cross(Back, Right));
     }
 }
