@@ -138,7 +138,7 @@ class WASDCamera : BaseCamera
     // 1: Instantly stops moving
     public float FrictionCoefficient = 0.99f;
 
-    public WASDCamera(Vector3? position, Vector3? target)
+    public WASDCamera(Vector3? position = null, Vector3? target = null)
     {
         if (position.HasValue || target.HasValue)
         {

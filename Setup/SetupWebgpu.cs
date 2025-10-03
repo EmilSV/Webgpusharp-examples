@@ -133,7 +133,7 @@ public class SetupWebGPU
                             break;
 
                         default:
-                            runContext.InputEventHandler.HandleEvent(@event);
+                            runContext.Input.HandleEvent(@event);
                             break;
                     }
                 }
