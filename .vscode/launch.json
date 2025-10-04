@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/ConwaysGameOfLife/bin/Debug/net9.0/ConwaysGameOfLife.dll",
+            "program": "${workspaceFolder}/Cameras/bin/Debug/net9.0/Cameras.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/ConwaysGameOfLife",
+            "cwd": "${workspaceFolder}/Cameras",
             "console": "internalConsole",
             "stopAtEntry": false
         },

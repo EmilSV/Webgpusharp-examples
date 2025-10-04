@@ -89,7 +89,7 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
         Usage = BufferUsage.Vertex,
         MappedAtCreation = true,
     });
-    verticesBuffer.GetMappedRange<Cube.Data>(
+    verticesBuffer.GetMappedRange<float>(
         callback: data => Cube.CubeVertexArray.AsSpan().CopyTo(data)
     );
     verticesBuffer.Unmap();

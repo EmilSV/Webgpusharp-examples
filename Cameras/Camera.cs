@@ -92,7 +92,7 @@ abstract class BaseCamera : ICamera
 
     // Returns `x` float-modulo `div`
     protected static float Mod(float x, float div) =>
-        x - div * MathF.Floor(MathF.Abs(x) / div) * div * MathF.Sign(x);
+        x - MathF.Floor(MathF.Abs(x) / div) * div * MathF.Sign(x);
 
     // Returns `vec` rotated `angle` radians around `axis`
     protected static Vector3 Rotate(Vector3 vec, Vector3 axis, float angle)
@@ -183,11 +183,11 @@ class WASDCamera : BaseCamera
         var deltaRight = Sign(digital.Right, digital.Left);
         var deltaUp = Sign(digital.Up, digital.Down);
         var targetVelocity = new Vector3();
-        var deltaBack = Sign(digital.Forward, digital.Backward);
+        var deltaBack = Sign(digital.Backward, digital.Forward);
         targetVelocity += Right * deltaRight;
         targetVelocity += Up * deltaUp;
         targetVelocity += Back * deltaBack;
-        targetVelocity = Vector3.Normalize(targetVelocity);
+        targetVelocity += targetVelocity.LengthSquared() > 0 ? Vector3.Normalize(targetVelocity) : targetVelocity;
         targetVelocity *= MovementSpeed;
 
         // Mix new target velocity
