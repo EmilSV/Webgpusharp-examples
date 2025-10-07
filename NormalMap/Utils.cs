@@ -1,12 +1,14 @@
 using WebGpuSharp;
 
+using GPUBuffer = WebGpuSharp.Buffer;
+
 sealed class BindGroupsObjectsAndLayout
 {
     public required BindGroup[] BindGroups { get; init; }
     public required BindGroupLayout BindGroupLayout { get; init; }
 }
 
-struct BindGroupBindingLayout
+readonly struct BindGroupBindingLayout
 {
     public object Value { get; private init; }
 
@@ -16,7 +18,15 @@ struct BindGroupBindingLayout
     public static implicit operator BindGroupBindingLayout(StorageTextureBindingLayout value) => new() { Value = value };
 }
 
-typedef GPUBindingResource = GPUSampler | GPUTexture | GPUTextureView | GPUBuffer | GPUBufferBinding 
+readonly struct BindingResource
+{
+    public object Value { get; private init; }
+
+    public static implicit operator BindingResource(Sampler value) => new() { Value = value };
+    public static implicit operator BindingResource(TextureView value) => new() { Value = value };
+    public static implicit operator BindingResource(GPUBuffer value) => new() { Value = value };
+}
+
 
 static class Utils
 {
@@ -29,8 +39,149 @@ static class Utils
         Device device
     )
     {
+        var layoutEntries = new BindGroupLayoutEntry[bindings.Length];
+        for (int i = 0; i < bindings.Length; i++)
+        {
+            layoutEntries[i] = new BindGroupLayoutEntry()
+            {
+                Binding = (uint)bindings[i],
+                Visibility = visibilities[i % visibilities.Length],
+            };
+            switch (resourceLayouts[i].Value)
+            {
+                case BufferBindingLayout bufferBindingLayout:
+                    layoutEntries[i].Buffer = bufferBindingLayout;
+                    break;
+                case SamplerBindingLayout samplerBindingLayout:
+                    layoutEntries[i].Sampler = samplerBindingLayout;
+                    break;
+                case TextureBindingLayout textureBindingLayout:
+                    layoutEntries[i].Texture = textureBindingLayout;
+                    break;
+                case StorageTextureBindingLayout storageTextureBindingLayout:
+                    layoutEntries[i].StorageTexture = storageTextureBindingLayout;
+                    break;
+                default:
+                    throw new Exception($"Unknown resource type: {resourceLayouts[i].Value.GetType().Name}");
+            }
+        }
+        var bindGroupLayout = device.CreateBindGroupLayout(new()
+        {
+            Label = $"{label}.bindGroupLayout",
+            Entries = layoutEntries
+        });
+
+        List<BindGroup> bindGroups = [];
+        for (int i = 0; i < resources.Length; i++)
+        {
+            List<BindGroupEntry> groupEntries = [];
+            for (int j = 0; j < resources[0].Length; j++)
+            {
+                BindGroupEntry entry = new()
+                {
+                    Binding = (uint)j,
+                };
+
+                switch (resources[i][j].Value)
+                {
+                    case GPUBuffer buffer:
+                        entry.Buffer = buffer;
+                        break;
+                    case Sampler sampler:
+                        entry.Sampler = sampler;
+                        break;
+                    case TextureView textureView:
+                        entry.TextureView = textureView;
+                        break;
+                    default:
+                        throw new Exception($"Unknown resource type: {resources[i][j].GetType().Name}");
+                }
+
+                groupEntries.Add(entry);
+            }
+            var newBindGroup = device.CreateBindGroup(new()
+            {
+                Label = $"{label}.bindGroup{i}",
+                Layout = bindGroupLayout,
+                Entries = groupEntries.ToArray()
+            });
+            bindGroups.Add(newBindGroup);
+        }
+
+
+        return new BindGroupsObjectsAndLayout()
+        {
+            BindGroups = [.. bindGroups],
+            BindGroupLayout = bindGroupLayout
+        };
 
     }
+
+    public static RenderPipeline Create3DRenderPipeline(
+        Device device,
+        string label,
+        BindGroupLayout[] bindGroupLayouts,
+        string vertexShader,
+        VertexFormat[] vertexBufferFormats,
+        string fragmentShader,
+        TextureFormat presentationFormat,
+        bool depthTest = false,
+        PrimitiveTopology topology = PrimitiveTopology.TriangleList,
+        CullMode cullMode = CullMode.Back)
+    {
+        var pipelineLayout = device.CreatePipelineLayout(new PipelineLayoutDescriptor
+        {
+            Label = $"{label}.pipelineLayout",
+            BindGroupLayouts = bindGroupLayouts
+        });
+
+        var pipelineDescriptor = new RenderPipelineDescriptor
+        {
+            Label = $"{label}.pipeline",
+            Layout = pipelineLayout,
+            Vertex = ref WebGpuUtil.InlineInit(ref new VertexState
+            {
+                Module = device.CreateShaderModuleWGSL(new()
+                {
+                    Label = $"{label}.vertexShader",
+                    Code = vertexShader
+                }),
+                Buffers = vertexBufferFormats.Length != 0
+                    ? new[] { CreateVertexBufferLayout(vertexBufferFormats) }
+                    : System.Array.Empty<VertexBufferLayout>()
+            }),
+            Fragment = new FragmentState
+            {
+                Module = device.CreateShaderModuleWGSL(new()
+                {
+                    Code = fragmentShader
+                }),
+                Targets = new[]
+                {
+                    new ColorTargetState
+                    {
+                        Format = presentationFormat
+                    }
+                }
+            },
+            Primitive = new PrimitiveState
+            {
+                Topology = topology,
+                CullMode = cullMode
+            }
+        };
+
+        if (depthTest)
+        {
+            pipelineDescriptor.DepthStencil = new DepthStencilState
+            {
+                DepthCompare = CompareFunction.Less,
+                DepthWriteEnabled = OptionalBool.True,
+                Format = TextureFormat.Depth24Plus
+            };
+        }
+
+        return device.CreateRende
 }
 
 
