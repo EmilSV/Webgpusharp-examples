@@ -27,6 +27,26 @@ static byte[] ToBytes(Stream s)
 
 var asm = Assembly.GetExecutingAssembly();
 var cubeWGSL = ToBytes(asm.GetManifestResourceStream("Cameras.shaders.cube.wgsl")!);
+var currentCameraType = CameraType.WASD;
+
+CommandBuffer DrawGUI(GuiContext guiContext, Surface surface, out bool changeCameraType)
+{
+    guiContext.NewFrame();
+    ImGui.SetNextWindowBgAlpha(0.75f);
+    ImGui.SetNextWindowPos(new(340, 0));
+    ImGui.SetNextWindowSize(new(300, 40));
+    ImGui.Begin("Cameras",
+        ImGuiWindowFlags.NoMove |
+        ImGuiWindowFlags.NoResize |
+        ImGuiWindowFlags.NoTitleBar
+    );
+
+    changeCameraType = ImGuiUtils.EnumDropdown("Camera Type", ref currentCameraType);
+
+    ImGui.End();
+    guiContext.EndFrame();
+    return guiContext.Render(surface)!.Value!;
+}
 
 return Run("Cameras", WIDTH, HEIGHT, async runContext =>
 {
@@ -34,7 +54,7 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
 
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    //var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.GetGuiContext();
     var inputEvents = runContext.Input;
     var inputHandler = new InputHandler(inputEvents);
 
@@ -69,7 +89,7 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
     var surfaceCapabilities = surface.GetCapabilities(adapter)!;
     var surfaceFormat = surfaceCapabilities.Formats[0];
 
-    //guiContext.SetupIMGUI(device, surfaceFormat);
+    guiContext.SetupIMGUI(device, surfaceFormat);
 
     surface.Configure(new()
     {
@@ -217,7 +237,12 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
 
     Matrix4x4 GetModelViewProjectionMatrix(float deltaTime)
     {
-        var camera = camerasWASD;
+        BaseCamera camera = currentCameraType switch
+        {
+            CameraType.Arcball => camerasArcball,
+            CameraType.WASD => camerasWASD,
+            _ => throw new ArgumentOutOfRangeException()
+        };
         var viewMatrix = camera.Update(deltaTime, inputHandler.GetInput());
         modelViewProjectionMatrix = Matrix4x4.Multiply(viewMatrix, projectionMatrix);
         return modelViewProjectionMatrix;
@@ -267,7 +292,36 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
         passEncoder.SetVertexBuffer(0, verticesBuffer);
         passEncoder.Draw(Cube.CUBE_VERTEX_COUNT);
         passEncoder.End();
-        query.Submit(commandEncoder.Finish());
+
+        var oldCameraType = currentCameraType;
+        var guiCommandBuffer = DrawGUI(guiContext, surface, out var cameraTypeChanged);
+        if (cameraTypeChanged)
+        {
+            BaseCamera oldCamera = oldCameraType switch
+            {
+                CameraType.Arcball => camerasArcball,
+                CameraType.WASD => camerasWASD,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+            BaseCamera newCamera = currentCameraType switch
+            {
+                CameraType.Arcball => camerasArcball,
+                CameraType.WASD => camerasWASD,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+
+            newCamera.SetMatrix(oldCamera.GetMatrix());
+        }
+
+
+        query.Submit([commandEncoder.Finish(), guiCommandBuffer]);
         surface.Present();
     };
 });
+
+
+enum CameraType
+{
+    Arcball,
+    WASD
+}

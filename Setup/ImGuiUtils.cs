@@ -35,17 +35,19 @@ public static partial class ImGuiUtils
 
     }
 
-    public static void EnumDropdown<T>(ReadOnlySpan<char> label, ref T current)
+    public static bool EnumDropdown<T>(ReadOnlySpan<char> label, ref T current)
         where T : struct, Enum
     {
         var index = EnumTypeStore<T>.ValueToIndex[current];
         if (ImGui.Combo(label, ref index, EnumTypeStore<T>.Names, EnumTypeStore<T>.Names.Length))
         {
             current = EnumTypeStore<T>.Values[index];
+            return true;
         }
+        return false;
     }
 
-    public static void EnumDropdown<T>(ReadOnlySpan<char> label, ref T current, ReadOnlySpan<T> values)
+    public static bool EnumDropdown<T>(ReadOnlySpan<char> label, ref T current, ReadOnlySpan<T> values)
         where T : unmanaged, Enum
     {
         var comparer = EqualityComparer<T>.Default;
@@ -70,7 +72,9 @@ public static partial class ImGuiUtils
         if (ImGui.Combo(label, ref index, array, values.Length))
         {
             current = values[index];
+            return true;
         }
+        return false;
     }
 
 

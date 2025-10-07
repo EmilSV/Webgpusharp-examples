@@ -29,6 +29,16 @@ public class RunContext(
         return _guiContext;
     }
 
+    internal bool ProcessEventIMGUi(in SDL2.SDL.SDL_Event @event)
+    {
+        if (_guiContext == null)
+        {
+            return false;
+        }
+
+        return ImGui_Impl_SDL2.ProcessEvent(@event);
+    }
+
     internal void InvokeOnFrame()
     {
         _onFrame?.Invoke();

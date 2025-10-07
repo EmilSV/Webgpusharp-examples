@@ -2,6 +2,7 @@
     "cSpell.words": [
         "Arcball",
         "Backface",
+        "bitangent",
         "bitonic",
         "Convs",
         "Cubemap",
@@ -12,6 +13,7 @@
         "Uncaptured",
         "Unmap",
         "Unorm",
+        "Vecs",
         "WGPU",
         "WGSL",
         "Workgroups"

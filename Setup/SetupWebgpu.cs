@@ -126,6 +126,7 @@ public class SetupWebGPU
             {
                 while (SDL_PollEvent(out var @event) != 0)
                 {
+                    bool handled = runContext.ProcessEventIMGUi(@event);
                     switch (@event.type)
                     {
                         case SDL_EventType.SDL_QUIT:
