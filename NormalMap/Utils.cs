@@ -139,16 +139,15 @@ static class Utils
         {
             Label = $"{label}.pipeline",
             Layout = pipelineLayout,
-            Vertex = ref WebGpuUtil.InlineInit(ref new VertexState
+            Vertex = ref WebGpuUtil.InlineInit(new VertexState
             {
-                Module = device.CreateShaderModuleWGSL(new()
+                Module = device.CreateShaderModuleWGSL($"{label}.vertexShader", new()
                 {
-                    Label = $"{label}.vertexShader",
                     Code = vertexShader
                 }),
                 Buffers = vertexBufferFormats.Length != 0
-                    ? new[] { CreateVertexBufferLayout(vertexBufferFormats) }
-                    : System.Array.Empty<VertexBufferLayout>()
+                    ? [CreateVBuffer(vertexBufferFormats)]
+                    : []
             }),
             Fragment = new FragmentState
             {
@@ -181,7 +180,42 @@ static class Utils
             };
         }
 
-        return device.CreateRende
+        return device.CreateRenderPipeline(pipelineDescriptor);
+    }
+
+    public static VertexBufferLayout CreateVBuffer(VertexFormat[] vertexFormats)
+    {
+        var attributes = new VertexAttribute[vertexFormats.Length];
+        uint arrayStride = 0;
+
+        for (int i = 0; i < vertexFormats.Length; i++)
+        {
+            attributes[i] = new VertexAttribute
+            {
+                ShaderLocation = (uint)i,
+                Offset = arrayStride,
+                Format = vertexFormats[i]
+            };
+
+            arrayStride += (uint)ConvertVertexFormatToBytes(vertexFormats[i]);
+        }
+
+        return new VertexBufferLayout
+        {
+            ArrayStride = arrayStride,
+            Attributes = attributes
+        };
+    }
+
+    static int ConvertVertexFormatToBytes(VertexFormat format)
+    {
+        var parts = format.ToString().Split('x');
+        var digits = new string(parts[0].Where(char.IsDigit).ToArray());
+        var bytesPerElement = int.Parse(digits) / 8;
+
+        var components = parts.Length > 1 && int.TryParse(parts[1], out var parsed) ? parsed : 1;
+        return bytesPerElement * components;
+    }
 }
 
 
