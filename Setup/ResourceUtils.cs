@@ -68,4 +68,22 @@ public static class ResourceUtils
             writeSize: new(width, height)
         );
     }
+
+    public static void CopyExternalImageToTexture(
+        Queue queue, ImageData source, Texture texture)
+    {
+        queue.WriteTexture(
+            destination: new()
+            {
+                Texture = texture,
+            },
+            data: source.Data,
+            dataLayout: new()
+            {
+                BytesPerRow = 4u * source.Width,
+                RowsPerImage = source.Height,
+            },
+            writeSize: new(source.Width, source.Height)
+        );
+    }
 }
