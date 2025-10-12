@@ -7,7 +7,7 @@ sealed class Renderable
 {
     public required GPUBuffer VertexBuffer { get; init; }
     public required GPUBuffer IndexBuffer { get; init; }
-    public required int IndexCount { get; init; }
+    public required uint IndexCount { get; init; }
     public GPUBuffer? BindGroup { get; init; }
 }
 
@@ -50,9 +50,9 @@ sealed class Mesh
         ulong indicesSizeInBytes = (mesh.IndicesU16 != null)
                 ? mesh.IndicesU16.GetSizeInBytes()
                 : mesh.IndicesU32!.GetSizeInBytes();
-        int indicesCount = (mesh.IndicesU16 != null)
+        uint indicesCount = (uint)((mesh.IndicesU16 != null)
                 ? mesh.IndicesU16.Length
-                : mesh.IndicesU32!.Length;
+                : mesh.IndicesU32!.Length);
 
 
         var indexBuffer = device.CreateBuffer(new BufferDescriptor

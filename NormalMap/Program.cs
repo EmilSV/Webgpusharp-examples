@@ -3,15 +3,10 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-using ImGuiNET;
 using Setup;
 using WebGpuSharp;
-using WebGpuSharp.FFI;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
-using GPUBuffer = WebGpuSharp.Buffer;
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
@@ -98,23 +93,22 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
         Format = TextureFormat.Depth24Plus,
         Usage = TextureUsage.RenderAttachment
     });
+    var depthTextureView = depthTexture.CreateView();
 
     var spaceTransformsBuffer = device.CreateBuffer(new()
     {
         // Buffer holding projection, view, and model matrices plus padding bytes
-        Size = (uint)Unsafe.SizeOf<Matrix4x4>() * 4,
+        Size = (uint)Unsafe.SizeOf<SpaceTransformsBuffer>(),
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst
     });
 
-    const uint MAP_INFO_FlOAT_AMOUNT = 8;
-
     var mapInfoBuffer = device.CreateBuffer(new()
     {
-        Size = (uint)sizeof(float) * MAP_INFO_FlOAT_AMOUNT,
+        Size = (uint)Unsafe.SizeOf<MapInfo>(),
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
 
-    var mapInfoArray = new float[MAP_INFO_FlOAT_AMOUNT];
+    MapInfo mapInfo = new();
 
     Texture woodAlbedoTexture = LoadAndCreateTexture(device, "NormalMap.assets.wood_albedo.png");
     Texture spiralNormalTexture = LoadAndCreateTexture(device, "NormalMap.assets.spiral_normal.png");
@@ -214,7 +208,7 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
     );
 
     Matrix4x4 GetViewMatrix() => Matrix4x4.CreateLookAt(
-        cameraPosition: new Vector3(settings.CameraPosX, settings.CameraPosY, settings.CameraPosZ),
+        cameraPosition: settings.CameraPos,
         cameraTarget: new Vector3(0, 0, 0),
         cameraUpVector: new Vector3(0, 1, 0)
     );
@@ -251,11 +245,70 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
         ],
         fragmentShader: normalMapWGSL,
         presentationFormat: surfaceFormat
-
     );
+
+    int currentSurfaceBindGroup = 0;
+    void OnChangeTexture()
+    {
+        currentSurfaceBindGroup = (int)settings.Texture;
+    }
 
     runContext.OnFrame += () =>
     {
+        var viewMatrix = GetViewMatrix();
+        var worldViewMatrix = GetModelMatrix() * viewMatrix;
+        var worldViewProjMatrix = worldViewMatrix * projectionMatrix;
+        SpaceTransformsBuffer matrices = new() {
+            WorldViewProjMatrix = worldViewProjMatrix,
+            WorldViewMatrix = worldViewMatrix
+        };
+
+        // Update mapInfoBuffer
+        var lightPowWS = settings.LightPos;
+        var lightPoVS = Vector3.Transform(lightPowWS, viewMatrix);
+        var mode = GetMode();
+        var queue = device.GetQueue();
+
+        queue.WriteBuffer(
+            buffer: spaceTransformsBuffer,
+            bufferOffset: 0,
+            data: matrices
+        );
+
+        queue.WriteBuffer(mapInfoBuffer, mapInfo);
+
+        RenderPassDescriptor renderPassDescriptor = new()
+        {
+            ColorAttachments = [
+                new()
+                {
+                    View = surface.GetCurrentTexture()!.Texture!.CreateView(),
+                    ClearValue = new(0,0,0,1f),
+                    LoadOp = LoadOp.Clear,
+                    StoreOp = StoreOp.Store,
+                }
+            ],
+            DepthStencilAttachment = new()
+            {
+                View = depthTextureView,
+                DepthClearValue = 1f,
+                DepthLoadOp = LoadOp.Clear,
+                DepthStoreOp = StoreOp.Store,
+            }
+        };
+
+        var commandEncoder = device.CreateCommandEncoder();
+        var passEncoder = commandEncoder.BeginRenderPass(renderPassDescriptor);
+        // Draw textured Cube
+        passEncoder.SetPipeline(texturedCubePipeline);
+        passEncoder.SetBindGroup(0, frameBGDescriptor.BindGroups[0]);
+        passEncoder.SetBindGroup(1, surfaceBGDescriptor.BindGroups[currentSurfaceBindGroup]);
+        passEncoder.SetVertexBuffer(0, box.VertexBuffer);
+        passEncoder.SetIndexBuffer(box.IndexBuffer, IndexFormat.Uint16);
+        passEncoder.DrawIndexed(box.IndexCount);
+        passEncoder.End();
+        queue.Submit(commandEncoder.Finish());
+
         surface.Present();
     };
 });
@@ -277,15 +330,26 @@ enum TextureAtlas
     BrickWall = 2,
 }
 
+struct MapInfo
+{
+    public Vector3 LightPosVS;
+    public uint Mode;
+    public float LightIntensity;
+    public float DepthScale;
+    public float DepthLayers;
+}
+
+struct SpaceTransformsBuffer
+{
+    public Matrix4x4 WorldViewProjMatrix;
+    public Matrix4x4 WorldViewMatrix;
+}
+
 class GUISettings
 {
     public BumpMode BumpMode = BumpMode.NormalMap;
-    public float CameraPosX = 0.0f;
-    public float CameraPosY = 0.8f;
-    public float CameraPosZ = 1.4f;
-    public float LightPosX = 1.7f;
-    public float LightPosY = 0.7f;
-    public float LightPosZ = 1.9f;
+    public Vector3 CameraPos = new(0.0f, 0.8f, 1.4f);
+    public Vector3 LightPos = new(1.7f, 0.7f, 1.9f);
     public float LightIntensity = 5.0f;
     public float DepthScale = 0.05f;
     public float DepthLayers = 16;
