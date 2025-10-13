@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Cameras/bin/Debug/net9.0/Cameras.dll",
+            "program": "${workspaceFolder}/NormalMap/bin/Debug/net9.0/NormalMap.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/Cameras",
+            "cwd": "${workspaceFolder}/NormalMap",
             "console": "internalConsole",
             "stopAtEntry": false
         },

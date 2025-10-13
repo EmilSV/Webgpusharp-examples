@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
@@ -20,6 +21,62 @@ static byte[] ToBytes(Stream s)
     s.CopyTo(ms);
     return ms.ToArray();
 }
+
+static uint ToUniformBufferSize(uint originalSize)
+{
+    return originalSize + (originalSize % 16);
+}
+
+CommandBuffer DrawGUI(GuiContext guiContext, Surface surface, out bool textureChanged)
+{
+    static void ClampInput(string label, ref float value, float min, float max, float? step)
+    {
+        if (step.HasValue)
+        {
+            if (ImGui.InputFloat(label, ref value, step.Value))
+            {
+                value = Math.Clamp(value, min, max);
+            }
+        }
+        else
+        {
+            if (ImGui.InputFloat(label, ref value))
+            {
+                value = Math.Clamp(value, min, max);
+            }
+        }
+    }
+
+    guiContext.NewFrame();
+    ImGui.SetNextWindowBgAlpha(0.75f);
+    ImGui.SetNextWindowPos(new(340, 0));
+    ImGui.SetNextWindowSize(new(300, 260));
+    ImGui.Begin("Normal Map",
+        ImGuiWindowFlags.NoMove |
+        ImGuiWindowFlags.NoResize
+    );
+
+    ImGuiUtils.EnumDropdown("Bump Mode", ref settings.BumpMode);
+    textureChanged = ImGuiUtils.EnumDropdown("Texture", ref settings.Texture);
+    if (ImGui.CollapsingHeader("Light"))
+    {
+        ClampInput("lightPosX", ref settings.LightPos.X, -5, 5, 0.1f);
+        ClampInput("lightPosY", ref settings.LightPos.Y, -5, 5, 0.1f);
+        ClampInput("lightPosZ", ref settings.LightPos.Z, -5, 5, 0.1f);
+        ClampInput("lightIntensity", ref settings.LightIntensity, 0.0f, 10f, 0.1f);
+    }
+
+    if (ImGui.CollapsingHeader("Depth"))
+    {
+        ClampInput("depthScale", ref settings.DepthScale, 0, 0.1f, 0.01f);
+        ClampInput("depthLayers", ref settings.DepthLayers, 1, 32, 1f);
+    }
+
+    ImGui.End();
+    guiContext.EndFrame();
+    return guiContext.Render(surface)!.Value!;
+}
+
 
 
 Texture LoadAndCreateTexture(Device device, string path)
@@ -48,6 +105,7 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
 
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
+    var guiContext = runContext.GetGuiContext();
 
     var adapter = await instance.RequestAdapterAsync(new()
     {
@@ -74,6 +132,8 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
     var surfaceCapabilities = surface.GetCapabilities(adapter)!;
     var surfaceFormat = surfaceCapabilities.Formats[0];
 
+    guiContext.SetupIMGUI(device, surfaceFormat);
+
     surface.Configure(new()
     {
         Width = WIDTH,
@@ -98,17 +158,15 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
     var spaceTransformsBuffer = device.CreateBuffer(new()
     {
         // Buffer holding projection, view, and model matrices plus padding bytes
-        Size = (uint)Unsafe.SizeOf<SpaceTransformsBuffer>(),
+        Size = ToUniformBufferSize((uint)Unsafe.SizeOf<SpaceTransformsBuffer>()),
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst
     });
 
     var mapInfoBuffer = device.CreateBuffer(new()
     {
-        Size = (uint)Unsafe.SizeOf<MapInfo>(),
+        Size = ToUniformBufferSize((uint)Unsafe.SizeOf<MapInfo>()),
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
-
-    MapInfo mapInfo = new();
 
     Texture woodAlbedoTexture = LoadAndCreateTexture(device, "NormalMap.assets.wood_albedo.png");
     Texture spiralNormalTexture = LoadAndCreateTexture(device, "NormalMap.assets.spiral_normal.png");
@@ -244,7 +302,8 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
             VertexFormat.Float32x3 // bitangent
         ],
         fragmentShader: normalMapWGSL,
-        presentationFormat: surfaceFormat
+        presentationFormat: surfaceFormat,
+        depthTest: true
     );
 
     int currentSurfaceBindGroup = 0;
@@ -258,7 +317,8 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
         var viewMatrix = GetViewMatrix();
         var worldViewMatrix = GetModelMatrix() * viewMatrix;
         var worldViewProjMatrix = worldViewMatrix * projectionMatrix;
-        SpaceTransformsBuffer matrices = new() {
+        SpaceTransformsBuffer matrices = new()
+        {
             WorldViewProjMatrix = worldViewProjMatrix,
             WorldViewMatrix = worldViewMatrix
         };
@@ -269,11 +329,16 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
         var mode = GetMode();
         var queue = device.GetQueue();
 
-        queue.WriteBuffer(
-            buffer: spaceTransformsBuffer,
-            bufferOffset: 0,
-            data: matrices
-        );
+        queue.WriteBuffer(spaceTransformsBuffer, matrices);
+
+        var mapInfo = new MapInfo()
+        {
+            LightPosVS = lightPoVS,
+            Mode = mode,
+            LightIntensity = settings.LightIntensity,
+            DepthScale = settings.DepthScale,
+            DepthLayers = settings.DepthLayers
+        };
 
         queue.WriteBuffer(mapInfoBuffer, mapInfo);
 
@@ -307,7 +372,14 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
         passEncoder.SetIndexBuffer(box.IndexBuffer, IndexFormat.Uint16);
         passEncoder.DrawIndexed(box.IndexCount);
         passEncoder.End();
-        queue.Submit(commandEncoder.Finish());
+
+        var guiCommandBuffer = DrawGUI(guiContext, surface, out var textureChanged);
+        if (textureChanged)
+        {
+            OnChangeTexture();
+        }
+
+        queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
 
         surface.Present();
     };
@@ -348,8 +420,8 @@ struct SpaceTransformsBuffer
 class GUISettings
 {
     public BumpMode BumpMode = BumpMode.NormalMap;
-    public Vector3 CameraPos = new(0.0f, 0.8f, 1.4f);
-    public Vector3 LightPos = new(1.7f, 0.7f, 1.9f);
+    public Vector3 CameraPos = new(0.0f, 0.8f, -1.4f);
+    public Vector3 LightPos = new(1.7f, 0.7f, -1.9f);
     public float LightIntensity = 5.0f;
     public float DepthScale = 0.05f;
     public float DepthLayers = 16;
