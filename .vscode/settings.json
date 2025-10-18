@@ -16,6 +16,7 @@
         "Unmap",
         "Unorm",
         "Vecs",
+        "Verts",
         "WGPU",
         "WGSL",
         "Workgroups"

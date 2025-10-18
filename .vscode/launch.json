@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/NormalMap/bin/Debug/net9.0/NormalMap.dll",
+            "program": "${workspaceFolder}/ShadowMapping/bin/Debug/net9.0/ShadowMapping.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/NormalMap",
+            "cwd": "${workspaceFolder}/ShadowMapping",
             "console": "internalConsole",
             "stopAtEntry": false
         },

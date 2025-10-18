@@ -80,3 +80,4 @@
 *.lib filter=lfs diff=lfs merge=lfs
 *.obj filter=lfs diff=lfs merge=lfs
 *.exp filter=lfs diff=lfs merge=lfs
+*.bin filter=lfs diff=lfs merge=lfs
