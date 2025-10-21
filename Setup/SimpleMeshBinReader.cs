@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
 using System.Numerics;
 
+namespace Setup;
+
 /// <summary>
 /// A simple binary mesh format reader.
 /// The format is as follows:
@@ -14,7 +16,7 @@ using System.Numerics;
 /// - float32 u, float32 v * number of uvs
 /// All numeric values are stored in little-endian format.
 /// </summary>
-static class SimpleMeshBinReader
+public static class SimpleMeshBinReader
 {
     public class Mesh
     {

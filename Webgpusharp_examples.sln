@@ -57,6 +57,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NormalMap", "NormalMap\Norm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShadowMapping", "ShadowMapping\ShadowMapping.csproj", "{20255872-F5DB-481B-8A45-A06B2124A675}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeferredRendering", "DeferredRendering\DeferredRendering.csproj", "{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -331,6 +333,18 @@ Global
 		{20255872-F5DB-481B-8A45-A06B2124A675}.Release|x64.Build.0 = Release|Any CPU
 		{20255872-F5DB-481B-8A45-A06B2124A675}.Release|x86.ActiveCfg = Release|Any CPU
 		{20255872-F5DB-481B-8A45-A06B2124A675}.Release|x86.Build.0 = Release|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Debug|x64.Build.0 = Debug|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Debug|x86.Build.0 = Debug|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Release|x64.ActiveCfg = Release|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Release|x64.Build.0 = Release|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Release|x86.ActiveCfg = Release|Any CPU
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -358,6 +372,7 @@ Global
 		{53EFDFA7-988E-42D4-87B2-E0D25A31106B} = {802D5E57-321A-97D6-DBA1-8935AA58EBF1}
 		{0402B43D-8E19-4FCB-B42A-EBCD7762CCEE} = {802D5E57-321A-97D6-DBA1-8935AA58EBF1}
 		{20255872-F5DB-481B-8A45-A06B2124A675} = {802D5E57-321A-97D6-DBA1-8935AA58EBF1}
+		{D05CB76E-EEDA-4FBD-A40D-55477E74CE31} = {802D5E57-321A-97D6-DBA1-8935AA58EBF1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AF7148F1-819C-4230-A56D-B4BD35AD2987}

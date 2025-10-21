@@ -28,11 +28,10 @@ static T ToUniformBufferSize<T>(T originalSize)
 
 
 var asm = Assembly.GetExecutingAssembly();
-using var stream = asm.GetManifestResourceStream("ShadowMapping.assets.stanfordDragonData.bin")!;
-var mesh = await SimpleMeshBinReader.LoadData(stream);
 var fragmentWGSL = ToBytes(asm.GetManifestResourceStream("ShadowMapping.shaders.fragment.wgsl")!);
 var vertexWGSL = ToBytes(asm.GetManifestResourceStream("ShadowMapping.shaders.vertex.wgsl")!);
 var vertexShadowWGSL = ToBytes(asm.GetManifestResourceStream("ShadowMapping.shaders.vertexShadow.wgsl")!);
+var mesh = await StanfordDragon.LoadMeshAsync();
 
 return Run("Shadow Mapping", WIDTH, HEIGHT, async runContext =>
 {

@@ -12,6 +12,9 @@
     <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2" />
     <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
     <PackageReference Include="SixLabors.ImageSharp" Version="2.1.11" />
+    <EmbeddedResource Include="assets\*.bin"/>
+    <EmbeddedResource Include="assets\*.png"/>
+    <EmbeddedResource Include="assets\*.jpeg"/>
   </ItemGroup>
 
   <ItemGroup>
