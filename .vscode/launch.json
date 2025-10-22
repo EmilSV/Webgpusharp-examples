@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/ShadowMapping/bin/Debug/net9.0/ShadowMapping.dll",
+            "program": "${workspaceFolder}/DeferredRendering/bin/Debug/net9.0/DeferredRendering.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/ShadowMapping",
+            "cwd": "${workspaceFolder}/DeferredRendering",
             "console": "internalConsole",
             "stopAtEntry": false
         },
