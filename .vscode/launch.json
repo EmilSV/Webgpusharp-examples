@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/DeferredRendering/bin/Debug/net9.0/DeferredRendering.dll",
+            "program": "${workspaceFolder}/Particles/bin/Debug/net9.0/Particles.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/DeferredRendering",
+            "cwd": "${workspaceFolder}/Particles",
             "console": "internalConsole",
             "stopAtEntry": false
         },

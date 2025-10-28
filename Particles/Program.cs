@@ -17,6 +17,12 @@ static byte[] ToBytes(Stream s)
     return ms.ToArray();
 }
 
+static uint ToUniformBufferSize(uint originalSize)
+{
+    return originalSize + 16 - (originalSize % 16);
+}
+
+
 const int WIDTH = 640;
 const int HEIGHT = 480;
 const float ASPECT = (float)WIDTH / HEIGHT;
@@ -24,13 +30,32 @@ const float ASPECT = (float)WIDTH / HEIGHT;
 const int NUM_PARTICLES = 50000;
 const int PARTICLE_POSITION_OFFSET = 0;
 const int PARTICLE_COLOR_OFFSET = 4 * 4;
-const TextureFormat PRESENTATION_FORMAT = TextureFormat.RGBA16Float;
 var simulationParams = new SimulationParams();
 
 var asm = Assembly.GetExecutingAssembly();
 var particleWGSL = ToBytes(asm.GetManifestResourceStream("Particles.shaders.particle.wgsl")!);
 var probabilityMapWGSL = ToBytes(asm.GetManifestResourceStream("Particles.shaders.probabilityMap.wgsl")!);
+var random = new Random();
 
+
+CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
+{
+    guiContext.NewFrame();
+    ImGui.SetNextWindowBgAlpha(0.75f);
+    ImGui.SetNextWindowPos(new(340, 0));
+    ImGui.SetNextWindowSize(new(300, 80));
+    ImGui.Begin("Particles",
+        ImGuiWindowFlags.NoMove |
+        ImGuiWindowFlags.NoResize
+    );
+
+    ImGui.Checkbox("Simulate", ref simulationParams.Simulate);
+    ImGui.InputFloat("Delta Time", ref simulationParams.DeltaTime);
+    
+    ImGui.End();
+    guiContext.EndFrame();
+    return guiContext.Render(surface)!.Value!;
+}
 
 
 return Run("Particles", WIDTH, HEIGHT, async runContext =>
@@ -39,11 +64,12 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
 
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
+    var guiContext = runContext.GetGuiContext();
 
-    var adapter = await instance.RequestAdapterAsync(new()
+    Adapter adapter = await instance.RequestAdapterAsync(new()
     {
-        CompatibleSurface = surface,
-        FeatureLevel = FeatureLevel.Compatibility
+        PowerPreference = PowerPreference.HighPerformance,
+        CompatibleSurface = surface
     });
 
     var device = await adapter.RequestDeviceAsync(new()
@@ -65,19 +91,16 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
     var surfaceCapabilities = surface.GetCapabilities(adapter)!;
     var surfaceFormat = surfaceCapabilities.Formats[0];
 
+    guiContext.SetupIMGUI(device, surfaceFormat);
+
     void configureContext()
     {
-        SurfaceColorManagement colorManagement = new()
-        {
-            ToneMappingMode = simulationParams.ToneMappingMode
-        };
-
-        surface.Configure(new(colorManagement)
+        surface.Configure(new()
         {
             Width = WIDTH,
             Height = HEIGHT,
             Usage = TextureUsage.RenderAttachment,
-            Format = PRESENTATION_FORMAT,
+            Format = surfaceFormat,
             Device = device,
             PresentMode = PresentMode.Fifo,
             AlphaMode = CompositeAlphaMode.Auto,
@@ -86,7 +109,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
 
     var particlesBuffer = device.CreateBuffer(new()
     {
-        Size = (ulong)(NUM_PARTICLES * Marshal.SizeOf<Particle>()),
+        Size = (ulong)(NUM_PARTICLES * Unsafe.SizeOf<Particle>()),
         Usage = BufferUsage.Vertex | BufferUsage.Storage,
     });
 
@@ -103,7 +126,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
             {
                 new VertexBufferLayout()
                 {
-                    ArrayStride = (ulong)Marshal.SizeOf<Particle>(),
+                    ArrayStride = (ulong)Unsafe.SizeOf<Particle>(),
                     StepMode = VertexStepMode.Instance,
                     Attributes = new[]
                     {
@@ -147,7 +170,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
             [
                 new()
                 {
-                    Format = PRESENTATION_FORMAT,
+                    Format = surfaceFormat,
                     Blend = new()
                     {
                         Color = new()
@@ -187,7 +210,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
 
     var uniformBuffer = device.CreateBuffer(new()
     {
-        Size = (ulong)Marshal.SizeOf<RenderParams>(),
+        Size = (ulong)Unsafe.SizeOf<RenderParams>(),
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
 
@@ -203,27 +226,6 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
             },
         ],
     });
-
-    var renderPassDescriptor = new RenderPassDescriptor()
-    {
-        ColorAttachments =
-        [
-            new()
-            {
-                View = null!, // Assigned later
-                ClearValue = new Color(0, 0, 0, 1),
-                LoadOp = LoadOp.Clear,
-                StoreOp = StoreOp.Store,
-            },
-        ],
-        DepthStencilAttachment = new()
-        {
-            View = depthTexture.CreateView(),
-            DepthClearValue = 1.0f,
-            DepthLoadOp = LoadOp.Clear,
-            DepthStoreOp = StoreOp.Store,
-        },
-    };
 
     Vector2[] vertexData = [
         new(-1.0f, -1.0f), new(+1.0f, -1.0f), new(-1.0f, +1.0f),
@@ -241,8 +243,279 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
     quadVertexBuffer.Unmap();
 
     // Texture
-    bool IsPowerOf2(int v) => (Math.Log2(v) % 1) == 0;
+    bool IsPowerOf2(long v) => (Math.Log2(v) % 1) == 0;
+    var imageStream = ResourceUtils.GetEmbeddedResourceStream("Particles.assets.img.webgpu.png", asm);
+    var imageData = ResourceUtils.LoadImage(imageStream!);
+    Debug.Assert(imageData.Width == imageData.Height, "image must be square");
+    Debug.Assert(IsPowerOf2(imageData.Width), "image must be a power of 2");
 
+    // Calculate number of mip levels required to generate the probability map
+    int mipLevelCount = (int)(Math.Log2(Math.Max(imageData.Width, imageData.Height)) + 1);
+    var texture = device.CreateTexture(new()
+    {
+        Size = new(imageData.Width, imageData.Height, 1),
+        MipLevelCount = (uint)mipLevelCount,
+        Format = TextureFormat.RGBA8Unorm,
+        Usage =
+        TextureUsage.TextureBinding |
+        TextureUsage.StorageBinding |
+        TextureUsage.CopyDst |
+        TextureUsage.RenderAttachment,
+    });
+    ResourceUtils.CopyExternalImageToTexture(query, imageData, texture);
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Probability map generation
+    // The 0'th mip level of texture holds the color data and spawn-probability in
+    // the alpha channel. The mip levels 1..N are generated to hold spawn
+    // probabilities up to the top 1x1 mip level.
+    //////////////////////////////////////////////////////////////////////////////
+    {
+        var probabilityMapImportLevelPipeline = device.CreateComputePipeline(new()
+        {
+            Layout = null!,
+            Compute = new()
+            {
+                Module = device.CreateShaderModuleWGSL(new()
+                {
+                    Code = probabilityMapWGSL,
+                }),
+                EntryPoint = "import_level",
+            },
+        });
+        var probabilityMapExportLevelPipeline = device.CreateComputePipeline(new()
+        {
+            Layout = null!,
+            Compute = new()
+            {
+                Module = device.CreateShaderModuleWGSL(new()
+                {
+                    Code = probabilityMapWGSL,
+                }),
+                EntryPoint = "export_level",
+            },
+        });
+
+        var probabilityMapUBOBuffer = device.CreateBuffer(new()
+        {
+            Size = ToUniformBufferSize(sizeof(uint)),
+            Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
+        });
+
+        var buffer_a = device.CreateBuffer(new()
+        {
+            Size = texture.GetWidth() * texture.GetHeight() * 4,
+            Usage = BufferUsage.Storage,
+        });
+
+        var buffer_b = device.CreateBuffer(new()
+        {
+            Size = buffer_a.GetSize(),
+            Usage = BufferUsage.Storage,
+        });
+
+        query.WriteBuffer(probabilityMapUBOBuffer, 0, texture.GetWidth());
+
+        var commandEncoder = device.CreateCommandEncoder();
+        for (int level = 0; level < mipLevelCount; level++)
+        {
+            var levelWidth = Math.Max(1, texture.GetWidth() >> level);
+            var levelHeight = Math.Max(1, texture.GetHeight() >> level);
+            var pipeline =
+                level == 0
+                    ? probabilityMapImportLevelPipeline.GetBindGroupLayout(0)
+                    : probabilityMapExportLevelPipeline.GetBindGroupLayout(0);
+            var probabilityMapBindGroup = device.CreateBindGroup(new()
+            {
+                Layout = pipeline,
+                Entries =
+                [
+                    new()
+                    {
+                        // ubo
+                        Binding = 0,
+                        Buffer = probabilityMapUBOBuffer,
+                    },
+                    new()
+                    {
+                        // buf_in
+                        Binding = 1,
+                        Buffer = (level & 1) != 0 ? buffer_a : buffer_b,
+                    },
+                    new()
+                    {
+                        // buf_out
+                        Binding = 2,
+                        Buffer = (level & 1) != 0 ? buffer_b : buffer_a,
+                    },
+                    new()
+                    {
+                        // tex_in / tex_out
+                        Binding = 3,
+                        TextureView = texture.CreateView(new()
+                        {
+                            Format = TextureFormat.RGBA8Unorm,
+                            Dimension = TextureViewDimension.D2,
+                            BaseMipLevel = (uint)level,
+                            MipLevelCount = 1,
+                        }),
+                    },
+                ],
+            });
+
+            if (level == 0)
+            {
+                var passEncoder = commandEncoder.BeginComputePass();
+                passEncoder.SetPipeline(probabilityMapImportLevelPipeline);
+                passEncoder.SetBindGroup(0, probabilityMapBindGroup);
+                passEncoder.DispatchWorkgroups((uint)Math.Ceiling(levelWidth / 64.0), levelHeight);
+                passEncoder.End();
+            }
+            else
+            {
+                var passEncoder = commandEncoder.BeginComputePass();
+                passEncoder.SetPipeline(probabilityMapExportLevelPipeline);
+                passEncoder.SetBindGroup(0, probabilityMapBindGroup);
+                passEncoder.DispatchWorkgroups((uint)Math.Ceiling(levelWidth / 64.0), levelHeight);
+                passEncoder.End();
+            }
+        }
+        query.Submit([commandEncoder.Finish()]);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Simulation compute pipeline
+    //////////////////////////////////////////////////////////////////////////////
+    var simulationUBOBuffer = device.CreateBuffer(new()
+    {
+        Size = (ulong)Unsafe.SizeOf<SimulationUBOParams>(),
+        Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
+    });
+
+
+    var computePipeline = device.CreateComputePipeline(new()
+    {
+        Layout = null!,
+        Compute = new()
+        {
+            Module = device.CreateShaderModuleWGSL(new()
+            {
+                Code = particleWGSL,
+            }),
+            EntryPoint = "simulate",
+        },
+    });
+
+    var computeBindGroup = device.CreateBindGroup(new()
+    {
+        Layout = computePipeline.GetBindGroupLayout(0),
+        Entries =
+        [
+            new()
+            {
+                Binding = 0,
+                Buffer = simulationUBOBuffer,
+            },
+            new()
+            {
+                Binding = 1,
+                Buffer = particlesBuffer,
+                Offset = 0,
+                Size = (ulong)(NUM_PARTICLES * Unsafe.SizeOf<Particle>()),
+            },
+            new()
+            {
+                Binding = 2,
+                TextureView = texture.CreateView(),
+            },
+        ],
+    });
+
+    var projection = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI * 2 / 5, ASPECT, 1.0f, 100.0f);
+    var view = Matrix4x4.Identity;
+    var mvp = Matrix4x4.Identity;
+
+    void Frame()
+    {
+        query.WriteBuffer(
+            simulationUBOBuffer,
+            0,
+            new SimulationUBOParams
+            {
+                DeltaTime = simulationParams.Simulate ? simulationParams.DeltaTime : 0.0f,
+                BrightnessFactor = simulationParams.BrightnessFactor,
+                Seed = new(
+                    x: random.NextSingle() * 100,
+                    y: random.NextSingle() * 100,
+                    z: 1.0f + random.NextSingle(),
+                    w: 1.0f + random.NextSingle()
+                )
+            });
+
+        view = Matrix4x4.CreateTranslation(0, 0, -3);
+        view.RotateX(MathF.PI * -0.2f);
+
+        mvp = Matrix4x4.Multiply(view, projection);
+
+        query.WriteBuffer(
+            uniformBuffer,
+            0,
+            new RenderParams()
+            {
+                ModelViewProjectionMatrix = mvp,
+                Right = new(view.M11, view.M21, view.M31),
+                Up = new(view.M12, view.M22, view.M32),
+            }
+        );
+
+        var swapChainTexture = surface.GetCurrentTexture();
+
+        var renderPassDescriptor = new RenderPassDescriptor()
+        {
+            ColorAttachments =
+            [
+                new()
+                {
+                    View = swapChainTexture.Texture!.CreateView(),
+                    ClearValue = new Color(0, 0, 0, 1),
+                    LoadOp = LoadOp.Clear,
+                    StoreOp = StoreOp.Store,
+                },
+            ],
+            DepthStencilAttachment = new()
+            {
+                View = depthTexture.CreateView(),
+                DepthClearValue = 1.0f,
+                DepthLoadOp = LoadOp.Clear,
+                DepthStoreOp = StoreOp.Store,
+            },
+        };
+
+        var commandEncoder = device.CreateCommandEncoder();
+        {
+            var passEncoder = commandEncoder.BeginComputePass();
+            passEncoder.SetPipeline(computePipeline);
+            passEncoder.SetBindGroup(0, computeBindGroup);
+            passEncoder.DispatchWorkgroups((uint)Math.Ceiling(NUM_PARTICLES / 64.0));
+            passEncoder.End();
+        }
+        {
+            var passEncoder = commandEncoder.BeginRenderPass(renderPassDescriptor);
+            passEncoder.SetPipeline(renderPipeline);
+            passEncoder.SetBindGroup(0, uniformBindGroup);
+            passEncoder.SetVertexBuffer(0, particlesBuffer);
+            passEncoder.SetVertexBuffer(1, quadVertexBuffer);
+            passEncoder.Draw(6, NUM_PARTICLES, 0, 0);
+            passEncoder.End();
+        }
+
+        var guiCommandBuffer = DrawGui(guiContext, surface);
+
+        query.Submit([commandEncoder.Finish(), guiCommandBuffer]);
+        surface.Present();
+    }
+    configureContext();
+    runContext.OnFrame += Frame;
 });
 
 [StructLayout(LayoutKind.Sequential)]
@@ -265,484 +538,21 @@ struct RenderParams
     private float _pad1;
 };
 
+[StructLayout(LayoutKind.Sequential)]
+struct SimulationUBOParams
+{
+    public float DeltaTime;
+    public float BrightnessFactor;
+    private Vector2 _pad0;
+    public Vector4 Seed;
+}
+
 class SimulationParams
 {
     public bool Simulate = true;
     public float DeltaTime = 0.04f;
+    //Right now ToneMappingMode is not supported in dawn native
     public ToneMappingMode ToneMappingMode = ToneMappingMode.Standard;
+    //Right now ToneMappingMode is not supported in dawn native
     public float BrightnessFactor = 1.0f;
 }
-
-// import { mat4, vec3 } from 'wgpu-matrix';
-// import { GUI } from 'dat.gui';
-
-// import particleWGSL from './particle.wgsl';
-// import probabilityMapWGSL from './probabilityMap.wgsl';
-// import { quitIfWebGPUNotAvailable } from '../util';
-
-// const numParticles = 50000;
-// const particlePositionOffset = 0;
-// const particleColorOffset = 4 * 4;
-// const particleInstanceByteSize =
-//   3 * 4 + // position
-//   1 * 4 + // lifetime
-//   4 * 4 + // color
-//   3 * 4 + // velocity
-//   1 * 4 + // padding
-//   0;
-
-// const canvas = document.querySelector('canvas') as HTMLCanvasElement;
-// const adapter = await navigator.gpu?.requestAdapter({
-//   featureLevel: 'compatibility',
-// });
-// const device = await adapter?.requestDevice();
-// quitIfWebGPUNotAvailable(adapter, device);
-
-// const context = canvas.getContext('webgpu');
-
-// const devicePixelRatio = window.devicePixelRatio;
-// canvas.width = canvas.clientWidth * devicePixelRatio;
-// canvas.height = canvas.clientHeight * devicePixelRatio;
-// const presentationFormat = 'rgba16float';
-
-// function configureContext() {
-//   context.configure({
-//     device,
-//     format: presentationFormat,
-//     toneMapping: { mode: simulationParams.toneMappingMode },
-//   });
-//   hdrFolder.name = getHdrFolderName();
-// }
-
-// const particlesBuffer = device.createBuffer({
-//   size: numParticles * particleInstanceByteSize,
-//   usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE,
-// });
-
-// const renderPipeline = device.createRenderPipeline({
-//   layout: 'auto',
-//   vertex: {
-//     module: device.createShaderModule({
-//       code: particleWGSL,
-//     }),
-//     buffers: [
-//       {
-//         // instanced particles buffer
-//         arrayStride: particleInstanceByteSize,
-//         stepMode: 'instance',
-//         attributes: [
-//           {
-//             // position
-//             shaderLocation: 0,
-//             offset: particlePositionOffset,
-//             format: 'float32x3',
-//           },
-//           {
-//             // color
-//             shaderLocation: 1,
-//             offset: particleColorOffset,
-//             format: 'float32x4',
-//           },
-//         ],
-//       },
-//       {
-//         // quad vertex buffer
-//         arrayStride: 2 * 4, // vec2f
-//         stepMode: 'vertex',
-//         attributes: [
-//           {
-//             // vertex positions
-//             shaderLocation: 2,
-//             offset: 0,
-//             format: 'float32x2',
-//           },
-//         ],
-//       },
-//     ],
-//   },
-//   fragment: {
-//     module: device.createShaderModule({
-//       code: particleWGSL,
-//     }),
-//     targets: [
-//       {
-//         format: presentationFormat,
-//         blend: {
-//           color: {
-//             srcFactor: 'src-alpha',
-//             dstFactor: 'one',
-//             operation: 'add',
-//           },
-//           alpha: {
-//             srcFactor: 'zero',
-//             dstFactor: 'one',
-//             operation: 'add',
-//           },
-//         },
-//       },
-//     ],
-//   },
-//   primitive: {
-//     topology: 'triangle-list',
-//   },
-
-//   depthStencil: {
-//     depthWriteEnabled: false,
-//     depthCompare: 'less',
-//     format: 'depth24plus',
-//   },
-// });
-
-// const depthTexture = device.createTexture({
-//   size: [canvas.width, canvas.height],
-//   format: 'depth24plus',
-//   usage: GPUTextureUsage.RENDER_ATTACHMENT,
-// });
-
-// const uniformBufferSize =
-//   4 * 4 * 4 + // modelViewProjectionMatrix : mat4x4f
-//   3 * 4 + // right : vec3f
-//   4 + // padding
-//   3 * 4 + // up : vec3f
-//   4 + // padding
-//   0;
-// const uniformBuffer = device.createBuffer({
-//   size: uniformBufferSize,
-//   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-// });
-
-// const uniformBindGroup = device.createBindGroup({
-//   layout: renderPipeline.getBindGroupLayout(0),
-//   entries: [
-//     {
-//       binding: 0,
-//       resource: {
-//         buffer: uniformBuffer,
-//       },
-//     },
-//   ],
-// });
-
-// const renderPassDescriptor: GPURenderPassDescriptor = {
-//   colorAttachments: [
-//     {
-//       view: undefined, // Assigned later
-//       clearValue: [0, 0, 0, 1],
-//       loadOp: 'clear',
-//       storeOp: 'store',
-//     },
-//   ],
-//   depthStencilAttachment: {
-//     view: depthTexture.createView(),
-
-//     depthClearValue: 1.0,
-//     depthLoadOp: 'clear',
-//     depthStoreOp: 'store',
-//   },
-// };
-
-// //////////////////////////////////////////////////////////////////////////////
-// // Quad vertex buffer
-// //////////////////////////////////////////////////////////////////////////////
-// const quadVertexBuffer = device.createBuffer({
-//   size: 6 * 2 * 4, // 6x vec2f
-//   usage: GPUBufferUsage.VERTEX,
-//   mappedAtCreation: true,
-// });
-// // prettier-ignore
-// const vertexData = [
-//   -1.0, -1.0, +1.0, -1.0, -1.0, +1.0, -1.0, +1.0, +1.0, -1.0, +1.0, +1.0,
-// ];
-// new Float32Array(quadVertexBuffer.getMappedRange()).set(vertexData);
-// quadVertexBuffer.unmap();
-
-// //////////////////////////////////////////////////////////////////////////////
-// // Texture
-// //////////////////////////////////////////////////////////////////////////////
-// const isPowerOf2 = (v: number) => Math.log2(v) % 1 === 0;
-// const response = await fetch('../../assets/img/webgpu.png');
-// const imageBitmap = await createImageBitmap(await response.blob());
-// assert(imageBitmap.width === imageBitmap.height, 'image must be square');
-// assert(isPowerOf2(imageBitmap.width), 'image must be a power of 2');
-
-// // Calculate number of mip levels required to generate the probability map
-// const mipLevelCount =
-//   (Math.log2(Math.max(imageBitmap.width, imageBitmap.height)) + 1) | 0;
-// const texture = device.createTexture({
-//   size: [imageBitmap.width, imageBitmap.height, 1],
-//   mipLevelCount,
-//   format: 'rgba8unorm',
-//   usage:
-//     GPUTextureUsage.TEXTURE_BINDING |
-//     GPUTextureUsage.STORAGE_BINDING |
-//     GPUTextureUsage.COPY_DST |
-//     GPUTextureUsage.RENDER_ATTACHMENT,
-// });
-// device.queue.copyExternalImageToTexture(
-//   { source: imageBitmap },
-//   { texture: texture },
-//   [imageBitmap.width, imageBitmap.height]
-// );
-
-// //////////////////////////////////////////////////////////////////////////////
-// // Probability map generation
-// // The 0'th mip level of texture holds the color data and spawn-probability in
-// // the alpha channel. The mip levels 1..N are generated to hold spawn
-// // probabilities up to the top 1x1 mip level.
-// //////////////////////////////////////////////////////////////////////////////
-// {
-//   const probabilityMapImportLevelPipeline = device.createComputePipeline({
-//     layout: 'auto',
-//     compute: {
-//       module: device.createShaderModule({ code: probabilityMapWGSL }),
-//       entryPoint: 'import_level',
-//     },
-//   });
-//   const probabilityMapExportLevelPipeline = device.createComputePipeline({
-//     layout: 'auto',
-//     compute: {
-//       module: device.createShaderModule({ code: probabilityMapWGSL }),
-//       entryPoint: 'export_level',
-//     },
-//   });
-
-//   const probabilityMapUBOBufferSize =
-//     1 * 4 + // stride
-//     3 * 4 + // padding
-//     0;
-//   const probabilityMapUBOBuffer = device.createBuffer({
-//     size: probabilityMapUBOBufferSize,
-//     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-//   });
-//   const buffer_a = device.createBuffer({
-//     size: texture.width * texture.height * 4,
-//     usage: GPUBufferUsage.STORAGE,
-//   });
-//   const buffer_b = device.createBuffer({
-//     size: buffer_a.size,
-//     usage: GPUBufferUsage.STORAGE,
-//   });
-//   device.queue.writeBuffer(
-//     probabilityMapUBOBuffer,
-//     0,
-//     new Uint32Array([texture.width])
-//   );
-//   const commandEncoder = device.createCommandEncoder();
-//   for (let level = 0; level < texture.mipLevelCount; level++) {
-//     const levelWidth = Math.max(1, texture.width >> level);
-//     const levelHeight = Math.max(1, texture.height >> level);
-//     const pipeline =
-//       level == 0
-//         ? probabilityMapImportLevelPipeline.getBindGroupLayout(0)
-//         : probabilityMapExportLevelPipeline.getBindGroupLayout(0);
-//     const probabilityMapBindGroup = device.createBindGroup({
-//       layout: pipeline,
-//       entries: [
-//         {
-//           // ubo
-//           binding: 0,
-//           resource: { buffer: probabilityMapUBOBuffer },
-//         },
-//         {
-//           // buf_in
-//           binding: 1,
-//           resource: { buffer: level & 1 ? buffer_a : buffer_b },
-//         },
-//         {
-//           // buf_out
-//           binding: 2,
-//           resource: { buffer: level & 1 ? buffer_b : buffer_a },
-//         },
-//         {
-//           // tex_in / tex_out
-//           binding: 3,
-//           resource: texture.createView({
-//             format: 'rgba8unorm',
-//             dimension: '2d',
-//             baseMipLevel: level,
-//             mipLevelCount: 1,
-//           }),
-//         },
-//       ],
-//     });
-//     if (level == 0) {
-//       const passEncoder = commandEncoder.beginComputePass();
-//       passEncoder.setPipeline(probabilityMapImportLevelPipeline);
-//       passEncoder.setBindGroup(0, probabilityMapBindGroup);
-//       passEncoder.dispatchWorkgroups(Math.ceil(levelWidth / 64), levelHeight);
-//       passEncoder.end();
-//     } else {
-//       const passEncoder = commandEncoder.beginComputePass();
-//       passEncoder.setPipeline(probabilityMapExportLevelPipeline);
-//       passEncoder.setBindGroup(0, probabilityMapBindGroup);
-//       passEncoder.dispatchWorkgroups(Math.ceil(levelWidth / 64), levelHeight);
-//       passEncoder.end();
-//     }
-//   }
-//   device.queue.submit([commandEncoder.finish()]);
-// }
-
-// //////////////////////////////////////////////////////////////////////////////
-// // Simulation compute pipeline
-// //////////////////////////////////////////////////////////////////////////////
-// const simulationParams = {
-//   simulate: true,
-//   deltaTime: 0.04,
-//   toneMappingMode: 'standard' as GPUCanvasToneMappingMode,
-//   brightnessFactor: 1.0,
-// };
-
-// const simulationUBOBufferSize =
-//   1 * 4 + // deltaTime
-//   1 * 4 + // brightnessFactor
-//   2 * 4 + // padding
-//   4 * 4 + // seed
-//   0;
-// const simulationUBOBuffer = device.createBuffer({
-//   size: simulationUBOBufferSize,
-//   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-// });
-
-// const gui = new GUI();
-// gui.width = 325;
-// gui.add(simulationParams, 'simulate');
-// gui.add(simulationParams, 'deltaTime');
-// const hdrFolder = gui.addFolder('');
-// hdrFolder
-//   .add(simulationParams, 'toneMappingMode', ['standard', 'extended'])
-//   .onChange(configureContext);
-// hdrFolder.add(simulationParams, 'brightnessFactor', 0, 4, 0.1);
-// hdrFolder.open();
-// const hdrMediaQuery = window.matchMedia('(dynamic-range: high)');
-// function getHdrFolderName() {
-//   if (!hdrMediaQuery.matches) {
-//     return "HDR settings ⚠️ Display isn't compatible";
-//   }
-//   if (!('getConfiguration' in GPUCanvasContext.prototype)) {
-//     return 'HDR settings';
-//   }
-//   if (
-//     simulationParams.toneMappingMode === 'extended' &&
-//     context.getConfiguration().toneMapping?.mode !== 'extended'
-//   ) {
-//     return "HDR settings ⚠️ Browser doesn't support HDR canvas";
-//   }
-//   return 'HDR settings';
-// }
-// hdrMediaQuery.onchange = () => {
-//   hdrFolder.name = getHdrFolderName();
-// };
-
-// const computePipeline = device.createComputePipeline({
-//   layout: 'auto',
-//   compute: {
-//     module: device.createShaderModule({
-//       code: particleWGSL,
-//     }),
-//     entryPoint: 'simulate',
-//   },
-// });
-// const computeBindGroup = device.createBindGroup({
-//   layout: computePipeline.getBindGroupLayout(0),
-//   entries: [
-//     {
-//       binding: 0,
-//       resource: {
-//         buffer: simulationUBOBuffer,
-//       },
-//     },
-//     {
-//       binding: 1,
-//       resource: {
-//         buffer: particlesBuffer,
-//         offset: 0,
-//         size: numParticles * particleInstanceByteSize,
-//       },
-//     },
-//     {
-//       binding: 2,
-//       resource: texture.createView(),
-//     },
-//   ],
-// });
-
-// const aspect = canvas.width / canvas.height;
-// const projection = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
-// const view = mat4.create();
-// const mvp = mat4.create();
-
-// function frame() {
-//   device.queue.writeBuffer(
-//     simulationUBOBuffer,
-//     0,
-//     new Float32Array([
-//       simulationParams.simulate ? simulationParams.deltaTime : 0.0,
-//       simulationParams.brightnessFactor,
-//       0.0,
-//       0.0, // padding
-//       Math.random() * 100,
-//       Math.random() * 100, // seed.xy
-//       1 + Math.random(),
-//       1 + Math.random(), // seed.zw
-//     ])
-//   );
-
-//   mat4.identity(view);
-//   mat4.translate(view, vec3.fromValues(0, 0, -3), view);
-//   mat4.rotateX(view, Math.PI * -0.2, view);
-//   mat4.multiply(projection, view, mvp);
-
-//   // prettier-ignore
-//   device.queue.writeBuffer(
-//     uniformBuffer,
-//     0,
-//     new Float32Array([
-//       // modelViewProjectionMatrix
-//       mvp[0], mvp[1], mvp[2], mvp[3],
-//       mvp[4], mvp[5], mvp[6], mvp[7],
-//       mvp[8], mvp[9], mvp[10], mvp[11],
-//       mvp[12], mvp[13], mvp[14], mvp[15],
-
-//       view[0], view[4], view[8], // right
-
-//       0, // padding
-
-//       view[1], view[5], view[9], // up
-
-//       0, // padding
-//     ])
-//   );
-//   const swapChainTexture = context.getCurrentTexture();
-//   // prettier-ignore
-//   renderPassDescriptor.colorAttachments[0].view = swapChainTexture.createView();
-
-//   const commandEncoder = device.createCommandEncoder();
-//   {
-//     const passEncoder = commandEncoder.beginComputePass();
-//     passEncoder.setPipeline(computePipeline);
-//     passEncoder.setBindGroup(0, computeBindGroup);
-//     passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
-//     passEncoder.end();
-//   }
-//   {
-//     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-//     passEncoder.setPipeline(renderPipeline);
-//     passEncoder.setBindGroup(0, uniformBindGroup);
-//     passEncoder.setVertexBuffer(0, particlesBuffer);
-//     passEncoder.setVertexBuffer(1, quadVertexBuffer);
-//     passEncoder.draw(6, numParticles, 0, 0);
-//     passEncoder.end();
-//   }
-
-//   device.queue.submit([commandEncoder.finish()]);
-
-//   requestAnimationFrame(frame);
-// }
-// configureContext();
-// requestAnimationFrame(frame);
-
-// function assert(cond: boolean, msg = '') {
-//   if (!cond) {
-//     throw new Error(msg);
-//   }
-// }
