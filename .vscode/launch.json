@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Particles/bin/Debug/net9.0/Particles.dll",
+            "program": "${workspaceFolder}/Points/bin/Debug/net9.0/Points.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/Particles",
+            "cwd": "${workspaceFolder}/Points",
             "console": "internalConsole",
             "stopAtEntry": false
         },

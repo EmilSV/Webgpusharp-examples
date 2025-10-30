@@ -89,7 +89,7 @@ public class GuiContext
         {
             RenderPassDescriptor renderPassDesc = new()
             {
-                label = "Pass IMGUI",
+                Label = "Pass IMGUI",
                 ColorAttachments = colorAttachments,
                 DepthStencilAttachment = null
             };

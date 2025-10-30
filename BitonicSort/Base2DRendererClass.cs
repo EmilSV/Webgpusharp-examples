@@ -96,7 +96,7 @@ sealed class ManagedRenderPassDescriptor
     {
         return new RenderPassDescriptor
         {
-            label = Label,
+            Label = Label,
             ColorAttachments = ColorAttachments,
             DepthStencilAttachment = DepthStencilAttachment,
             OcclusionQuerySet = OcclusionQuerySet,

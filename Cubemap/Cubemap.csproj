@@ -6,7 +6,6 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="ImGui.NET" Version="1.91.0.1"></PackageReference>
         <ProjectReference Include="..\WebGPUSharp\WebGpuSharp.csproj"></ProjectReference>
         <ProjectReference Include="..\Setup\Setup.csproj"></ProjectReference>
         <EmbeddedResource Include="cubemap\*.jpg"></EmbeddedResource>
@@ -15,6 +14,6 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2"></PackageReference>
-        <PackageReference Include="ppy.SDL2-CS" Version="1.0.741-alpha"></PackageReference>
+        <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
     </ItemGroup>
 </Project>
