@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Points/bin/Debug/net9.0/Points.dll",
+            "program": "${workspaceFolder}/PrimitivePicking/bin/Debug/net9.0/PrimitivePicking.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/Points",
+            "cwd": "${workspaceFolder}/PrimitivePicking",
             "console": "internalConsole",
             "stopAtEntry": false
         },

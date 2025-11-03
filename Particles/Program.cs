@@ -51,7 +51,7 @@ CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
 
     ImGui.Checkbox("Simulate", ref simulationParams.Simulate);
     ImGui.InputFloat("Delta Time", ref simulationParams.DeltaTime);
-    
+
     ImGui.End();
     guiContext.EndFrame();
     return guiContext.Render(surface)!.Value!;
