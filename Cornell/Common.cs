@@ -1,6 +1,5 @@
 using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
+using System.Runtime.CompilerServices;
 using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 
@@ -20,18 +19,14 @@ public sealed class Common
 		// Random seed for the workgroup
 		public Vector3 Seed;
 
-		private float _pad0;
+		private readonly float _pad0;
 	}
-
-	private const int MatrixElementCount = 16;
-	private const int SeedElementCount = 4;
-	private const int UniformFloatCount = MatrixElementCount * 2 + SeedElementCount;
 
 	private readonly Device _device;
 	private readonly Queue _queue;
 	private readonly GPUBuffer _uniformBuffer;
 	private readonly Random _rng = new();
-	private uint _frame;
+	private ulong _frame;
 
 	public Common(Device device, GPUBuffer quadBuffer, string shaderSource)
 	{
@@ -42,7 +37,7 @@ public sealed class Common
 		_uniformBuffer = device.CreateBuffer(new()
 		{
 			Label = "Common.uniformBuffer",
-			Size = (ulong)(UniformFloatCount * sizeof(float)),
+			Size = (ulong)Unsafe.SizeOf<CommonUniforms>(),
 			Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
 		});
 
