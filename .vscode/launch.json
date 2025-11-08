@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/PrimitivePicking/bin/Debug/net9.0/PrimitivePicking.dll",
+            "program": "${workspaceFolder}/Cornell/bin/Debug/net9.0/Cornell.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/PrimitivePicking",
+            "cwd": "${workspaceFolder}/Cornell",
             "console": "internalConsole",
             "stopAtEntry": false
         },
