@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Setup;
 using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 
@@ -21,6 +22,12 @@ public sealed class Common
 
 		private readonly float _pad0;
 	}
+
+	/// <summary>The WGSL of the common shader.</summary>
+	public static Lazy<byte[]> Wgsl = new(
+		() => ResourceUtils.GetEmbeddedResource($"Cornell.shaders.common.wgsl", typeof(Common).Assembly)
+	);
+
 
 	private readonly Device _device;
 	private readonly Queue _queue;

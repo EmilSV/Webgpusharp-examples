@@ -1,4 +1,6 @@
 using System;
+using System.Runtime.CompilerServices;
+using Setup;
 using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 
@@ -9,18 +11,41 @@ namespace Cornell;
 /// </summary>
 public sealed class Radiosity
 {
+	private static Lazy<byte[]> _radiosityWGSL = new(
+		() => ResourceUtils.GetEmbeddedResource($"Cornell.shaders.radiosity.wgsl", typeof(Radiosity).Assembly)
+	);
+
+	// The output lightmap format and dimensions	
 	public const TextureFormat LightmapFormat = TextureFormat.RGBA16Float;
 	public const uint LightmapWidth = 256;
 	public const uint LightmapHeight = 256;
 
+	// The output lightmap.
+	public Texture Lightmap { get; }
+
+	/// <summary>
+	/// Number of photons emitted per workgroup.
+	/// This is equal to the workgroup size (one photon per invocation)
+	/// </summary>
 	private const uint PhotonsPerWorkgroup = 256;
 	private const uint WorkgroupsPerFrame = 1024;
+	private const uint PhotonsPerFrame = PhotonsPerWorkgroup * WorkgroupsPerFrame;
+
+	/// <summary>
+	///Maximum value that can be added to the 'accumulation' buffer, per photon,
+	///across all texels.
+	/// </summary>
 	private const uint PhotonEnergy = 100_000;
+
+	/// <summary>
+	/// The maximum value of 'accumulationAverage' before all values in
+	/// accumulation' are reduced to avoid integer overflows.
+	/// </summary>
 	private const uint AccumulationMeanMax = 0x10000000;
+
 	private const uint AccumulationToLightmapWorkgroupSizeX = 16;
 	private const uint AccumulationToLightmapWorkgroupSizeY = 16;
 
-	private readonly Device _device;
 	private readonly Queue _queue;
 	private readonly Common _common;
 	private readonly Scene _scene;
@@ -29,43 +54,54 @@ public sealed class Radiosity
 	private readonly BindGroup _bindGroup;
 	private readonly ComputePipeline _radiosityPipeline;
 	private readonly ComputePipeline _accumulationToLightmapPipeline;
+
+	/// <summary>
+	/// The total number of lightmap texels for all quads.
+	/// </summary>
 	private readonly uint _totalLightmapTexels;
-	private readonly uint _quadCount;
 
 	private double _accumulationMean;
 
-	public Radiosity(Device device, Common common, Scene scene, string radiosityShaderSource, string commonShaderSource)
+	public Radiosity(Device device, Common common, Scene scene)
 	{
-		_device = device;
 		_queue = device.GetQueue();
 		_common = common;
 		_scene = scene;
-		_quadCount = (uint)scene.QuadCount;
+		var quadCount = (uint)scene.Quads.Count;
 
 		Lightmap = device.CreateTexture(new()
 		{
 			Label = "Radiosity.lightmap",
-			Size = new Extent3D(LightmapWidth, LightmapHeight, _quadCount),
+			Size = new(
+				width: LightmapWidth,
+				height: LightmapHeight,
+				depthOrArrayLayers: quadCount
+			),
 			Format = LightmapFormat,
 			Usage = TextureUsage.TextureBinding | TextureUsage.StorageBinding,
 		});
 
-		ulong accumulationBufferSize = LightmapWidth * LightmapHeight * (ulong)_quadCount * 16ul;
 		_accumulationBuffer = device.CreateBuffer(new()
 		{
 			Label = "Radiosity.accumulationBuffer",
-			Size = accumulationBufferSize,
+			Size = (
+				LightmapWidth *
+				LightmapHeight *
+				quadCount *
+				16
+			),
 			Usage = BufferUsage.Storage,
 		});
+
+		_totalLightmapTexels = LightmapWidth * LightmapHeight * quadCount;
 
 		_uniformBuffer = device.CreateBuffer(new()
 		{
 			Label = "Radiosity.uniformBuffer",
-			Size = 8 * sizeof(float),
+			Size = (ulong)Unsafe.SizeOf<RadiosityUniforms>(),
 			Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
 		});
 
-		_totalLightmapTexels = LightmapWidth * LightmapHeight * _quadCount;
 
 		var bindGroupLayout = device.CreateBindGroupLayout(new()
 		{
@@ -74,6 +110,7 @@ public sealed class Radiosity
 			[
 				new()
 				{
+					// accumulation buffer
 					Binding = 0,
 					Visibility = ShaderStage.Compute,
 					Buffer = new BufferBindingLayout
@@ -83,6 +120,7 @@ public sealed class Radiosity
 				},
 				new()
 				{
+					// lightmap
 					Binding = 1,
 					Visibility = ShaderStage.Compute,
 					StorageTexture = new StorageTextureBindingLayout
@@ -94,6 +132,7 @@ public sealed class Radiosity
 				},
 				new()
 				{
+					// radiosity_uniforms
 					Binding = 2,
 					Visibility = ShaderStage.Compute,
 					Buffer = new BufferBindingLayout
@@ -112,17 +151,20 @@ public sealed class Radiosity
 			[
 				new()
 				{
+					// accumulation buffer
 					Binding = 0,
 					Buffer = _accumulationBuffer,
 					Size = _accumulationBuffer.GetSize(),
 				},
 				new()
 				{
+					// lightmap
 					Binding = 1,
 					TextureView = Lightmap.CreateView(),
 				},
 				new()
 				{
+					// radiosity_uniforms
 					Binding = 2,
 					Buffer = _uniformBuffer,
 					Size = _uniformBuffer.GetSize(),
@@ -130,10 +172,9 @@ public sealed class Radiosity
 			],
 		});
 
-		string combinedShaderSource = radiosityShaderSource + common.ShaderSource;
-		var shaderModule = device.CreateShaderModuleWGSL(new()
+		var mod = device.CreateShaderModuleWGSL(new()
 		{
-			Code = System.Text.Encoding.UTF8.GetBytes(combinedShaderSource),
+			Code = (byte[])[.. _radiosityWGSL.Value, .. Common.Wgsl.Value],
 		});
 
 		var pipelineLayout = device.CreatePipelineLayout(new()
@@ -146,14 +187,14 @@ public sealed class Radiosity
 		{
 			Label = "Radiosity.compute",
 			Layout = pipelineLayout,
-			Compute = new ComputeState
+			Compute = new()
 			{
-				Module = shaderModule,
+				Module = mod,
 				EntryPoint = "radiosity",
 				Constants =
 				[
-					new ConstantEntry("PhotonsPerWorkgroup", PhotonsPerWorkgroup),
-					new ConstantEntry("PhotonEnergy", PhotonEnergy),
+					new ("PhotonsPerWorkgroup", PhotonsPerWorkgroup),
+					new ("PhotonEnergy", PhotonEnergy),
 				],
 			},
 		});
@@ -162,52 +203,55 @@ public sealed class Radiosity
 		{
 			Label = "Radiosity.accumulationToLightmap",
 			Layout = pipelineLayout,
-			Compute = new ComputeState
+			Compute = new()
 			{
-				Module = shaderModule,
+				Module = mod,
 				EntryPoint = "accumulation_to_lightmap",
 				Constants =
 				[
-					new ConstantEntry("AccumulationToLightmapWorkgroupSizeX", AccumulationToLightmapWorkgroupSizeX),
-					new ConstantEntry("AccumulationToLightmapWorkgroupSizeY", AccumulationToLightmapWorkgroupSizeY),
+					new("AccumulationToLightmapWorkgroupSizeX", AccumulationToLightmapWorkgroupSizeX),
+					new("AccumulationToLightmapWorkgroupSizeY", AccumulationToLightmapWorkgroupSizeY),
 				],
 			},
 		});
 	}
 
-	public Texture Lightmap { get; }
-
 	public void Run(CommandEncoder commandEncoder)
 	{
-		_accumulationMean += (double)(PhotonsPerWorkgroup * WorkgroupsPerFrame) * PhotonEnergy / _totalLightmapTexels;
+		// Calculate the new mean value for the accumulation buffer
+		_accumulationMean += ((double)PhotonsPerFrame * PhotonEnergy) / _totalLightmapTexels;
 
+		// Calculate the 'accumulation' -> 'lightmap' scale factor from 'accumulationMean'
 		double accumulationToLightmapScale = 1.0 / _accumulationMean;
+		// If 'accumulationMean' is greater than 'kAccumulationMeanMax', then reduce
+		// the 'accumulation' buffer values to prevent u32 overflow.
 		double accumulationBufferScale = _accumulationMean > 2.0 * AccumulationMeanMax ? 0.5 : 1.0;
 		_accumulationMean *= accumulationBufferScale;
 
-		Span<float> uniformData = stackalloc float[8];
-		uniformData[0] = (float)accumulationToLightmapScale;
-		uniformData[1] = (float)accumulationBufferScale;
-		uniformData[2] = _scene.LightWidth;
-		uniformData[3] = _scene.LightHeight;
-		uniformData[4] = _scene.LightCenter.X;
-		uniformData[5] = _scene.LightCenter.Y;
-		uniformData[6] = _scene.LightCenter.Z;
-		uniformData[7] = 0f;
+		// Update the radiosity uniform buffer data.
+		_queue.WriteBuffer(_uniformBuffer, new RadiosityUniforms
+		{
+			AccumulationToLightmapScale = (float)accumulationToLightmapScale,
+			AccumulationBufferScale = (float)accumulationBufferScale,
+			LightWidth = _scene.LightWidth,
+			LightHeight = _scene.LightHeight,
+			LightCenter = _scene.LightCenter,
+		});
 
-		_queue.WriteBuffer(_uniformBuffer, 0, uniformData);
-
+		// Dispatch the radiosity workgroups
 		var passEncoder = commandEncoder.BeginComputePass();
 		passEncoder.SetBindGroup(0, _common.UniformBindGroup);
 		passEncoder.SetBindGroup(1, _bindGroup);
 		passEncoder.SetPipeline(_radiosityPipeline);
 		passEncoder.DispatchWorkgroups(WorkgroupsPerFrame);
 
+		// Then copy the 'accumulation' data to 'lightmap'
 		passEncoder.SetPipeline(_accumulationToLightmapPipeline);
 		passEncoder.DispatchWorkgroups(
 			DivRoundUp(LightmapWidth, AccumulationToLightmapWorkgroupSizeX),
 			DivRoundUp(LightmapHeight, AccumulationToLightmapWorkgroupSizeY),
-			_quadCount);
+			Lightmap.GetDepthOrArrayLayers()
+		);
 		passEncoder.End();
 	}
 

@@ -21,18 +21,17 @@ public sealed class Scene
 	private static readonly Vector3 LightUp = new(0f, 0f, 1f);
 	private static readonly Vector3 LightColor = new(5f, 5f, 5f);
 
-	private readonly List<Quad> _quads;
+	public List<Quad> Quads { get; private set; }
 
 	public Scene(Device device)
 	{
-		_quads = BuildScene();
+		Quads = BuildScene();
 
-		Span<float> quadData = stackalloc float[_quads.Count * QuadFloatCount];
-		Span<float> vertexData = stackalloc float[_quads.Count * VerticesPerQuad * VertexFloatStride];
-		Span<ushort> indexData = stackalloc ushort[_quads.Count * IndicesPerQuad];
-
-		FillQuadData(_quads, quadData);
-		FillVertexAndIndexData(_quads, vertexData, indexData, out uint vertexCount, out uint indexCount);
+		Span<float> quadData = stackalloc float[Quads.Count * QuadFloatCount];
+		Span<float> vertexData = stackalloc float[Quads.Count * VerticesPerQuad * VertexFloatStride];
+		Span<ushort> indexData = stackalloc ushort[Quads.Count * IndicesPerQuad];
+		FillQuadData(Quads, quadData);
+		FillVertexAndIndexData(Quads, vertexData, indexData, out uint vertexCount, out uint indexCount);
 
 		var quadArray = quadData.ToArray();
 		var vertexArray = vertexData.ToArray();
@@ -79,7 +78,6 @@ public sealed class Scene
 		LightHeight = LightUp.Length() * 2f;
 	}
 
-	public int QuadCount => _quads.Count;
 	public GPUBuffer QuadBuffer { get; }
 	public GPUBuffer Vertices { get; }
 	public GPUBuffer Indices { get; }
@@ -309,14 +307,5 @@ public sealed class Scene
 			Up = y,
 			Color = colorArray[5],
 		};
-	}
-
-	private readonly struct Quad
-	{
-		public Vector3 Center { get; init; }
-		public Vector3 Right { get; init; }
-		public Vector3 Up { get; init; }
-		public Vector3 Color { get; init; }
-		public float Emissive { get; init; }
 	}
 }

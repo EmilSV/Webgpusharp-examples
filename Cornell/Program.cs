@@ -127,7 +127,7 @@ return Run("Cornell Box", WindowWidth, WindowHeight, async (instance, surface, g
 
 	var scene = new Scene(device);
 	var common = new Common(device, scene.QuadBuffer, commonWGSL);
-	var radiosity = new Radiosity(device, common, scene, radiosityWGSL, commonWGSL);
+	var radiosity = new Radiosity(device, common, scene);
 	var rasterizer = new Rasterizer(device, common, scene, radiosity, framebuffer, rasterizerWGSL, commonWGSL);
 	var raytracer = new Raytracer(device, common, radiosity, framebuffer, raytracerWGSL, commonWGSL);
 	var tonemapper = new Tonemapper(device, framebuffer, presentationFormat, tonemapperWGSL, commonWGSL);
