@@ -1,5 +1,7 @@
 using System;
 using System.Text;
+using Setup;
+using Utf8StringInterpolation;
 using WebGpuSharp;
 
 namespace Cornell;
@@ -9,101 +11,116 @@ namespace Cornell;
 /// </summary>
 public sealed class Tonemapper
 {
+	private static Lazy<byte[]> _tonemapperWGSL = new(
+		() => ResourceUtils.GetEmbeddedResource($"Cornell.shaders.tonemapper.wgsl", typeof(Tonemapper).Assembly)
+	);
+
+	private readonly ComputePipeline _pipeline;
+	private BindGroup _bindGroup;
+	private readonly uint _width;
+	private readonly uint _height;
+
 	private const uint WorkgroupSizeX = 16;
 	private const uint WorkgroupSizeY = 16;
 
-	private readonly Device _device;
-	private readonly TextureView _inputView;
-	private readonly uint _width;
-	private readonly uint _height;
-	private readonly BindGroupLayout _bindGroupLayout;
-	private readonly ComputePipeline _pipeline;
-
-	public Tonemapper(Device device, Texture input, TextureFormat outputFormat, string tonemapperShaderSource, string commonShaderSource)
+	public Tonemapper(
+		Device device,
+		Texture input,
+		Texture outputTexture)
 	{
-		_device = device;
-		_inputView = input.CreateView();
 		_width = input.GetWidth();
 		_height = input.GetHeight();
 
-		_bindGroupLayout = device.CreateBindGroupLayout(new()
+		var bindGroupLayout = device.CreateBindGroupLayout(new()
 		{
 			Label = "Tonemapper.bindGroupLayout",
 			Entries =
 			[
-				new BindGroupLayoutEntry
+				new()
 				{
+					// input
 					Binding = 0,
 					Visibility = ShaderStage.Compute,
-					Texture = new TextureBindingLayout
+					Texture = new()
 					{
 						ViewDimension = TextureViewDimension.D2,
 					},
 				},
-				new BindGroupLayoutEntry
+				new()
 				{
+					// output
 					Binding = 1,
 					Visibility = ShaderStage.Compute,
-					StorageTexture = new StorageTextureBindingLayout
+					StorageTexture = new()
 					{
 						Access = StorageTextureAccess.WriteOnly,
-						Format = outputFormat,
+						Format = outputTexture.GetFormat(),
 						ViewDimension = TextureViewDimension.D2,
 					},
 				},
 			],
 		});
-
-		string shaderSource = tonemapperShaderSource.Replace("{OUTPUT_FORMAT}", ToWgslFormat(outputFormat)) + commonShaderSource;
-		var shaderModule = device.CreateShaderModuleWGSL(new()
+		_bindGroup = device.CreateBindGroup(new()
 		{
-			Code = Encoding.UTF8.GetBytes(shaderSource),
-		});
-
-		_pipeline = device.CreateComputePipeline(new()
-		{
-			Label = "Tonemapper.pipeline",
-			Layout = device.CreatePipelineLayout(new()
-			{
-				BindGroupLayouts = [_bindGroupLayout],
-			}),
-			Compute = new ComputeState
-			{
-				Module = shaderModule,
-				EntryPoint = "main",
-				Constants =
-				[
-					new ConstantEntry("WorkgroupSizeX", WorkgroupSizeX),
-					new ConstantEntry("WorkgroupSizeY", WorkgroupSizeY),
-				],
-			},
-		});
-	}
-
-	public void Run(CommandEncoder commandEncoder, Texture outputTexture)
-	{
-		var bindGroup = _device.CreateBindGroup(new()
-		{
-			Layout = _bindGroupLayout,
+			Label = "Tonemapper.bindGroup",
+			Layout = bindGroupLayout,
 			Entries =
 			[
-				new BindGroupEntry
+				new()
 				{
+					// input
 					Binding = 0,
-					TextureView = _inputView,
+					TextureView = input.CreateView(),
 				},
-				new BindGroupEntry
+				new()
 				{
+					// output
 					Binding = 1,
 					TextureView = outputTexture.CreateView(),
 				},
 			],
 		});
 
+		string tonemapperShaderSourceStr = Encoding.UTF8.GetString(_tonemapperWGSL.Value);
+		string commonShaderSourceStr = Encoding.UTF8.GetString(Common.Wgsl.Value);
+		string shaderSource = tonemapperShaderSourceStr.Replace("{OUTPUT_FORMAT}", ToWgslFormat(outputTexture.GetFormat())) + commonShaderSourceStr;
+		var mod = device.CreateShaderModuleWGSL(new()
+		{
+			Code = Encoding.UTF8.GetBytes(shaderSource),
+		});
+
+
+		var pipelineLayout = device.CreatePipelineLayout(new()
+		{
+			Label = "Tonemapper.pipelineLayout",
+			BindGroupLayouts = [bindGroupLayout],
+		});
+
+		_pipeline = device.CreateComputePipeline(new()
+		{
+			Label = "Tonemapper.pipeline",
+			Layout = pipelineLayout,
+			Compute = new ComputeState
+			{
+				Module = mod,
+				Constants =
+				[
+					new("WorkgroupSizeX", WorkgroupSizeX),
+					new("WorkgroupSizeY", WorkgroupSizeY),
+				],
+			},
+		});
+	}
+
+	public void Run(CommandEncoder commandEncoder)
+	{
 		var pass = commandEncoder.BeginComputePass();
 		pass.SetPipeline(_pipeline);
-		pass.SetBindGroup(0, bindGroup);
-		pass.DispatchWorkgroups(DivRoundUp(_width, WorkgroupSizeX), DivRoundUp(_height, WorkgroupSizeY));
+		pass.SetBindGroup(0, _bindGroup);
+		pass.DispatchWorkgroups(
+			workgroupCountX: DivRoundUp(_width, WorkgroupSizeX),
+			workgroupCountY: DivRoundUp(_height, WorkgroupSizeY)
+		);
 		pass.End();
 	}
 

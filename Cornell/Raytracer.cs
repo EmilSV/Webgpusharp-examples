@@ -4,19 +4,20 @@ using WebGpuSharp;
 namespace Cornell;
 
 /// <summary>
-/// Implements the compute-based ray tracer for the Cornell box scene.
+/// Raytracer renders the scene using a software ray-tracing compute pipeline.
 /// </summary>
 public sealed class Raytracer
 {
+	private readonly Common _common;
+	private readonly Texture _framebuffer;
+	private readonly ComputePipeline _pipeline;
+	private readonly BindGroup _bindGroup;
+
 	private const uint WorkgroupSizeX = 16;
 	private const uint WorkgroupSizeY = 16;
 
-	private readonly Common _common;
-	private readonly Texture _framebuffer;
 	private readonly uint _width;
 	private readonly uint _height;
-	private readonly ComputePipeline _pipeline;
-	private readonly BindGroup _bindGroup;
 
 	public Raytracer(Device device, Common common, Radiosity radiosity, Texture framebuffer, string raytracerShaderSource, string commonShaderSource)
 	{
