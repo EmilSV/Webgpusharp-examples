@@ -28,6 +28,10 @@ public sealed class Common
 		() => ResourceUtils.GetEmbeddedResource($"Cornell.shaders.common.wgsl", typeof(Common).Assembly)
 	);
 
+	public static Lazy<string> WgslString = new(
+		() => System.Text.Encoding.UTF8.GetString(Wgsl.Value)
+	);
+
 
 	private readonly Device _device;
 	private readonly Queue _queue;

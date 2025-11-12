@@ -112,8 +112,8 @@ public sealed class Raytracer
 				EntryPoint = "main",
 				Constants =
 				[
-					new ConstantEntry("WorkgroupSizeX", WorkgroupSizeX),
-					new ConstantEntry("WorkgroupSizeY", WorkgroupSizeY),
+					new("WorkgroupSizeX", WorkgroupSizeX),
+					new("WorkgroupSizeY", WorkgroupSizeY),
 				],
 			},
 		});

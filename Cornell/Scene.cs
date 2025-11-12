@@ -11,20 +11,80 @@ namespace Cornell;
 /// </summary>
 public sealed class Scene
 {
+	private struct QuadUniform
+	{
+		public Vector4 Plane;
+		public Vector4 Right;
+		public Vector4 Up;
+		public Vector3 Color;
+		public float Emissive;
+	}
+
 	private const int QuadFloatCount = 16;
 	private const int VerticesPerQuad = 4;
 	private const int IndicesPerQuad = 6;
 	private const int VertexFloatStride = 10;
 
-	private static readonly Vector3 LightCenterPosition = new(0f, 9.95f, 0f);
-	private static readonly Vector3 LightRight = new(1f, 0f, 0f);
-	private static readonly Vector3 LightUp = new(0f, 0f, 1f);
-	private static readonly Vector3 LightColor = new(5f, 5f, 5f);
+	private static readonly Quad Light = new()
+	{
+		Center = new Vector3(0f, 9.95f, 0f),
+		Right = new Vector3(1f, 0f, 0f),
+		Up = new Vector3(0f, 0f, 1f),
+		Color = new Vector3(5f, 5f, 5f),
+		Emissive = 1f,
+	};
 
-	public List<Quad> Quads { get; private set; }
+	public Quad[] Quads = [
+		..Box(
+			center: new(0f, 5f, 0f),
+			width: 10f,
+			height: 10f,
+			depth: 10f,
+			rotation: 0f,
+			colors:
+			[
+				new(0.0f, 0.5f, 0.0f),
+				new(0.5f, 0.5f, 0.5f),
+				new(0.5f, 0.5f, 0.5f),
+				new(0.5f, 0.0f, 0.0f),
+				new(0.5f, 0.5f, 0.5f),
+				new(0.5f, 0.5f, 0.5f),
+			],
+			concave: true
+		),
+		..Box(
+			center: new(1.5f, 1.5f, 1f),
+			width: 3f,
+			height: 3f,
+			depth: 3f,
+			rotation: 0.3f,
+			color: new(0.8f, 0.8f, 0.8f) ,
+			concave: false
+		),
+		..Box(
+			center: new(-2f, 3f, -2f),
+			width: 3f,
+			height: 6f,
+			depth: 3f,
+			rotation: -0.4f,
+			color: new(0.8f, 0.8f, 0.8f),
+			concave: false
+		),
+		Light
+	];
 
 	public Scene(Device device)
 	{
+
+		var quadBuffer = device.CreateBuffer(new()
+		{
+			Size = (ulong)(Unsafe.SizeOf<QuadUniform>() * Quads.Length),
+			Usage = BufferUsage.Storage,
+			MappedAtCreation = true,
+		});
+
+		const int QuadStride = 16 * 4;
+
 		Quads = BuildScene();
 
 		Span<float> quadData = stackalloc float[Quads.Count * QuadFloatCount];
@@ -202,7 +262,7 @@ public sealed class Scene
 	{
 		var quads = new List<Quad>();
 
-		quads.AddRange(CreateBox(
+		quads.AddRange(Box(
 			center: new Vector3(0f, 5f, 0f),
 			width: 10f,
 			height: 10f,
@@ -219,7 +279,7 @@ public sealed class Scene
 			},
 			concave: true));
 
-		quads.AddRange(CreateBox(
+		quads.AddRange(Box(
 			center: new Vector3(1.5f, 1.5f, 1f),
 			width: 3f,
 			height: 3f,
@@ -228,7 +288,7 @@ public sealed class Scene
 			colors: new[] { new Vector3(0.8f, 0.8f, 0.8f) },
 			concave: false));
 
-		quads.AddRange(CreateBox(
+		quads.AddRange(Box(
 			center: new Vector3(-2f, 3f, -2f),
 			width: 3f,
 			height: 6f,
@@ -249,63 +309,90 @@ public sealed class Scene
 		return quads;
 	}
 
-	private static IEnumerable<Quad> CreateBox(Vector3 center, float width, float height, float depth, float rotation, IReadOnlyList<Vector3> colors, bool concave)
+	private static Quad[] Box(
+		Vector3 center,
+		float width,
+		float height,
+		float depth,
+		float rotation,
+		Vector3 color,
+		bool concave)
 	{
-		var colorArray = colors.Count == 6
-			? colors
-			: new[] { colors[0], colors[0], colors[0], colors[0], colors[0], colors[0] };
+		Span<Vector3> colorSpan = stackalloc Vector3[6];
+		colorSpan.Fill(color);
+		return Box(center, width, height, depth, rotation, colorSpan, concave);
+	}
 
-		var halfWidth = width / 2f;
-		var halfHeight = height / 2f;
-		var halfDepth = depth / 2f;
+	private static Quad[] Box(
+		Vector3 center,
+		float width,
+		float height,
+		float depth,
+		float rotation,
+		ReadOnlySpan<Vector3> colors,
+		bool concave)
+	{
+		var x = new Vector3(
+			x: MathF.Cos(rotation) * width / 2f,
+			y: 0f,
+			z: MathF.Sin(rotation) * depth / 2f
+		);
+		var y = new Vector3(
+			x: 0f,
+			y: height / 2f,
+			z: 0f
+		);
+		var z = new Vector3(
+			x: MathF.Sin(rotation) * width / 2f,
+			y: 0f,
+			z: -MathF.Cos(rotation) * depth / 2f
+		);
 
-		var x = new Vector3(MathF.Cos(rotation) * halfWidth, 0f, MathF.Sin(rotation) * halfDepth);
-		var y = new Vector3(0f, halfHeight, 0f);
-		var z = new Vector3(MathF.Sin(rotation) * halfWidth, 0f, -MathF.Cos(rotation) * halfDepth);
+		Vector3 Sign(Vector3 v) => concave ? v : -v;
 
-		Vector3 Adjust(Vector3 v) => concave ? v : -v;
-
-		yield return new Quad
-		{
-			Center = center + x,
-			Right = Adjust(-z),
-			Up = y,
-			Color = colorArray[0],
-		};
-		yield return new Quad
-		{
-			Center = center + y,
-			Right = Adjust(x),
-			Up = -z,
-			Color = colorArray[1],
-		};
-		yield return new Quad
-		{
-			Center = center + z,
-			Right = Adjust(x),
-			Up = y,
-			Color = colorArray[2],
-		};
-		yield return new Quad
-		{
-			Center = center - x,
-			Right = Adjust(z),
-			Up = y,
-			Color = colorArray[3],
-		};
-		yield return new Quad
-		{
-			Center = center - y,
-			Right = Adjust(x),
-			Up = z,
-			Color = colorArray[4],
-		};
-		yield return new Quad
-		{
-			Center = center - z,
-			Right = Adjust(-x),
-			Up = y,
-			Color = colorArray[5],
-		};
+		return [
+			new Quad
+			{
+				Center = center + x,
+				Right = Sign(-z),
+				Up = y,
+				Color = colors[0],
+			},
+			new Quad
+			{
+				Center = center + y,
+				Right = Sign(x),
+				Up = -z,
+				Color = colors[1],
+			},
+			new Quad
+			{
+				Center = center + z,
+				Right = Sign(x),
+				Up = y,
+				Color = colors[2],
+			},
+			new Quad
+			{
+				Center = center - x,
+				Right = Sign(z),
+				Up = y,
+				Color = colors[3],
+			},
+			new Quad
+			{
+				Center = center - y,
+				Right = Sign(x),
+				Up = z,
+				Color = colors[4],
+			},
+			new Quad
+			{
+				Center = center - z,
+				Right = Sign(-x),
+				Up = y,
+				Color = colors[5],
+			}
+		];
 	}
 }
