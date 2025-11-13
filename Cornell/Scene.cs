@@ -1,13 +1,15 @@
-using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 
 namespace Cornell;
 
 /// <summary>
-/// Describes the Cornell box geometry and uploads the buffers required by the GPU pipelines.
+/// Scene holds the cornell-box scene information.
 /// </summary>
 public sealed class Scene
 {
@@ -20,10 +22,42 @@ public sealed class Scene
 		public float Emissive;
 	}
 
-	private const int QuadFloatCount = 16;
+	private struct VertexInUniform
+	{
+		public Vector4 Position;
+		public Vector3 Uv;
+		public Vector3 Emissive;
+	};
+
 	private const int VerticesPerQuad = 4;
+	[InlineArray(VerticesPerQuad)]
+	private struct VertexInUniformPerQuad
+	{
+		private VertexInUniform _element0;
+
+		[UnscopedRef]
+		public ref VertexInUniform this[int i]
+		{
+			get => ref this[i];
+		}
+	}
 	private const int IndicesPerQuad = 6;
+	[InlineArray(IndicesPerQuad)]
+	private struct IndexPerQuad
+	{
+		private ushort _element0;
+
+		[UnscopedRef]
+		public ref ushort this[int i]
+		{
+			get => ref this[i];
+		}
+	}
+
+
+	private const int QuadFloatCount = 16;
 	private const int VertexFloatStride = 10;
+	
 
 	private static readonly Quad Light = new()
 	{
@@ -34,7 +68,14 @@ public sealed class Scene
 		Emissive = 1f,
 	};
 
-	public Quad[] Quads = [
+	public readonly uint VertexCount;
+	public readonly uint IndexCount;
+	public GPUBuffer Vertices;
+	public GPUBuffer Indices;
+	public VertexBufferLayout[] VertexBufferLayout;
+	public GPUBuffer QuadBuffer;
+
+	public readonly Quad[] Quads = [
 		..Box(
 			center: new(0f, 5f, 0f),
 			width: 10f,
@@ -75,7 +116,6 @@ public sealed class Scene
 
 	public Scene(Device device)
 	{
-
 		var quadBuffer = device.CreateBuffer(new()
 		{
 			Size = (ulong)(Unsafe.SizeOf<QuadUniform>() * Quads.Length),
@@ -83,168 +123,137 @@ public sealed class Scene
 			MappedAtCreation = true,
 		});
 
-		const int QuadStride = 16 * 4;
+		var vertexBuffer = device.CreateBuffer(new()
+		{
+			Size = (ulong)(Unsafe.SizeOf<VertexInUniformPerQuad>() * Quads.Length),
+			Usage = BufferUsage.Vertex,
+			MappedAtCreation = true,
+		});
 
-		Quads = BuildScene();
+		var indexBuffer = device.CreateBuffer(new()
+		{
+			Size = (ulong)(Unsafe.SizeOf<IndexPerQuad>() * Quads.Length),
+			Usage = BufferUsage.Index,
+			MappedAtCreation = true,
+		});
 
-		Span<float> quadData = stackalloc float[Quads.Count * QuadFloatCount];
-		Span<float> vertexData = stackalloc float[Quads.Count * VerticesPerQuad * VertexFloatStride];
-		Span<ushort> indexData = stackalloc ushort[Quads.Count * IndicesPerQuad];
-		FillQuadData(Quads, quadData);
-		FillVertexAndIndexData(Quads, vertexData, indexData, out uint vertexCount, out uint indexCount);
+		GPUBuffer.DoReadWriteOperation([quadBuffer, vertexBuffer, indexBuffer], context =>
+		{
+			var quadSpan = context.GetMappedRange<QuadUniform>(quadBuffer);
+			var vertexSpan = context.GetMappedRange<VertexInUniformPerQuad>(vertexBuffer);
+			var indexSpan = context.GetMappedRange<IndexPerQuad>(indexBuffer);
 
-		var quadArray = quadData.ToArray();
-		var vertexArray = vertexData.ToArray();
-		var indexArray = indexData.ToArray();
+			Debug.Assert(quadSpan.Length == Quads.Length);
+			Debug.Assert(vertexSpan.Length == Quads.Length);
+			Debug.Assert(indexSpan.Length == Quads.Length);
 
-		QuadBuffer = CreateBuffer(device, "Scene.quadBuffer", quadArray, BufferUsage.Storage);
-		Vertices = CreateBuffer(device, "Scene.vertices", vertexArray, BufferUsage.Vertex);
-		Indices = CreateBuffer(device, "Scene.indices", indexArray, BufferUsage.Index);
-
-		VertexCount = vertexCount;
-		IndexCount = indexCount;
-
-		VertexBufferLayout =
-		[
-			new VertexBufferLayout
+			for (int quadIdx = 0; quadIdx < Quads.Length; quadIdx++)
 			{
-				ArrayStride = (ulong)(VertexFloatStride * sizeof(float)),
+				ref var quad = ref Quads[quadIdx];
+				var normal = Vector3.Normalize(Vector3.Cross(quad.Right, quad.Up));
+
+				var invRight = Reciprocal(quad.Right);
+				var invUp = Reciprocal(quad.Up);
+
+				quadSpan[quadIdx] = new()
+				{
+					Plane = new(normal, -Vector3.Dot(normal, quad.Center)),
+					Right = new(invRight, -Vector3.Dot(invRight, quad.Center)),
+					Up = new(invUp, -Vector3.Dot(invUp, quad.Center)),
+					Color = quad.Color,
+					Emissive = quad.Emissive,
+				};
+
+				var a = quad.Center - quad.Right + quad.Up;
+				var b = quad.Center + quad.Right + quad.Up;
+				var c = quad.Center - quad.Right - quad.Up;
+				var d = quad.Center + quad.Right - quad.Up;
+
+				vertexSpan[quadIdx] = new()
+				{
+					[0] = new()
+					{
+						Position = new(a, 1f),
+						Uv = new(0f, 1f, quadIdx),
+						Emissive = quad.Color * quad.Emissive,
+					},
+					[1] = new()
+					{
+						Position = new(b, 1f),
+						Uv = new(1f, 1f, quadIdx),
+						Emissive = quad.Color * quad.Emissive,
+					},
+					[2] = new()
+					{
+						Position = new(c, 1f),
+						Uv = new(0f, 0f, quadIdx),
+						Emissive = quad.Color * quad.Emissive,
+					},
+					[3] = new()
+					{
+						Position = new(d, 1f),
+						Uv = new(1f, 0f, quadIdx),
+						Emissive = quad.Color * quad.Emissive,
+					},
+				};
+
+				ushort baseIndex = (ushort)(quadIdx * VerticesPerQuad);
+				indexSpan[quadIdx] = new()
+				{
+					[0] = baseIndex,
+					[1] = (ushort)(baseIndex + 2),
+					[2] = (ushort)(baseIndex + 1),
+					[3] = (ushort)(baseIndex + 1),
+					[4] = (ushort)(baseIndex + 2),
+					[5] = (ushort)(baseIndex + 3),
+				};
+			}
+
+		});
+
+		quadBuffer.Unmap();
+		vertexBuffer.Unmap();
+		indexBuffer.Unmap();
+
+		var vertexBufferLayout = new VertexBufferLayout[]
+		{
+			new()
+			{
+				ArrayStride = (ulong)Unsafe.SizeOf<VertexInUniform>(),
 				Attributes =
 				[
-					new VertexAttribute
+					// position
+					new()
 					{
 						ShaderLocation = 0,
-						Offset = 0,
+						Offset = (ulong)Marshal.OffsetOf<VertexInUniform>(nameof(VertexInUniform.Position)),
 						Format = VertexFormat.Float32x4,
 					},
-					new VertexAttribute
+					// uv
+					new()
 					{
 						ShaderLocation = 1,
-						Offset = 4 * sizeof(float),
+						Offset = (ulong)Marshal.OffsetOf<VertexInUniform>(nameof(VertexInUniform.Uv)),
 						Format = VertexFormat.Float32x3,
 					},
-					new VertexAttribute
+
+					// color
+					new()
 					{
 						ShaderLocation = 2,
-						Offset = 7 * sizeof(float),
+						Offset = (ulong)Marshal.OffsetOf<VertexInUniform>(nameof(VertexInUniform.Emissive)),
 						Format = VertexFormat.Float32x3,
 					},
 				],
 			},
-		];
+		};
 
-		LightCenter = LightCenterPosition;
-		LightWidth = LightRight.Length() * 2f;
-		LightHeight = LightUp.Length() * 2f;
-	}
-
-	public GPUBuffer QuadBuffer { get; }
-	public GPUBuffer Vertices { get; }
-	public GPUBuffer Indices { get; }
-	public VertexBufferLayout[] VertexBufferLayout { get; }
-	public uint VertexCount { get; }
-	public uint IndexCount { get; }
-	public Vector3 LightCenter { get; }
-	public float LightWidth { get; }
-	public float LightHeight { get; }
-
-	private static GPUBuffer CreateBuffer<T>(Device device, string label, T[] data, BufferUsage usage)
-		where T : unmanaged
-	{
-		var buffer = device.CreateBuffer(new()
-		{
-			Label = label,
-			Size = (ulong)(data.Length * Unsafe.SizeOf<T>()),
-			Usage = usage,
-			MappedAtCreation = true,
-		});
-
-		buffer.GetMappedRange<T>(span => data.CopyTo(span));
-		buffer.Unmap();
-		return buffer;
-	}
-
-	private static void FillQuadData(IReadOnlyList<Quad> quads, Span<float> quadData)
-	{
-		int offset = 0;
-		foreach (var quad in quads)
-		{
-			var normal = Vector3.Normalize(Vector3.Cross(quad.Right, quad.Up));
-
-			quadData[offset++] = normal.X;
-			quadData[offset++] = normal.Y;
-			quadData[offset++] = normal.Z;
-			quadData[offset++] = -Vector3.Dot(normal, quad.Center);
-
-			var invRight = Reciprocal(quad.Right);
-			quadData[offset++] = invRight.X;
-			quadData[offset++] = invRight.Y;
-			quadData[offset++] = invRight.Z;
-			quadData[offset++] = -Vector3.Dot(invRight, quad.Center);
-
-			var invUp = Reciprocal(quad.Up);
-			quadData[offset++] = invUp.X;
-			quadData[offset++] = invUp.Y;
-			quadData[offset++] = invUp.Z;
-			quadData[offset++] = -Vector3.Dot(invUp, quad.Center);
-
-			quadData[offset++] = quad.Color.X;
-			quadData[offset++] = quad.Color.Y;
-			quadData[offset++] = quad.Color.Z;
-			quadData[offset++] = quad.Emissive;
-		}
-	}
-
-	private static void FillVertexAndIndexData(IReadOnlyList<Quad> quads, Span<float> vertexData, Span<ushort> indexData, out uint vertexCount, out uint indexCount)
-	{
-		vertexCount = 0;
-		indexCount = 0;
-		int vertexOffset = 0;
-		int indexOffset = 0;
-
-		for (int quadIndex = 0; quadIndex < quads.Count; quadIndex++)
-		{
-			var quad = quads[quadIndex];
-
-			var a = Vector3.Add(Vector3.Subtract(quad.Center, quad.Right), quad.Up);
-			var b = Vector3.Add(Vector3.Add(quad.Center, quad.Right), quad.Up);
-			var c = Vector3.Subtract(Vector3.Subtract(quad.Center, quad.Right), quad.Up);
-			var d = Vector3.Subtract(Vector3.Add(quad.Center, quad.Right), quad.Up);
-
-			float emissiveR = quad.Color.X * quad.Emissive;
-			float emissiveG = quad.Color.Y * quad.Emissive;
-			float emissiveB = quad.Color.Z * quad.Emissive;
-
-			WriteVertex(vertexData, ref vertexOffset, a, new Vector2(0f, 1f), quadIndex, emissiveR, emissiveG, emissiveB);
-			WriteVertex(vertexData, ref vertexOffset, b, new Vector2(1f, 1f), quadIndex, emissiveR, emissiveG, emissiveB);
-			WriteVertex(vertexData, ref vertexOffset, c, new Vector2(0f, 0f), quadIndex, emissiveR, emissiveG, emissiveB);
-			WriteVertex(vertexData, ref vertexOffset, d, new Vector2(1f, 0f), quadIndex, emissiveR, emissiveG, emissiveB);
-
-			ushort baseIndex = (ushort)vertexCount;
-			indexData[indexOffset++] = baseIndex;
-			indexData[indexOffset++] = (ushort)(baseIndex + 2);
-			indexData[indexOffset++] = (ushort)(baseIndex + 1);
-			indexData[indexOffset++] = (ushort)(baseIndex + 1);
-			indexData[indexOffset++] = (ushort)(baseIndex + 2);
-			indexData[indexOffset++] = (ushort)(baseIndex + 3);
-
-			vertexCount += VerticesPerQuad;
-			indexCount += IndicesPerQuad;
-		}
-	}
-
-	private static void WriteVertex(Span<float> vertexData, ref int offset, Vector3 position, Vector2 uv, int quadIndex, float emissiveR, float emissiveG, float emissiveB)
-	{
-		vertexData[offset++] = position.X;
-		vertexData[offset++] = position.Y;
-		vertexData[offset++] = position.Z;
-		vertexData[offset++] = 1f;
-		vertexData[offset++] = uv.X;
-		vertexData[offset++] = uv.Y;
-		vertexData[offset++] = quadIndex;
-		vertexData[offset++] = emissiveR;
-		vertexData[offset++] = emissiveG;
-		vertexData[offset++] = emissiveB;
+		VertexCount = (uint)(Quads.Length * VerticesPerQuad);
+		IndexCount = (uint)(Quads.Length * IndicesPerQuad);
+		Vertices = vertexBuffer;
+		Indices = indexBuffer;
+		VertexBufferLayout = vertexBufferLayout;
+		QuadBuffer = quadBuffer;
 	}
 
 	private static Vector3 Reciprocal(Vector3 v)
@@ -256,57 +265,6 @@ public sealed class Scene
 		}
 		float scale = 1f / lenSq;
 		return v * scale;
-	}
-
-	private static List<Quad> BuildScene()
-	{
-		var quads = new List<Quad>();
-
-		quads.AddRange(Box(
-			center: new Vector3(0f, 5f, 0f),
-			width: 10f,
-			height: 10f,
-			depth: 10f,
-			rotation: 0f,
-			colors: new[]
-			{
-				new Vector3(0.0f, 0.5f, 0.0f),
-				new Vector3(0.5f, 0.5f, 0.5f),
-				new Vector3(0.5f, 0.5f, 0.5f),
-				new Vector3(0.5f, 0.0f, 0.0f),
-				new Vector3(0.5f, 0.5f, 0.5f),
-				new Vector3(0.5f, 0.5f, 0.5f),
-			},
-			concave: true));
-
-		quads.AddRange(Box(
-			center: new Vector3(1.5f, 1.5f, 1f),
-			width: 3f,
-			height: 3f,
-			depth: 3f,
-			rotation: 0.3f,
-			colors: new[] { new Vector3(0.8f, 0.8f, 0.8f) },
-			concave: false));
-
-		quads.AddRange(Box(
-			center: new Vector3(-2f, 3f, -2f),
-			width: 3f,
-			height: 6f,
-			depth: 3f,
-			rotation: -0.4f,
-			colors: new[] { new Vector3(0.8f, 0.8f, 0.8f) },
-			concave: false));
-
-		quads.Add(new Quad
-		{
-			Center = LightCenterPosition,
-			Right = LightRight,
-			Up = LightUp,
-			Color = LightColor,
-			Emissive = 1f,
-		});
-
-		return quads;
 	}
 
 	private static Quad[] Box(
