@@ -114,6 +114,10 @@ public sealed class Scene
 		Light
 	];
 
+	public readonly Vector3 LightCenter = Light.Center;
+	public readonly float LightWidth = Light.Right.Length() * 2f;
+	public readonly float LightHeight = Light.Up.Length() * 2f;
+
 	public Scene(Device device)
 	{
 		var quadBuffer = device.CreateBuffer(new()
@@ -309,42 +313,42 @@ public sealed class Scene
 		Vector3 Sign(Vector3 v) => concave ? v : -v;
 
 		return [
-			new Quad
+			new()
 			{
 				Center = center + x,
 				Right = Sign(-z),
 				Up = y,
 				Color = colors[0],
 			},
-			new Quad
+			new()
 			{
 				Center = center + y,
 				Right = Sign(x),
 				Up = -z,
 				Color = colors[1],
 			},
-			new Quad
+			new()
 			{
 				Center = center + z,
 				Right = Sign(x),
 				Up = y,
 				Color = colors[2],
 			},
-			new Quad
+			new()
 			{
 				Center = center - x,
 				Right = Sign(z),
 				Up = y,
 				Color = colors[3],
 			},
-			new Quad
+			new()
 			{
 				Center = center - y,
 				Right = Sign(x),
 				Up = z,
 				Color = colors[4],
 			},
-			new Quad
+			new()
 			{
 				Center = center - z,
 				Right = Sign(-x),

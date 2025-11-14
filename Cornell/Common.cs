@@ -28,7 +28,7 @@ public sealed class Common
 		() => ResourceUtils.GetEmbeddedResource($"Cornell.shaders.common.wgsl", typeof(Common).Assembly)
 	);
 
-	public static Lazy<string> WgslString = new(
+	public static Lazy<string> WgslStr = new(
 		() => System.Text.Encoding.UTF8.GetString(Wgsl.Value)
 	);
 

@@ -14,6 +14,11 @@ public sealed class Tonemapper
 	private static Lazy<byte[]> _tonemapperWGSL = new(
 		() => ResourceUtils.GetEmbeddedResource($"Cornell.shaders.tonemapper.wgsl", typeof(Tonemapper).Assembly)
 	);
+	private static Lazy<string> _tonemapperWGSLStr = new(
+		() => Encoding.UTF8.GetString(
+			ResourceUtils.GetEmbeddedResource($"Cornell.shaders.tonemapper.wgsl", typeof(Tonemapper).Assembly)
+		)
+	);
 
 	private readonly ComputePipeline _pipeline;
 	private BindGroup _bindGroup;
@@ -81,9 +86,7 @@ public sealed class Tonemapper
 			],
 		});
 
-		string tonemapperShaderSourceStr = Encoding.UTF8.GetString(_tonemapperWGSL.Value);
-		string commonShaderSourceStr = Encoding.UTF8.GetString(Common.Wgsl.Value);
-		string shaderSource = tonemapperShaderSourceStr.Replace("{OUTPUT_FORMAT}", ToWgslFormat(outputTexture.GetFormat())) + commonShaderSourceStr;
+		string shaderSource = _tonemapperWGSLStr.Value.Replace("{OUTPUT_FORMAT}", ToWgslFormat(outputTexture.GetFormat())) + Common.WgslStr.Value;
 		var mod = device.CreateShaderModuleWGSL(new()
 		{
 			Code = Encoding.UTF8.GetBytes(shaderSource),

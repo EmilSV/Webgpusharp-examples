@@ -9,7 +9,7 @@ namespace Cornell;
 public sealed class Raytracer
 {
 	private readonly Common _common;
-	private readonly Texture _framebuffer;
+
 	private readonly ComputePipeline _pipeline;
 	private readonly BindGroup _bindGroup;
 
@@ -22,7 +22,6 @@ public sealed class Raytracer
 	public Raytracer(Device device, Common common, Radiosity radiosity, Texture framebuffer, string raytracerShaderSource, string commonShaderSource)
 	{
 		_common = common;
-		_framebuffer = framebuffer;
 		_width = framebuffer.GetWidth();
 		_height = framebuffer.GetHeight();
 

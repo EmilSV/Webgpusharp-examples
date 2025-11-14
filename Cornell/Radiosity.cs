@@ -28,6 +28,9 @@ public sealed class Radiosity
 	/// This is equal to the workgroup size (one photon per invocation)
 	/// </summary>
 	private const uint PhotonsPerWorkgroup = 256;
+	/// <summary>
+	/// Number of radiosity workgroups dispatched per frame.
+	/// </summary>
 	private const uint WorkgroupsPerFrame = 1024;
 	private const uint PhotonsPerFrame = PhotonsPerWorkgroup * WorkgroupsPerFrame;
 
@@ -64,10 +67,11 @@ public sealed class Radiosity
 
 	public Radiosity(Device device, Common common, Scene scene)
 	{
+		uint quadCount = (uint)scene.Quads.Length;
+
 		_queue = device.GetQueue();
 		_common = common;
 		_scene = scene;
-		var quadCount = (uint)scene.Quads.Count;
 
 		Lightmap = device.CreateTexture(new()
 		{
