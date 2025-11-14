@@ -1,4 +1,5 @@
 using System.Text;
+using Setup;
 using WebGpuSharp;
 
 namespace Cornell;
@@ -8,6 +9,18 @@ namespace Cornell;
 /// </summary>
 public sealed class Raytracer
 {
+	private static readonly Lazy<byte[]> raytracerShaderWgsl = new(() =>
+		ResourceUtils.GetEmbeddedResource(
+			"Cornell.shaders.raytracer.wgsl",
+			typeof(Raytracer).Assembly
+		)
+	);
+
+	private static readonly Lazy<string> raytracerShaderStr = new(() =>
+		Encoding.UTF8.GetString(raytracerShaderWgsl.Value)
+	);
+
+
 	private readonly Common _common;
 
 	private readonly ComputePipeline _pipeline;
@@ -19,7 +32,7 @@ public sealed class Raytracer
 	private readonly uint _width;
 	private readonly uint _height;
 
-	public Raytracer(Device device, Common common, Radiosity radiosity, Texture framebuffer, string raytracerShaderSource, string commonShaderSource)
+	public Raytracer(Device device, Common common, Radiosity radiosity, Texture framebuffer)
 	{
 		_common = common;
 		_width = framebuffer.GetWidth();
@@ -59,32 +72,30 @@ public sealed class Raytracer
 			],
 		});
 
-		var sampler = device.CreateSampler(new()
-		{
-			AddressModeU = AddressMode.ClampToEdge,
-			AddressModeV = AddressMode.ClampToEdge,
-			AddressModeW = AddressMode.ClampToEdge,
-			MagFilter = FilterMode.Linear,
-			MinFilter = FilterMode.Linear,
-		});
-
 		_bindGroup = device.CreateBindGroup(new()
 		{
-			Label = "Raytracer.bindGroup",
+			Label = "rendererBindGroup",
 			Layout = bindGroupLayout,
 			Entries =
 			[
-				new BindGroupEntry
+				new()
 				{
 					Binding = 0,
 					TextureView = radiosity.Lightmap.CreateView(),
 				},
-				new BindGroupEntry
+				new()
 				{
 					Binding = 1,
-					Sampler = sampler,
+					Sampler = device.CreateSampler(new()
+					{
+						AddressModeU = AddressMode.ClampToEdge,
+						AddressModeV = AddressMode.ClampToEdge,
+						AddressModeW = AddressMode.ClampToEdge,
+						MagFilter = FilterMode.Linear,
+						MinFilter = FilterMode.Linear,
+					})
 				},
-				new BindGroupEntry
+				new()
 				{
 					Binding = 2,
 					TextureView = framebuffer.CreateView(),
@@ -92,23 +103,19 @@ public sealed class Raytracer
 			],
 		});
 
-		string shaderSource = raytracerShaderSource + commonShaderSource;
-		var shaderModule = device.CreateShaderModuleWGSL(new()
-		{
-			Code = Encoding.UTF8.GetBytes(shaderSource),
-		});
-
 		_pipeline = device.CreateComputePipeline(new()
 		{
-			Label = "Raytracer.pipeline",
+			Label = "raytracerPipeline",
 			Layout = device.CreatePipelineLayout(new()
 			{
 				BindGroupLayouts = [common.UniformBindGroupLayout, bindGroupLayout],
 			}),
-			Compute = new ComputeState
+			Compute = new()
 			{
-				Module = shaderModule,
-				EntryPoint = "main",
+				Module = device.CreateShaderModuleWGSL(new()
+				{
+					Code = raytracerShaderWgsl.Value.Concat(Common.Wgsl.Value).ToArray(),
+				}),
 				Constants =
 				[
 					new("WorkgroupSizeX", WorkgroupSizeX),

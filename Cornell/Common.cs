@@ -32,18 +32,20 @@ public sealed class Common
 		() => System.Text.Encoding.UTF8.GetString(Wgsl.Value)
 	);
 
-
-	private readonly Device _device;
 	private readonly Queue _queue;
 	private readonly GPUBuffer _uniformBuffer;
 	private readonly Random _rng = new();
 	private ulong _frame;
 
-	public Common(Device device, GPUBuffer quadBuffer, string shaderSource)
+	/// <summary>Bind group layout for the common uniforms and quad storage buffer.</summary>
+	public BindGroupLayout UniformBindGroupLayout { get; }
+
+	/// <summary>Bind group that binds the shared uniform buffer and quads.</summary>
+	public BindGroup UniformBindGroup { get; }
+
+	public Common(Device device, GPUBuffer quadBuffer)
 	{
-		_device = device;
 		_queue = device.GetQueue();
-		ShaderSource = shaderSource;
 
 		_uniformBuffer = device.CreateBuffer(new()
 		{
@@ -100,14 +102,8 @@ public sealed class Common
 		});
 	}
 
-	/// <summary>The WGSL snippet shared across all shaders.</summary>
-	public string ShaderSource { get; }
 
-	/// <summary>Bind group layout for the common uniforms and quad storage buffer.</summary>
-	public BindGroupLayout UniformBindGroupLayout { get; }
 
-	/// <summary>Bind group that binds the shared uniform buffer and quads.</summary>
-	public BindGroup UniformBindGroup { get; }
 
 	/// <summary>
 	/// Update the uniform buffer with the latest camera matrices and random seeds.

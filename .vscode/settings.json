@@ -10,6 +10,7 @@
         "IGPU",
         "Multisample",
         "radiosity",
+        "raytracer",
         "renderables",
         "Skia",
         "Texels",
