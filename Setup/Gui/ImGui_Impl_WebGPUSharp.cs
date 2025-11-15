@@ -403,7 +403,7 @@ public static class ImGui_Impl_WebGPUSharp
                     FrontFace = FrontFace.CW,
                     CullMode = CullMode.None
                 },
-                Vertex = ref vertexState,
+                Vertex = vertexState,
                 Fragment = fragmentState,
                 DepthStencil = bd.depthStencilFormat == TextureFormat.Undefined ? null : depthStencilState, // TODO set defaults not this is not needed
                 Multisample = bd.InitInfo.PipelineMultisampleState

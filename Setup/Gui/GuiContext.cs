@@ -4,7 +4,7 @@ using WebGpuSharp;
 public class GuiContext
 {
     private IntPtr window;
-    private Device device;
+    private Device? device;
 
     internal GuiContext(IntPtr window)
     {
@@ -62,7 +62,7 @@ public class GuiContext
 
         TextureViewDescriptor viewdescriptor = new()
         {
-            Format = surfaceTexture.Texture.GetFormat(),
+            Format = surfaceTexture.Texture!.GetFormat(),
             Dimension = TextureViewDimension.D2,
             MipLevelCount = 1,
             BaseMipLevel = 0,
@@ -73,7 +73,7 @@ public class GuiContext
         TextureView textureView = surfaceTexture.Texture.CreateView(viewdescriptor) ?? throw new Exception("Failed to create texture view");
 
         // Command Encoder
-        var commandEncoder = device.CreateCommandEncoder(new() { Label = "Main Command Encoder" });
+        var commandEncoder = device!.CreateCommandEncoder(new() { Label = "Main Command Encoder" });
 
         Span<RenderPassColorAttachment> colorAttachments = [
             new(){

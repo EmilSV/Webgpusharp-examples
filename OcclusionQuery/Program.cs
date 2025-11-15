@@ -7,7 +7,6 @@ using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
@@ -179,7 +178,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContex
     var pipeline = device.CreateRenderPipeline(new()
     {
         Layout = null,
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
             Module = module,
             Buffers = [
@@ -203,7 +202,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContex
                     StepMode = VertexStepMode.Vertex,
                 }
             ]
-        }),
+        },
         Fragment = new FragmentState()
         {
             Module = module,

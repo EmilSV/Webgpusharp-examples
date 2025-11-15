@@ -1,11 +1,9 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 static byte[] ToByteArray(Stream input)
 {
@@ -42,7 +40,7 @@ return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
             Console.Error.WriteLine($"Device lost: {reason} {messageString}");
         },
     }) ?? throw new Exception("Could not create device");
-    
+
     var queue = device.GetQueue();
     var surfaceCapabilities = surface.GetCapabilities(adapter)!;
     var surfaceFormat = surfaceCapabilities.Formats[0];
@@ -74,8 +72,8 @@ return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 
     var pipeline = device.CreateRenderPipeline(new()
     {
-        Layout = null!,
-        Vertex = ref InlineInit(new VertexState()
+        Layout = null, // Auto-layout
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
@@ -103,7 +101,7 @@ return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
                     ],
                 }
             ]
-        }),
+        },
         Fragment = new FragmentState()
         {
             Module = device.CreateShaderModuleWGSL(new()

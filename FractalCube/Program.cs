@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Text;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 static byte[] ToByteArray(Stream input)
 {
@@ -88,34 +87,32 @@ return Run(
             new()
             {
                 Layout = null,
-                Vertex = ref InlineInit(
-                    new VertexState()
-                    {
-                        Module = device.CreateShaderModuleWGSL(new() { Code = basicVertWgsl }),
-                        Buffers =
-                        [
-                            new()
-                            {
-                                ArrayStride = Cube.CubeVertexSize,
-                                Attributes =
-                                [
-                                    new()
-                                    {
-                                        ShaderLocation = 0,
-                                        Offset = Cube.CubePositionOffset,
-                                        Format = VertexFormat.Float32x4,
-                                    },
-                                    new()
-                                    {
-                                        ShaderLocation = 1,
-                                        Offset = Cube.CubeUVOffset,
-                                        Format = VertexFormat.Float32x2,
-                                    },
-                                ],
-                            },
-                        ],
-                    }
-                ),
+                Vertex = new VertexState()
+                {
+                    Module = device.CreateShaderModuleWGSL(new() { Code = basicVertWgsl }),
+                    Buffers =
+                    [
+                        new()
+                        {
+                            ArrayStride = Cube.CubeVertexSize,
+                            Attributes =
+                            [
+                                new()
+                                {
+                                    ShaderLocation = 0,
+                                    Offset = Cube.CubePositionOffset,
+                                    Format = VertexFormat.Float32x4,
+                                },
+                                new()
+                                {
+                                    ShaderLocation = 1,
+                                    Offset = Cube.CubeUVOffset,
+                                    Format = VertexFormat.Float32x2,
+                                },
+                            ],
+                        },
+                    ],
+                },
                 Fragment = new FragmentState()
                 {
                     Module = device!.CreateShaderModuleWGSL(new() { Code = vertexPositionColorWgsl })!,

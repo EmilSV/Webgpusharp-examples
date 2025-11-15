@@ -2,7 +2,6 @@
 using System.Text;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
@@ -68,12 +67,10 @@ return Run(
             new()
             {
                 Layout = null!,
-                Vertex = ref InlineInit(
-                    new VertexState()
-                    {
-                        Module = device.CreateShaderModuleWGSL(new() { Code = triangleVertShaderWgsl }),
-                    }
-                ),
+                Vertex = new()
+                {
+                    Module = device.CreateShaderModuleWGSL(new() { Code = triangleVertShaderWgsl }),
+                },
                 Fragment = new FragmentState()
                 {
                     Module = device.CreateShaderModuleWGSL(new() { Code = redFragShaderWgsl }),

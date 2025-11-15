@@ -8,7 +8,6 @@ using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 const int MAX_NUM_LIGHTS = 1024;
 const int WIDTH = 640;
@@ -215,15 +214,15 @@ return Run("Deferred Rendering", WIDTH, HEIGHT, async runContext =>
 
     var writeGBuffersPipeline = device.CreateRenderPipeline(new()
     {
-        Layout = null!,
-        Vertex = ref InlineInit(new VertexState()
+        Layout = null, // Auto-layout
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = vertexWriteGBuffersWGSL,
             }),
             Buffers = vertexBuffers,
-        }),
+        },
         Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
@@ -321,13 +320,13 @@ return Run("Deferred Rendering", WIDTH, HEIGHT, async runContext =>
         {
             BindGroupLayouts = [gBufferTexturesBindGroupLayout],
         }),
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = vertexTextureQuadWGSL,
             }),
-        }),
+        },
         Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
@@ -359,13 +358,13 @@ return Run("Deferred Rendering", WIDTH, HEIGHT, async runContext =>
                 lightsBufferBindGroupLayout,
             ],
         }),
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = vertexTextureQuadWGSL,
             }),
-        }),
+        },
         Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new()

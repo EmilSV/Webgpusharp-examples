@@ -121,14 +121,9 @@ public sealed class Rasterizer
 
 		var mod = device.CreateShaderModuleWGSL("RasterizerRenderer.module", new()
 		{
-			Code =  Wgsl.Value.Concat(Common.Wgsl.Value).ToArray(),
+			Code = Wgsl.Value.Concat(Common.Wgsl.Value).ToArray(),
 		});
 
-		var vertexState = new VertexState
-		{
-			Module = mod,
-			Buffers = scene.VertexBufferLayout,
-		};
 
 		_pipeline = device.CreateRenderPipeline(new()
 		{
@@ -137,7 +132,11 @@ public sealed class Rasterizer
 			{
 				BindGroupLayouts = [common.UniformBindGroupLayout, bindGroupLayout],
 			}),
-			Vertex = ref vertexState,
+			Vertex = new()
+			{
+				Module = mod,
+				Buffers = scene.VertexBufferLayout,
+			},
 			Fragment = new()
 			{
 				Module = mod,

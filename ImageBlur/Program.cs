@@ -6,7 +6,6 @@ using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 const uint TileDim = 128;
 const uint BatchSize = 4;
@@ -100,10 +99,10 @@ return Run("Image Blur", windowWidth, windowHeight, async runContext =>
 	var fullscreenPipeline = device.CreateRenderPipeline(new()
 	{
 		Layout = null,
-		Vertex = ref InlineInit(new VertexState
+		Vertex = new()
 		{
 			Module = fullscreenModule,
-		}),
+		},
 		Fragment = new()
 		{
 			Module = fullscreenModule,

@@ -3,15 +3,11 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
-using WebGpuSharp.FFI;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
-using GPUBuffer = WebGpuSharp.Buffer;
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
@@ -117,7 +113,7 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
     var pipeline = device.CreateRenderPipeline(new()
     {
         Layout = null!,
-        Vertex = ref InlineInit<VertexState>(new()
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new() { Code = cubeWGSL }),
             Buffers = [
@@ -142,7 +138,7 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
                     ]
                 }
             ]
-        }),
+        },
         Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new() { Code = cubeWGSL }),

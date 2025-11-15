@@ -7,7 +7,6 @@ using Setup;
 using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 using System.Runtime.InteropServices;
 
 const int WIDTH = 1280;
@@ -111,7 +110,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
     var pipeline = device.CreateRenderPipeline(new()
     {
         Layout = null,
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
             Module = shaderModule,
             Buffers = [
@@ -143,14 +142,15 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
                         ]
                     }
             ]
-        }),
-        Fragment = new FragmentState()
+        },
+        Fragment = new()
         {
             Module = shaderModule,
             Targets = [
-                new(){
-                        Format = surfaceFormat
-                    }
+                new()
+                {
+                    Format = surfaceFormat
+                }
             ]
         },
         Primitive = new()
@@ -342,7 +342,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
 
     void EnsureEnoughAsteroids()
     {
-        if(renderables.Capacity < asteroidCount)
+        if (renderables.Capacity < asteroidCount)
         {
             renderables.Capacity = asteroidCount;
         }

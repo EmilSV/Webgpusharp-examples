@@ -6,7 +6,6 @@ using System.Text;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 const int SHADOW_DEPTH_TEXTURE_SIZE = 1024;
 const int WIDTH = 640;
@@ -44,7 +43,7 @@ return Run("Shadow Mapping", WIDTH, HEIGHT, async runContext =>
         CompatibleSurface = surface,
         FeatureLevel = FeatureLevel.Compatibility,
     });
-        var device = await adapter.RequestDeviceAsync(new()
+    var device = await adapter.RequestDeviceAsync(new()
     {
         UncapturedErrorCallback = (type, message) =>
         {
@@ -184,14 +183,14 @@ return Run("Shadow Mapping", WIDTH, HEIGHT, async runContext =>
                 uniformBufferBindGroupLayout,
             ],
         }),
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = vertexShadowWGSL,
             }),
             Buffers = vertexBuffers,
-        }),
+        },
         DepthStencil = new()
         {
             DepthWriteEnabled = OptionalBool.True,
@@ -248,14 +247,14 @@ return Run("Shadow Mapping", WIDTH, HEIGHT, async runContext =>
                 uniformBufferBindGroupLayout,
             ],
         }),
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = vertexWGSL,
             }),
             Buffers = vertexBuffers,
-        }),
+        },
         Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
@@ -445,7 +444,7 @@ return Run("Shadow Mapping", WIDTH, HEIGHT, async runContext =>
                 StencilStoreOp = StoreOp.Store,
             },
         };
-        
+
         var commandEncoder = device.CreateCommandEncoder();
         {
             var shadowPass = commandEncoder.BeginRenderPass(new()

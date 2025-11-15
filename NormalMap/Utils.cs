@@ -139,7 +139,7 @@ static class Utils
         {
             Label = $"{label}.pipeline",
             Layout = pipelineLayout,
-            Vertex = ref WebGpuUtil.InlineInit(new VertexState
+            Vertex = new()
             {
                 Module = device.CreateShaderModuleWGSL($"{label}.vertexShader", new()
                 {
@@ -148,7 +148,7 @@ static class Utils
                 Buffers = vertexBufferFormats.Length != 0
                     ? [CreateVBuffer(vertexBufferFormats)]
                     : []
-            }),
+            },
             Fragment = new FragmentState
             {
                 Module = device.CreateShaderModuleWGSL(new()

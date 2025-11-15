@@ -75,13 +75,17 @@ return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         AlphaMode = CompositeAlphaMode.Auto,
     });
 
-    VertexState vertexState = new()
+
+    var pipeline = device.CreateRenderPipeline(new()
     {
-        Module = device!.CreateShaderModuleWGSL(new()
+        Layout = null, // Auto-layout
+        Vertex = new()
         {
-            Code = basicVertWgsl
-        })!,
-        Buffers = [
+            Module = device.CreateShaderModuleWGSL(new()
+            {
+                Code = basicVertWgsl
+            }),
+            Buffers = [
             new()
             {
                 ArrayStride = Cube.CubeVertexSize,
@@ -101,18 +105,13 @@ return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
                 ],
             }
         ]
-    };
-
-    var pipeline = device.CreateRenderPipeline(new()
-    {
-        Layout = null!,
-        Vertex = ref vertexState,
-        Fragment = new FragmentState()
+        },
+        Fragment = new()
         {
-            Module = device!.CreateShaderModuleWGSL(new()
+            Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = sampleTextureMixColor
-            })!,
+            }),
             Targets = [
                 new()
                 {

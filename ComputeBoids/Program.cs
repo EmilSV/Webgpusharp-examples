@@ -1,15 +1,11 @@
-﻿
-using System.Diagnostics;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
-using WebGpuSharp.FFI;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 using GPUBuffer = WebGpuSharp.Buffer;
 
 
@@ -109,7 +105,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
     var renderPipeline = device.CreateRenderPipeline(new()
     {
         Layout = null,
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
             Module = spriteShaderModule,
             Buffers = [
@@ -148,7 +144,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
                     ]
                 }
             ]
-        }),
+        },
         Fragment = new()
         {
             Module = spriteShaderModule,

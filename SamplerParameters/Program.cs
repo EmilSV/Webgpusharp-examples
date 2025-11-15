@@ -7,7 +7,6 @@ using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 const int VIEWPORT_SIZE = 200;
 const double VIEWPORT_GRID_SIZE = 4;
@@ -229,12 +228,12 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
     var blitPipeline = device.CreateRenderPipeline(new()
     {
         Layout = null,
-        Vertex = ref InlineInit(new VertexState
+        Vertex = new()
         {
             Module = pixelBlitModule,
             EntryPoint = "vs"
-        }),
-        Fragment = new FragmentState
+        },
+        Fragment = new()
         {
             Module = pixelBlitModule,
             EntryPoint = "fs",
@@ -326,10 +325,10 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
     var showTexturePipeline = device.CreateRenderPipeline(new()
     {
         Layout = null, // Autogenerate the pipeline layout,
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
             Module = showTextureModule,
-        }),
+        },
         Fragment = new FragmentState()
         {
             Module = showTextureModule,
@@ -378,7 +377,7 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
     var texturedSquarePipeline = device.CreateRenderPipeline(new()
     {
         Layout = null, // Autogenerate the pipeline layout,
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new ()
         {
             Module = texturedSquareModule,
             Constants = [
@@ -393,7 +392,7 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
                     Value = viewportSize,
                 }
             ]
-        }),
+        },
         Fragment = new FragmentState()
         {
             Module = texturedSquareModule,

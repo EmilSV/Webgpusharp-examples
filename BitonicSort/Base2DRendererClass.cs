@@ -55,13 +55,13 @@ abstract class Base2DRendererClass
             {
                 BindGroupLayouts = bgLayouts
             }),
-            Vertex = ref WebGpuUtil.InlineInit(new VertexState()
+            Vertex = new()
             {
                 Module = device.CreateShaderModuleWGSL(new()
                 {
                     Code = FullscreenTexturedQuad.Value,
                 }),
-            }),
+            },
             Fragment = new()
             {
                 Module = device.CreateShaderModuleWGSL(new()

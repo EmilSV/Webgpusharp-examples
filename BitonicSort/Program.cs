@@ -9,7 +9,6 @@ using Setup;
 using WebGpuSharp;
 using WebGpuSharp.FFI;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 using GPUBuffer = WebGpuSharp.Buffer;
 
 

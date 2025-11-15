@@ -246,7 +246,7 @@ return Run("Blending", WIDTH, HEIGHT, async (instance, surface, guiContext, onFr
     var dstPipeline = device.CreateRenderPipeline(new()
     {
         Layout = null,
-        Vertex = ref pipelineBaseVertex,
+        Vertex = pipelineBaseVertex,
         Fragment = new FragmentState()
         {
             Module = shaderModule,
@@ -491,7 +491,7 @@ return Run("Blending", WIDTH, HEIGHT, async (instance, surface, guiContext, onFr
         var srcPipeline = device.CreateRenderPipeline(new()
         {
             Layout = null,
-            Vertex = ref pipelineBaseVertex,
+            Vertex = pipelineBaseVertex,
             Fragment = new FragmentState()
             {
                 Module = shaderModule,
@@ -510,16 +510,16 @@ return Run("Blending", WIDTH, HEIGHT, async (instance, surface, guiContext, onFr
             Primitive = new() { Topology = PrimitiveTopology.TriangleList }
         });
 
-    // Clear color (optionally premultiplied)
+        // Clear color (optionally premultiplied)
         var mult = clearPremultiply ? clearAlpha : 1f;
         var clear = new Color(clearColor.X * mult, clearColor.Y * mult, clearColor.Z * mult, clearAlpha);
 
-    // Select texture set and bind groups
-    var dstBG = usePremultipliedSet ? dstBG_Premul : dstBG_Unpremul;
-    var srcTex = usePremultipliedSet ? srcTexPremul : srcTexUnpremul;
-    // IMPORTANT: create source bind group using the source pipeline's auto layout
-    var srcLayout = srcPipeline.GetBindGroupLayout(0);
-    var srcBGFrame = MakeBGWithLayout(srcLayout, srcTex, srcUBO);
+        // Select texture set and bind groups
+        var dstBG = usePremultipliedSet ? dstBG_Premul : dstBG_Unpremul;
+        var srcTex = usePremultipliedSet ? srcTexPremul : srcTexUnpremul;
+        // IMPORTANT: create source bind group using the source pipeline's auto layout
+        var srcLayout = srcPipeline.GetBindGroupLayout(0);
+        var srcBGFrame = MakeBGWithLayout(srcLayout, srcTex, srcUBO);
 
         var swapView = surface.GetCurrentTexture().Texture!.CreateView();
         var encoder = device.CreateCommandEncoder();
@@ -528,14 +528,14 @@ return Run("Blending", WIDTH, HEIGHT, async (instance, surface, guiContext, onFr
             ColorAttachments = [new() { View = swapView, LoadOp = LoadOp.Clear, StoreOp = StoreOp.Store, ClearValue = clear }]
         });
 
-    // Draw destination (no blending)
+        // Draw destination (no blending)
         pass.SetPipeline(dstPipeline);
         pass.SetBindGroup(0, dstBG);
         pass.Draw(6);
 
         // Draw source (with blending)
         pass.SetPipeline(srcPipeline);
-    pass.SetBindGroup(0, srcBGFrame);
+        pass.SetBindGroup(0, srcBGFrame);
         pass.SetBlendConstant(new Color(constantColor.X, constantColor.Y, constantColor.Z, constantAlpha));
         pass.Draw(6);
 

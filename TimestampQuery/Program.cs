@@ -7,7 +7,6 @@ using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
@@ -131,8 +130,8 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, guiContex
 
     var pipeline = device.CreateRenderPipeline(new()
     {
-        Layout = null,
-        Vertex = ref InlineInit(new VertexState()
+        Layout = null, // Auto-layout
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
@@ -156,7 +155,7 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, guiContex
                     }
                 ],
             }],
-        }),
+        },
         Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new() { Code = blackFragWGSL }),

@@ -8,7 +8,6 @@ using Setup;
 using ImGuiNET;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 const int geometryVertexSize = 4 * 8; // Byte size of one geometry vertex.
 const int geometryPositionOffset = 0;
@@ -185,7 +184,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
         var depthPrePassRenderPipelineDescriptorBase = new RenderPipelineDescriptor()
         {
             Layout = depthPrePassRenderPipelineLayout,
-            Vertex = ref InlineInit(new VertexState()
+            Vertex = new()
             {
                 Module = device!.CreateShaderModuleWGSL(new()
                 {
@@ -208,7 +207,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
                         ],
                     },
                 ],
-            }),
+            },
             Primitive = new()
             {
                 Topology = PrimitiveTopology.TriangleList,
@@ -260,9 +259,9 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
         var precisionPassRenderPipelineDescriptorBase = new RenderPipelineDescriptor()
         {
             Layout = precisionPassRenderPipelineLayout,
-            Vertex = ref InlineInit(new VertexState()
+            Vertex = new()
             {
-                Module = device!.CreateShaderModuleWGSL(new()
+                Module = device.CreateShaderModuleWGSL(new()
                 {
                     Code = vertexPrecisionErrorPassWGSL!
                 }),
@@ -283,7 +282,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
                         ],
                     },
                 ],
-            }),
+            },
             Fragment = new FragmentState()
             {
                 Module = device!.CreateShaderModuleWGSL(new()
@@ -347,9 +346,9 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
         var colorPassRenderPipelineDescriptorBase = new RenderPipelineDescriptor()
         {
             Layout = colorPassRenderPiplineLayout,
-            Vertex = ref InlineInit(new VertexState()
+            Vertex = new()
             {
-                Module = device!.CreateShaderModuleWGSL(new()
+                Module = device.CreateShaderModuleWGSL(new()
                 {
                     Code = vertexWGSL!
                 }),
@@ -377,7 +376,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
                         ],
                     },
                 ],
-            }),
+            },
             Fragment = new FragmentState()
             {
                 Module = device!.CreateShaderModuleWGSL(new()
@@ -439,13 +438,13 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
     var textureQuadPassPipline = device.CreateRenderPipeline(new()
     {
         Layout = textureQuadPassPiplineLayout,
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
-            Module = device!.CreateShaderModuleWGSL(new()
+            Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = vertexTextureQuadWGSL!
             }),
-        }),
+        },
         Fragment = new FragmentState()
         {
             Module = device!.CreateShaderModuleWGSL(new()

@@ -1,15 +1,9 @@
-﻿
-using System.Diagnostics;
-using System.Numerics;
-using System.Reflection;
-using System.Runtime.InteropServices;
+﻿using System.Reflection;
 using System.Text;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
-using WebGpuSharp.FFI;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 using GPUBuffer = WebGpuSharp.Buffer;
 
 
@@ -244,7 +238,7 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
         (null, null),
         (null, null)
     ];
-    Action<bool> render = null;
+    Action<bool>? render = null;
 
     void ResetGameData()
     {
@@ -364,11 +358,11 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
             {
                 Topology = PrimitiveTopology.TriangleStrip,
             },
-            Vertex = ref InlineInit(new VertexState()
+            Vertex = new()
             {
                 Module = vertexShader,
                 Buffers = [cellsStride, squareStride]
-            }),
+            },
             Fragment = new()
             {
                 Module = fragmentShader,

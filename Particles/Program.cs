@@ -8,7 +8,6 @@ using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 static byte[] ToBytes(Stream s)
 {
@@ -115,8 +114,8 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
 
     var renderPipeline = device.CreateRenderPipeline(new()
     {
-        Layout = null!,
-        Vertex = ref InlineInit(new VertexState()
+        Layout = null, // Auto-layout
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
@@ -159,7 +158,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
                     },
                 },
             },
-        }),
+        },
         Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new()

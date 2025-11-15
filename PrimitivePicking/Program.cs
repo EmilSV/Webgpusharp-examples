@@ -8,7 +8,6 @@ using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-using static WebGpuSharp.WebGpuUtil;
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
@@ -202,15 +201,15 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
 
     var forwardRenderingPipeline = device.CreateRenderPipeline(new()
     {
-        Layout = null,
-        Vertex = ref InlineInit(new VertexState()
+        Layout = null, // Auto-layout
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = vertexForwardRendering,
             }),
             Buffers = vertexBuffers,
-        }),
+        },
         Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
@@ -262,13 +261,13 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
         {
             BindGroupLayouts = [primitiveTextureBindGroupLayout],
         }),
-        Vertex = ref InlineInit(new VertexState()
+        Vertex = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = vertexTextureQuad,
             }),
-        }),
+        },
         Fragment = new()
         {
             Module = device.CreateShaderModuleWGSL(new()
@@ -285,10 +284,10 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
         Primitive = primitive,
     });
 
-    var pickBindGroupLayout = device.CreateBindGroupLayout(new()
-    {
-        Entries = [
-            new()
+var pickBindGroupLayout = device.CreateBindGroupLayout(new()
+{
+    Entries = [
+        new()
             {
                 Binding = 0,
                 Visibility = ShaderStage.Compute,
@@ -304,28 +303,28 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
                 },
             },
         ],
-    });
+});
 
 
-    var pickPipeline = device.CreateComputePipeline(new()
+var pickPipeline = device.CreateComputePipeline(new()
+{
+    Layout = device.CreatePipelineLayout(new()
     {
-        Layout = device.CreatePipelineLayout(new()
+        BindGroupLayouts = [pickBindGroupLayout],
+    }),
+    Compute = new()
+    {
+        Module = device.CreateShaderModuleWGSL(new()
         {
-            BindGroupLayouts = [pickBindGroupLayout],
+            Code = computePickPrimitive,
         }),
-        Compute = new()
-        {
-            Module = device.CreateShaderModuleWGSL(new()
-            {
-                Code = computePickPrimitive,
-            }),
-        },
-    });
+    },
+});
 
-    var forwardRenderPassDescriptor = new RenderPassDescriptor
-    {
-        ColorAttachments = [
-            new()
+var forwardRenderPassDescriptor = new RenderPassDescriptor
+{
+    ColorAttachments = [
+        new()
             {
                 // view is acquired and set in render loop.
                 View = null,
@@ -342,20 +341,20 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
                 StoreOp = StoreOp.Store,
             },
         ],
-        DepthStencilAttachment = new()
-        {
-            View = depthTexture.CreateView(),
-
-            DepthClearValue = 1.0f,
-            DepthLoadOp = LoadOp.Clear,
-            DepthStoreOp = StoreOp.Store,
-        },
-    };
-
-    var textureQuadPassDescriptor = new RenderPassDescriptor
+    DepthStencilAttachment = new()
     {
-        ColorAttachments = [
-            new()
+        View = depthTexture.CreateView(),
+
+        DepthClearValue = 1.0f,
+        DepthLoadOp = LoadOp.Clear,
+        DepthStoreOp = StoreOp.Store,
+    },
+};
+
+var textureQuadPassDescriptor = new RenderPassDescriptor
+{
+    ColorAttachments = [
+        new()
             {
                 // view is acquired and set in render loop.
                 View = null,
@@ -365,26 +364,26 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
                 StoreOp = StoreOp.Store,
             },
         ],
-    };
+};
 
 
-    var modelUniformBuffer = device.CreateBuffer(new()
-    {
-        Size = (ulong)Unsafe.SizeOf<UniformFrameData>(),
-        Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
-    });
+var modelUniformBuffer = device.CreateBuffer(new()
+{
+    Size = (ulong)Unsafe.SizeOf<UniformFrameData>(),
+    Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
+});
 
-    var frameUniformBuffer = device.CreateBuffer(new()
-    {
-        Size = (ulong)Unsafe.SizeOf<FullFrame>(),
-        Usage = BufferUsage.Uniform | BufferUsage.CopyDst | BufferUsage.Storage,
-    });
+var frameUniformBuffer = device.CreateBuffer(new()
+{
+    Size = (ulong)Unsafe.SizeOf<FullFrame>(),
+    Usage = BufferUsage.Uniform | BufferUsage.CopyDst | BufferUsage.Storage,
+});
 
-    var sceneUniformBindGroup = device.CreateBindGroup(new()
-    {
-        Layout = forwardRenderingPipeline.GetBindGroupLayout(0),
-        Entries = [
-            new()
+var sceneUniformBindGroup = device.CreateBindGroup(new()
+{
+    Layout = forwardRenderingPipeline.GetBindGroupLayout(0),
+    Entries = [
+        new()
             {
                 Binding = 0,
                 Buffer =  modelUniformBuffer
@@ -395,26 +394,26 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
                 Buffer = frameUniformBuffer
             },
         ],
-    });
+});
 
 
-    var primitiveTextureBindGroup = device.CreateBindGroup(new()
-    {
-        Layout = primitiveTextureBindGroupLayout,
-        Entries = [
-            new()
+var primitiveTextureBindGroup = device.CreateBindGroup(new()
+{
+    Layout = primitiveTextureBindGroupLayout,
+    Entries = [
+        new()
             {
                 Binding = 0,
                 TextureView = primitiveIndexTexture.CreateView(),
             },
         ],
-    });
+});
 
-    var pickBindGroup = device.CreateBindGroup(new()
-    {
-        Layout = pickBindGroupLayout,
-        Entries = [
-            new()
+var pickBindGroup = device.CreateBindGroup(new()
+{
+    Layout = pickBindGroupLayout,
+    Entries = [
+        new()
             {
                 Binding = 0,
                 Buffer = frameUniformBuffer
@@ -425,79 +424,79 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
                 TextureView = primitiveIndexTexture.CreateView(),
             },
         ],
-    });
+});
 
-    var eyePosition = new Vector3(0, 12, -25);
-    var upVector = Vector3.UnitY;
-    var origin = Vector3.Zero;
+var eyePosition = new Vector3(0, 12, -25);
+var upVector = Vector3.UnitY;
+var origin = Vector3.Zero;
 
-    var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
-        fieldOfView: (float)(2 * Math.PI) / 5,
-        aspectRatio: ASPECT,
-        nearPlaneDistance: 1,
-        farPlaneDistance: 2000.0f
-    );
+var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
+    fieldOfView: (float)(2 * Math.PI) / 5,
+    aspectRatio: ASPECT,
+    nearPlaneDistance: 1,
+    farPlaneDistance: 2000.0f
+);
 
-    // Move the model so it's centered.
-    var modelMatrix = Matrix4x4.CreateTranslation(0, 0, 0);
-    var invertTransposeModelMatrix = Matrix4x4.Invert(modelMatrix, out var inverted) ?
-        Matrix4x4.Transpose(inverted) :
-        throw new InvalidOperationException("Could not invert model matrix");
+// Move the model so it's centered.
+var modelMatrix = Matrix4x4.CreateTranslation(0, 0, 0);
+var invertTransposeModelMatrix = Matrix4x4.Invert(modelMatrix, out var inverted) ?
+    Matrix4x4.Transpose(inverted) :
+    throw new InvalidOperationException("Could not invert model matrix");
 
-    var normalModelData = invertTransposeModelMatrix;
-    queue.WriteBuffer(modelUniformBuffer, 0, new Uniform
+var normalModelData = invertTransposeModelMatrix;
+queue.WriteBuffer(modelUniformBuffer, 0, new Uniform
+{
+    ModelMatrix = modelMatrix,
+    NormalModelMatrix = normalModelData,
+});
+
+
+var pickCoord = new Vector2(0, 0);
+input.OnMouseMotion += eventData =>
+{
+    pickCoord.X = eventData.x;
+    pickCoord.Y = eventData.y;
+};
+
+
+float rad = 0;
+Matrix4x4 GetCameraViewProjMatrix()
+{
+    if (settings.Rotate)
     {
-        ModelMatrix = modelMatrix,
-        NormalModelMatrix = normalModelData,
-    });
+        float elapsed = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalMilliseconds / 1000.0f;
+        rad = MathF.PI * (elapsed / 10f);
+    }
+    var rotation = Matrix4x4.CreateTranslation(origin);
+    rotation.RotateY(rad);
+    var rotatedEyePosition = Vector3.Transform(eyePosition, rotation);
+    var viewMatrix = Matrix4x4.CreateLookAt(rotatedEyePosition, origin, upVector);
+
+    return viewMatrix * projectionMatrix;
+}
 
 
-    var pickCoord = new Vector2(0, 0);
-    input.OnMouseMotion += eventData =>
+void Frame()
+{
+    var cameraViewProj = GetCameraViewProjMatrix();
+    var cameraInvViewProj = Matrix4x4.Invert(cameraViewProj, out var inv) ?
+    inv : throw new InvalidOperationException("Could not invert view projection matrix");
+
+    UniformFrameData frame = new()
     {
-        pickCoord.X = eventData.x;
-        pickCoord.Y = eventData.y;
+        ViewProjectionMatrix = cameraViewProj,
+        InvViewProjectionMatrix = cameraInvViewProj,
+        PickCoord = pickCoord
     };
 
+    queue.WriteBuffer(frameUniformBuffer, 0, frame);
 
-    float rad = 0;
-    Matrix4x4 GetCameraViewProjMatrix()
+    var commandEncoder = device.CreateCommandEncoder();
     {
-        if (settings.Rotate)
+        var forwardRenderPassDescriptor = new RenderPassDescriptor
         {
-            float elapsed = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalMilliseconds / 1000.0f;
-            rad = MathF.PI * (elapsed / 10f);
-        }
-        var rotation = Matrix4x4.CreateTranslation(origin);
-        rotation.RotateY(rad);
-        var rotatedEyePosition = Vector3.Transform(eyePosition, rotation);
-        var viewMatrix = Matrix4x4.CreateLookAt(rotatedEyePosition, origin, upVector);
-
-        return viewMatrix * projectionMatrix;
-    }
-
-
-    void Frame()
-    {
-        var cameraViewProj = GetCameraViewProjMatrix();
-        var cameraInvViewProj = Matrix4x4.Invert(cameraViewProj, out var inv) ?
-        inv : throw new InvalidOperationException("Could not invert view projection matrix");
-
-        UniformFrameData frame = new()
-        {
-            ViewProjectionMatrix = cameraViewProj,
-            InvViewProjectionMatrix = cameraInvViewProj,
-            PickCoord = pickCoord
-        };
-
-        queue.WriteBuffer(frameUniformBuffer, 0, frame);
-
-        var commandEncoder = device.CreateCommandEncoder();
-        {
-            var forwardRenderPassDescriptor = new RenderPassDescriptor
-            {
-                ColorAttachments = [
-                    new()
+            ColorAttachments = [
+                new()
                     {
                         // view is acquired and set in render loop.
                         View = surface.GetCurrentTexture().Texture!.CreateView(),
@@ -514,32 +513,32 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
                         StoreOp = StoreOp.Store,
                     },
                 ],
-                DepthStencilAttachment = new()
-                {
-                    View = depthTexture.CreateView(),
-
-                    DepthClearValue = 1.0f,
-                    DepthLoadOp = LoadOp.Clear,
-                    DepthStoreOp = StoreOp.Store,
-                },
-            };
-
-            // Forward rendering pass
-            var forwardPass = commandEncoder.BeginRenderPass(forwardRenderPassDescriptor);
-            forwardPass.SetPipeline(forwardRenderingPipeline);
-            forwardPass.SetBindGroup(0, sceneUniformBindGroup);
-            forwardPass.SetVertexBuffer(0, vertexBuffer);
-            forwardPass.SetIndexBuffer(indexBuffer, IndexFormat.Uint16);
-            forwardPass.DrawIndexed((uint)(indexCount));
-            forwardPass.End();
-        }
-        {
-            if (settings.Mode == Settings.ModeType.PrimitiveIndexes)
+            DepthStencilAttachment = new()
             {
-                var textureQuadPassDescriptor = new RenderPassDescriptor
-                {
-                    ColorAttachments = [
-                        new()
+                View = depthTexture.CreateView(),
+
+                DepthClearValue = 1.0f,
+                DepthLoadOp = LoadOp.Clear,
+                DepthStoreOp = StoreOp.Store,
+            },
+        };
+
+        // Forward rendering pass
+        var forwardPass = commandEncoder.BeginRenderPass(forwardRenderPassDescriptor);
+        forwardPass.SetPipeline(forwardRenderingPipeline);
+        forwardPass.SetBindGroup(0, sceneUniformBindGroup);
+        forwardPass.SetVertexBuffer(0, vertexBuffer);
+        forwardPass.SetIndexBuffer(indexBuffer, IndexFormat.Uint16);
+        forwardPass.DrawIndexed((uint)(indexCount));
+        forwardPass.End();
+    }
+    {
+        if (settings.Mode == Settings.ModeType.PrimitiveIndexes)
+        {
+            var textureQuadPassDescriptor = new RenderPassDescriptor
+            {
+                ColorAttachments = [
+                    new()
                         {
                             // view is acquired and set in render loop.
                             View = surface.GetCurrentTexture().Texture!.CreateView(),
@@ -549,37 +548,37 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
                             StoreOp = StoreOp.Store,
                         },
                     ],
-                };
+            };
 
-                // Primitive Index debug view
-                // Overwrites the canvas texture with a visualization of the primitive
-                // index for each primitive
-                var debugViewPass = commandEncoder.BeginRenderPass(textureQuadPassDescriptor);
-                debugViewPass.SetPipeline(primitivesDebugViewPipeline);
-                debugViewPass.SetBindGroup(0, primitiveTextureBindGroup);
-                debugViewPass.Draw(6);
-                debugViewPass.End();
-            }
+            // Primitive Index debug view
+            // Overwrites the canvas texture with a visualization of the primitive
+            // index for each primitive
+            var debugViewPass = commandEncoder.BeginRenderPass(textureQuadPassDescriptor);
+            debugViewPass.SetPipeline(primitivesDebugViewPipeline);
+            debugViewPass.SetBindGroup(0, primitiveTextureBindGroup);
+            debugViewPass.Draw(6);
+            debugViewPass.End();
         }
-        {
-            // Picking pass. Executes a single instance of a compute shader that loads
-            // the primitive index at the pointer coordinates from the primitive index
-            // texture written in the forward pass. The selected primitive index is
-            // saved in the frameUniformBuffer and used for highlighting on the next
-            // render. This means that the highlighted primitive is always a frame behind.
-            var pickPass = commandEncoder.BeginComputePass();
-            pickPass.SetPipeline(pickPipeline);
-            pickPass.SetBindGroup(0, pickBindGroup);
-            pickPass.DispatchWorkgroups(1);
-            pickPass.End();
-        }
-
-        var guiCommandBuffer = DrawGui(guiContext, surface);
-
-        queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
-        surface.Present();
     }
-    runContext.OnFrame += Frame;
+    {
+        // Picking pass. Executes a single instance of a compute shader that loads
+        // the primitive index at the pointer coordinates from the primitive index
+        // texture written in the forward pass. The selected primitive index is
+        // saved in the frameUniformBuffer and used for highlighting on the next
+        // render. This means that the highlighted primitive is always a frame behind.
+        var pickPass = commandEncoder.BeginComputePass();
+        pickPass.SetPipeline(pickPipeline);
+        pickPass.SetBindGroup(0, pickBindGroup);
+        pickPass.DispatchWorkgroups(1);
+        pickPass.End();
+    }
+
+    var guiCommandBuffer = DrawGui(guiContext, surface);
+
+    queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
+    surface.Present();
+}
+runContext.OnFrame += Frame;
 });
 
 

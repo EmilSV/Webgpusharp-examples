@@ -66,24 +66,23 @@ return Run("Hello Triangle", WIDTH, HEIGHT, async (instance, surface, onFrame) =
         AlphaMode = CompositeAlphaMode.Auto,
     });
 
-    VertexState vertexState = new()
-    {
-        Module = device!.CreateShaderModuleWGSL(new()
-        {
-            Code = TriangleVertShaderSource
-        })!,
-    };
 
     var pipeline = device.CreateRenderPipeline(new()
     {
-        Layout = null!,
-        Vertex = ref vertexState,
+        Layout = null, // Auto-layout
+        Vertex = new VertexState()
+        {
+            Module = device.CreateShaderModuleWGSL(new()
+            {
+                Code = TriangleVertShaderSource
+            }),
+        },
         Fragment = new FragmentState()
         {
-            Module = device!.CreateShaderModuleWGSL(new()
+            Module = device.CreateShaderModuleWGSL(new()
             {
                 Code = RedFragShaderSource
-            })!,
+            }),
             Targets = [
                 new()
                 {
