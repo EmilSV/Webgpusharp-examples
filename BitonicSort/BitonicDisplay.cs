@@ -1,56 +1,98 @@
+using Setup;
 using WebGpuSharp;
+
+public struct BitonicDisplayRenderArgs
+{
+    public uint Highlight;
+}
 
 class BitonicDisplayRenderer : Base2DRendererClass
 {
-    public BindGroupCluster ComputeBGDescript { get; }
+    private Lazy<byte[]> BitonicDisplayFragWGSL = new(() =>
+    {
+        return ResourceUtils.GetEmbeddedResource("BitonicSort.shaders.bitonicDisplay.frag.wgsl", typeof(BitonicDisplayRenderer).Assembly);
+    });
+
+    public (BindGroup[] bindGroups, BindGroupLayout layout) computeBindGroupsAndLayout;
+    private WebGpuSharp.Buffer _uniformBuffer;
+    private Queue _queue;
+    private BindGroupLayout _bindGroupLayout;
+    private BindGroup _bindGroup;
+    private RenderPipeline _pipeline;
+    private MangedRenderPassDescriptor _renderPassDescriptor;
+
     public BitonicDisplayRenderer(
         Device device,
         TextureFormat presentationFormat,
-        ManagedRenderPassDescriptor renderPassDescriptor,
-        BindGroupCluster computeBGDescript,
-        string label)
+        MangedRenderPassDescriptor renderPassDescriptor,
+        (BindGroup[] bindGroups, BindGroupLayout layout) computeBindGroupsAndLayout,
+        string label
+    )
     {
-        // RenderPassDescriptor = renderPassDescriptor;
-        // ComputeBGDescript = computeBGDescript;
+        _queue = device.GetQueue();
+        _renderPassDescriptor = renderPassDescriptor;
 
-        // var uniformBuffer = device.CreateBuffer(new()
-        // {
-        //     Size = sizeof(uint),
-        //     Usage = BufferUsage.Uniform | BufferUsage.CopyDst
-        // });
+        _uniformBuffer = device.CreateBuffer(new BufferDescriptor
+        {
+            Size = sizeof(uint),
+            Usage = BufferUsage.Uniform | BufferUsage.CopyDst
+        });
 
-        // var bgCluster = BindGroupCluster.CreateBindGroupCluster(
-        //     [0],
-        //     [ShaderStage.Fragment],
-        //     [ResourceType.Buffer],
-        //     [new BufferBindingLayout()
-        //     {
-        //         Type = BufferBindingType.Uniform,
-        //     }],
-        //     [[uniformBuffer]],
-        //     label,
-        //     device
-        // );
+        _bindGroupLayout = device.CreateBindGroupLayout(new BindGroupLayoutDescriptor
+        {
+            Label = $"{label}.bindGroupLayout",
+            Entries =
+            [
+                new()
+                {
+                    Binding = 0,
+                    Visibility = ShaderStage.Fragment,
+                    Buffer = new BufferBindingLayout
+                    {
+                        Type = BufferBindingType.Uniform
+                    }
+                }
+            ]
+        });
 
-        // this.CurrentBindGroup = bgCluster.BindGroups[0];
+        _bindGroup = device.CreateBindGroup(new BindGroupDescriptor
+        {
+            Label = $"{label}.bindGroup0",
+            Layout = _bindGroupLayout,
+            Entries =
+            [
+                new()
+                {
+                    Binding = 0,
+                    Buffer = _uniformBuffer
+                }
+            ]
+        });
 
-        // this.Pipeline = Create2DRenderPipeline(
-        //     device,
-        //     label,
-        //     [computeBGDescript.BindGroupLayout,bgCluster.BindGroupLayout],
-        //     ShadersResources.BitonicDisplayWgsl.Value,
-        //     presentationFormat
-        // );
-
+        _pipeline = Create2DRenderPipeline(
+            device,
+            label,
+            [computeBindGroupsAndLayout.layout, _bindGroupLayout],
+            BitonicDisplayFragWGSL.Value,
+            presentationFormat
+        );
     }
 
-    public override void StartRun(CommandEncoder commandEncoder, params object[] args)
+    public void SetArguments(BitonicDisplayRenderArgs args)
     {
-        throw new NotImplementedException();
+        _queue.WriteBuffer(_uniformBuffer, 0, args.Highlight);
     }
 
-    public override void SwitchBindGroup(string name)
+    public void StartRun(CommandEncoder commandEncoder, BitonicDisplayRenderArgs args)
     {
-        throw new NotImplementedException();
+        SetArguments(args);
+        ExecuteRun(
+                commandEncoder,
+                _renderPassDescriptor,
+                _pipeline!,
+                [computeBindGroupsAndLayout.bindGroups[0], _bindGroup]
+            );
     }
 }
+
+

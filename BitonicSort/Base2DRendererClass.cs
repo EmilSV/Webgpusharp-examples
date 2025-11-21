@@ -1,37 +1,33 @@
-using System.Reflection.Emit;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 using WebGpuSharp;
+using WebGpuSharp.FFI;
+using Setup;
 
 abstract class Base2DRendererClass
 {
-    static Lazy<byte[]> FullscreenTexturedQuad = new(() =>
+    private static readonly Lazy<byte[]> FullscreenTexturedQuadWGSL = new(() =>
     {
-        var assembly = typeof(Base2DRendererClass).Assembly;
-        using var stream = assembly.GetManifestResourceStream("BitonicSort.fullscreenTexturedQuad.wgsl");
-        if (stream == null)
-        {
-            throw new Exception("Could not find embedded resource 'BitonicSort.fullscreenTexturedQuad.wgsl'");
-        }
-        using MemoryStream ms = new();
-        stream.CopyTo(ms);
-        return ms.ToArray();
+        return ResourceUtils.GetEmbeddedResource("BitonicSort.shaders.fullscreenTexturedQuad.wgsl");
     });
 
-    public ManagedRenderPassDescriptor? RenderPassDescriptor;
-    public RenderPipeline? Pipeline;
-    public Dictionary<string, BindGroup> BindGroups = [];
-    public BindGroup? CurrentBindGroup;
-    public string? CurrentBindGroupName;
-
-    public abstract void SwitchBindGroup(string name);
-    public abstract void StartRun(CommandEncoder commandEncoder, params object[] args);
-
-    public virtual void ExecuteRun(
+    public void ExecuteRun(
         CommandEncoder commandEncoder,
-        in RenderPassDescriptor renderPassDescriptor,
+        MangedRenderPassDescriptor renderPassDescriptor,
         RenderPipeline pipeline,
-        ReadOnlySpan<BindGroup> bindGroups)
+        ReadOnlySpan<BindGroup> bindGroups
+    )
     {
-        var passEncoder = commandEncoder.BeginRenderPass(in renderPassDescriptor);
+        var passEncoder = commandEncoder.BeginRenderPass(new RenderPassDescriptor
+        {
+            Label = renderPassDescriptor.Label,
+            ColorAttachments = renderPassDescriptor.ColorAttachments,
+            DepthStencilAttachment = renderPassDescriptor.DepthStencilAttachment,
+            OcclusionQuerySet = renderPassDescriptor.OcclusionQuerySet,
+            TimestampWrites = renderPassDescriptor.TimestampWrites,
+        });
         passEncoder.SetPipeline(pipeline);
         for (int i = 0; i < bindGroups.Length; i++)
         {
@@ -41,12 +37,13 @@ abstract class Base2DRendererClass
         passEncoder.End();
     }
 
-    public virtual RenderPipeline Create2DRenderPipeline(
+    public RenderPipeline Create2DRenderPipeline(
         Device device,
         string label,
-        ReadOnlySpan<BindGroupLayout> bgLayouts,
+        BindGroupLayout[] bgLayouts,
         WGPURefText code,
-        TextureFormat presentationFormat)
+        TextureFormat presentationFormat
+    )
     {
         return device.CreateRenderPipeline(new()
         {
@@ -59,21 +56,22 @@ abstract class Base2DRendererClass
             {
                 Module = device.CreateShaderModuleWGSL(new()
                 {
-                    Code = FullscreenTexturedQuad.Value,
-                }),
+                    Code = FullscreenTexturedQuadWGSL.Value
+                })
             },
             Fragment = new()
             {
                 Module = device.CreateShaderModuleWGSL(new()
                 {
-                    Code = code,
+                    Code = code
                 }),
-                Targets = [
+                Targets =
+                [
                     new()
                     {
                         Format = presentationFormat
                     }
-                ]
+                ],
             },
             Primitive = new()
             {
@@ -81,26 +79,5 @@ abstract class Base2DRendererClass
                 CullMode = CullMode.None
             }
         });
-    }
-}
-
-sealed class ManagedRenderPassDescriptor
-{
-    public string? Label;
-    public required RenderPassColorAttachment[] ColorAttachments;
-    public RenderPassDepthStencilAttachment? DepthStencilAttachment;
-    public QuerySet? OcclusionQuerySet;
-    public PassTimestampWrites? TimestampWrites;
-
-    public RenderPassDescriptor ToRenderPassDescriptor()
-    {
-        return new RenderPassDescriptor
-        {
-            Label = Label,
-            ColorAttachments = ColorAttachments,
-            DepthStencilAttachment = DepthStencilAttachment,
-            OcclusionQuerySet = OcclusionQuerySet,
-            TimestampWrites = TimestampWrites
-        };
     }
 }

@@ -10,7 +10,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Cornell/bin/Debug/net9.0/Cornell.dll",
+            "program": "${workspaceFolder}/Cornell/bin/Debug/net10.0/Cornell.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Cornell",
             "console": "internalConsole",
