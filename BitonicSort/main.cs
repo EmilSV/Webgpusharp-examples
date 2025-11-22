@@ -156,16 +156,36 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         Size = elementBufferSize,
         Usage = BufferUsage.Storage | BufferUsage.CopySrc,
     });
-    var elementsReadbackBuffer = device.CreateBuffer(new()
+    var elementsStagingBuffer = device.CreateBuffer(new()
     {
         Size = elementBufferSize,
-        Usage = BufferUsage.CopyDst | BufferUsage.MapRead,
+        Usage = BufferUsage.MapRead | BufferUsage.CopyDst,
     });
+
+    var atomicSwapsOutputBuffer = device.CreateBuffer(new()
+    {
+        Size = sizeof(uint),
+        Usage = BufferUsage.Storage | BufferUsage.CopySrc,
+    });
+
+    var atomicSwapsStagingBuffer = device.CreateBuffer(new()
+    {
+        Size = sizeof(uint),
+        Usage = BufferUsage.MapRead | BufferUsage.CopyDst,
+    });
+
     var computeUniformsBuffer = device.CreateBuffer(new()
     {
         Size = (ulong)Unsafe.SizeOf<ComputeUniforms>(),
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
+
+    var elementsReadbackBuffer = device.CreateBuffer(new()
+    {
+        Size = elementBufferSize,
+        Usage = BufferUsage.CopyDst | BufferUsage.MapRead,
+    });
+
     var swapCounterBuffer = device.CreateBuffer(new()
     {
         Size = sizeof(uint),
@@ -225,7 +245,20 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         BindGroupLayouts = new[] { computeBindGroupLayout },
     });
 
-    ComputePipeline? computePipeline = null;
+    ComputePipeline? computePipeline = device.CreateComputePipeline(new()
+    {
+        Layout = device.CreatePipelineLayout(new()
+        {
+            BindGroupLayouts = new[] { computeBindGroupLayout },
+        }),
+        Compute = new()
+        {
+            Module = device.CreateShaderModuleWGSL(new()
+            {
+                Code = BitonicCompute.NaiveBitonicCompute(settings.WorkgroupSize)
+            })
+        },
+    });
 
     ComputePipeline CreateBitonicPipeline()
     {
