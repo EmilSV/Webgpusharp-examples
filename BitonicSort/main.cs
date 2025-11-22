@@ -110,18 +110,23 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     {
         totalElementOptions.Add(value);
     }
+    var totalElementLabels = totalElementOptions.ConvertAll(static v => v.ToString()).ToArray();
 
     List<uint> sizeLimitOptions = new();
     for (uint value = maxWorkgroupSize; value >= 2; value /= 2)
     {
         sizeLimitOptions.Add(value);
     }
-
-    var totalElementLabels = totalElementOptions.ConvertAll(static v => v.ToString()).ToArray();
     var sizeLimitLabels = sizeLimitOptions.ConvertAll(static v => v.ToString()).ToArray();
 
-    var gridDims = BitonicMath.GetGridDimensions(maxElements);
-    var settings = new BitonicSettings(maxElements, gridDims.Width, gridDims.Height, maxWorkgroupSize);
+
+
+    var defaultGridWidth = (uint)(Math.Sqrt(maxElements) % 2 == 0
+        ? Math.Floor(Math.Sqrt(maxElements))
+        : Math.Floor(Math.Sqrt(maxElements / 2)));
+    var defaultGridHeight = maxElements / defaultGridWidth;
+
+    var settings = new BitonicSettings(maxElements, defaultGridWidth, defaultGridHeight, maxWorkgroupSize);
     var configStats = new Dictionary<(uint TotalElements, uint SizeLimit), ConfigStats>();
 
     uint highestBlockHeight = 2;
@@ -134,18 +139,17 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     bool logCopyInFlight = false;
     bool logReadbackPending = false;
     bool swapReadbackPending = false;
-    (uint TotalElements, uint SizeLimit) currentConfigKey = (0, 0);
     int totalElementsIndex = 0;
     int sizeLimitIndex = 0;
 
-    var random = new Random();
-    var hostElements = new uint[maxElements];
+    // Initialize initial elements array
+    var elements = Enumerable.Range(0, (int)settings.TotalElements).Select(i => (uint)i).ToArray();
 
-    var elementBufferSize = (ulong)(maxElements * sizeof(uint));
+    var elementBufferSize = (ulong)(totalElementOptions[0] * sizeof(float));
     var elementsInputBuffer = device.CreateBuffer(new()
     {
         Size = elementBufferSize,
-        Usage = BufferUsage.Storage | BufferUsage.CopyDst | BufferUsage.CopySrc,
+        Usage = BufferUsage.Storage | BufferUsage.CopyDst,
     });
     var elementsOutputBuffer = device.CreateBuffer(new()
     {
@@ -170,7 +174,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     var swapReadbackBuffer = device.CreateBuffer(new()
     {
         Size = sizeof(uint),
-        Usage = BufferUsage.CopyDst | BufferUsage.MapRead,
+        Usage = BufferUsage.MapRead | BufferUsage.CopyDst,
     });
 
     var computeBindGroupLayout = device.CreateBindGroupLayout(new()
@@ -265,12 +269,11 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
     void EnsureConfigEntry()
     {
-        currentConfigKey = (settings.TotalElements, settings.SizeLimit);
-        if (!configStats.ContainsKey(currentConfigKey))
+        if (!configStats.ContainsKey(settings.CurrentConfigKey))
         {
-            configStats[currentConfigKey] = new ConfigStats();
+            configStats[settings.CurrentConfigKey] = new ConfigStats();
         }
-        var stats = configStats[currentConfigKey];
+        var stats = configStats[settings.CurrentConfigKey];
         settings.AverageSortTimeMs = stats.Sorts == 0 ? 0 : stats.TotalTimeMs / stats.Sorts;
     }
 
@@ -291,14 +294,14 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         int length = (int)settings.TotalElements;
         for (int i = 0; i < length; i++)
         {
-            hostElements[i] = (uint)i;
+            elements[i] = (uint)i;
         }
         for (int i = length - 1; i > 0; i--)
         {
-            int j = random.Next(i + 1);
-            (hostElements[i], hostElements[j]) = (hostElements[j], hostElements[i]);
+            int j = Random.Shared.Next(i + 1);
+            (elements[i], elements[j]) = (elements[j], elements[i]);
         }
-        queue.WriteBuffer(elementsInputBuffer, 0, hostElements.AsSpan(0, length));
+        queue.WriteBuffer(elementsInputBuffer, 0, elements.AsSpan(0, length));
     }
 
     void UpdateSwappedCell()
@@ -381,10 +384,10 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
             return;
         }
 
-        var stats = configStats[currentConfigKey];
+        var stats = configStats[settings.CurrentConfigKey];
         stats.Sorts++;
         stats.TotalTimeMs += settings.SortTimeMs;
-        configStats[currentConfigKey] = stats;
+        configStats[settings.CurrentConfigKey] = stats;
         settings.AverageSortTimeMs = stats.TotalTimeMs / stats.Sorts;
     }
 

@@ -37,9 +37,14 @@ internal struct FragmentUniforms
 
 internal sealed class BitonicSettings
 {
+	// The number of elements to be sorted. Must equal gridWidth * gridHeight || Workgroup Size * Workgroups * 2.
+	// When changed, all relevant values within the settings object are reset to their defaults at the beginning of a sort with n elements.
 	public uint TotalElements;
+	// The width of the screen in cells.
 	public uint GridWidth;
+	// The height of the screen in cells.
 	public uint GridHeight;
+
 	public uint WorkgroupSize;
 	public uint SizeLimit;
 	public uint WorkgroupsPerStep;
@@ -57,6 +62,8 @@ internal sealed class BitonicSettings
 	public double SortTimeMs;
 	public double AverageSortTimeMs;
 	public int AutoSortSpeedMs;
+
+	public (uint TotalElements, uint SizeLimit) CurrentConfigKey => (TotalElements, SizeLimit);
 
 	public BitonicSettings(uint totalElements, uint gridWidth, uint gridHeight, uint sizeLimit)
 	{
