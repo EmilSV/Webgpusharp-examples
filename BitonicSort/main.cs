@@ -164,34 +164,40 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     // Initialize input, output, staging buffers
     var elementsInputBuffer = device.CreateBuffer(new()
     {
+        Label = "BitonicSort.ElementsInputBuffer",
         Size = elementBufferSize,
         Usage = BufferUsage.Storage | BufferUsage.CopyDst,
     });
     var elementsOutputBuffer = device.CreateBuffer(new()
     {
+        Label = "BitonicSort.ElementsOutputBuffer",
         Size = elementBufferSize,
         Usage = BufferUsage.Storage | BufferUsage.CopySrc,
     });
     var elementsStagingBuffer = device.CreateBuffer(new()
     {
+        Label = "BitonicSort.ElementsStagingBuffer",
         Size = elementBufferSize,
         Usage = BufferUsage.MapRead | BufferUsage.CopyDst,
     });
 
     var atomicSwapsOutputBuffer = device.CreateBuffer(new()
     {
+        Label = "BitonicSort.AtomicSwapsOutputBuffer",
         Size = sizeof(uint),
         Usage = BufferUsage.Storage | BufferUsage.CopySrc,
     });
 
     var atomicSwapsStagingBuffer = device.CreateBuffer(new()
     {
+        Label = "BitonicSort.AtomicSwapsStagingBuffer",
         Size = sizeof(uint),
         Usage = BufferUsage.MapRead | BufferUsage.CopyDst,
     });
 
     var computeUniformsBuffer = device.CreateBuffer(new()
     {
+        Label = "BitonicSort.ComputeUniformsBuffer",
         Size = (ulong)Unsafe.SizeOf<ComputeUniforms>(),
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
@@ -242,9 +248,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         ],
     });
 
-
-
-    ComputePipeline? computePipeline = device.CreateComputePipeline(new()
+    var computePipeline = device.CreateComputePipeline(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {
@@ -320,7 +324,19 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     {
         settings.StepTimeMs = 0;
         settings.SortTimeMs = 0;
-        UpdateConfigKey();
+        (uint Sorts, double TotalTimeMs) stats;
+        if (!settings.ConfigToCompleteSwapsMap.TryGetValue(settings.ConfigKey, out stats))
+        {
+            stats.TotalTimeMs = 0;
+            stats.Sorts = 0;
+            settings.ConfigToCompleteSwapsMap[settings.ConfigKey] = stats;
+        }
+        var ast = stats.TotalTimeMs / stats.Sorts;
+        if (double.IsNaN(ast))
+        {
+            ast = 0;
+        }
+        settings.AverageSortTimeMs = ast;
     }
 
     void ResetSwapCounter()
@@ -339,7 +355,6 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     {
         var active = elements.AsSpan(0, (int)settings.TotalElements);
         queue.WriteBuffer(elementsInputBuffer, 0, active);
-        queue.WriteBuffer(elementsOutputBuffer, 0, active);
     }
 
     void RandomizeElementArray()
