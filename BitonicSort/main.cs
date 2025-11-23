@@ -419,23 +419,37 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     void ResetExecutionInformation(bool randomizeValues, bool recreatePipeline)
     {
         UpdateConfigKey();
-        settings.WorkgroupSize = BitonicMath.ComputeWorkgroupSize(settings.TotalElements, settings.SizeLimit);
-        settings.WorkgroupsPerStep = BitonicMath.ComputeWorkgroupsPerStep(settings.TotalElements, settings.WorkgroupSize);
-        settings.TotalSteps = BitonicMath.GetNumSteps(settings.TotalElements);
+        // The workgroup size is either elements / 2 or Size Limit
+        settings.WorkgroupSize = Math.Min(settings.TotalElements / 2, settings.SizeLimit);
+
+        settings.WorkgroupsPerStep = settings.TotalElements / (settings.WorkgroupSize * 2);
+
+        // Reset step Index and number of steps based on elements size
         settings.StepIndex = 0;
+        settings.TotalSteps = GetNumSteps(settings.TotalElements);
+
+        // Get new width and height of screen display in cells
+        uint newCellWidth = (uint)(
+            Math.Sqrt(settings.TotalElements) % 2 == 0
+                ? Math.Floor(Math.Sqrt(settings.TotalElements))
+                : Math.Floor(Math.Sqrt(settings.TotalElements / 2.0)));
+
+        uint newCellHeight = settings.TotalElements / newCellWidth;
+        settings.GridWidth = newCellWidth;
+        settings.GridHeight = newCellHeight;
+        
+        // Set prevStep to None (restart) and next step to FLIP
         settings.PrevStep = StepType.None;
         settings.NextStep = StepType.FlipLocal;
+        
         settings.PrevSwapSpan = 0;
         settings.NextSwapSpan = 2;
-        settings.TotalSwaps = 0;
-        settings.ExecuteStep = false;
-        highestBlockHeight = 2;
+
+       // settings.ExecuteStep = false;
         sortCompleted = false;
         pendingAverageUpdate = false;
         autoSortAccumulatorMs = 0;
         var dims = BitonicMath.GetGridDimensions(settings.TotalElements);
-        settings.GridWidth = dims.Width;
-        settings.GridHeight = dims.Height;
         sizeLimitLocked = false;
 
         if (randomizeValues)
@@ -451,6 +465,10 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         {
             computePipeline = CreateBitonicPipeline();
         }
+
+        settings.TotalSwaps = 0;
+
+        highestBlockHeight = 2;
     }
 
     void ResizeElementArray()
