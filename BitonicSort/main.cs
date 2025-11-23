@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,7 +17,13 @@ const int WindowWidth = 1200;
 const int WindowHeight = 900;
 
 var assembly = Assembly.GetExecutingAssembly();
-var atomicResetWGSL = ResourceUtils.GetEmbeddedResource("BitonicSort.shaders.atomicToZero.wgsl", assembly);
+var atomicToZeroWGSL = ResourceUtils.GetEmbeddedResource("BitonicSort.shaders.atomicToZero.wgsl", assembly);
+
+static uint GetNumSteps(uint elements)
+{
+    var n = Math.Log2(elements);
+    return (uint)(n * (n + 1) / 2);
+}
 
 return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 {
@@ -126,18 +133,24 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         : Math.Floor(Math.Sqrt(maxElements / 2)));
     var defaultGridHeight = maxElements / defaultGridWidth;
 
-    var settings = new BitonicSettings(maxElements, defaultGridWidth, defaultGridHeight, maxWorkgroupSize);
-    var configStats = new Dictionary<(uint TotalElements, uint SizeLimit), ConfigStats>();
+    var settings = new BitonicSettings()
+    {
+        TotalElements = maxElements,
+        GridWidth = defaultGridWidth,
+        GridHeight = defaultGridHeight,
+        WorkgroupSize = maxWorkgroupSize,
+        SizeLimit = maxWorkgroupSize,
+        WorkgroupsPerStep = maxElements / (maxWorkgroupSize * 2),
+        TotalSteps = GetNumSteps(maxElements),
+    };
 
     uint highestBlockHeight = 2;
-    bool autoSortEnabled = true;
+    bool autoSortRunning = false;
     double autoSortAccumulatorMs = 0;
-    bool manualStepRequested = false;
+    bool sizeLimitLocked = false;
+    bool pendingAverageUpdate = false;
     bool sortCompleted = false;
-    bool averageUpdatePending = false;
-    bool logCopyRequested = false;
-    bool logCopyInFlight = false;
-    bool logReadbackPending = false;
+    bool elementsReadbackPending = false;
     bool swapReadbackPending = false;
     int totalElementsIndex = 0;
     int sizeLimitIndex = 0;
@@ -145,7 +158,10 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     // Initialize initial elements array
     var elements = Enumerable.Range(0, (int)settings.TotalElements).Select(i => (uint)i).ToArray();
 
+    // Initialize elementsBuffer and elementsStagingBuffer
     var elementBufferSize = (ulong)(totalElementOptions[0] * sizeof(float));
+
+    // Initialize input, output, staging buffers
     var elementsInputBuffer = device.CreateBuffer(new()
     {
         Size = elementBufferSize,
@@ -180,25 +196,10 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
 
-    var elementsReadbackBuffer = device.CreateBuffer(new()
-    {
-        Size = elementBufferSize,
-        Usage = BufferUsage.CopyDst | BufferUsage.MapRead,
-    });
-
-    var swapCounterBuffer = device.CreateBuffer(new()
-    {
-        Size = sizeof(uint),
-        Usage = BufferUsage.Storage | BufferUsage.CopySrc,
-    });
-    var swapReadbackBuffer = device.CreateBuffer(new()
-    {
-        Size = sizeof(uint),
-        Usage = BufferUsage.MapRead | BufferUsage.CopyDst,
-    });
 
     var computeBindGroupLayout = device.CreateBindGroupLayout(new()
     {
+        Label = "BitonicSort.ComputeBindGroupLayout",
         Entries =
         [
             new()
@@ -230,20 +231,18 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
     var computeBindGroup = device.CreateBindGroup(new()
     {
+        Label = "BitonicSort.ComputeBindGroup",
         Layout = computeBindGroupLayout,
         Entries =
         [
             new() { Binding = 0, Buffer = elementsInputBuffer },
             new() { Binding = 1, Buffer = elementsOutputBuffer },
             new() { Binding = 2, Buffer = computeUniformsBuffer },
-            new() { Binding = 3, Buffer = swapCounterBuffer },
+            new() { Binding = 3, Buffer = atomicSwapsOutputBuffer },
         ],
     });
 
-    var computePipelineLayout = device.CreatePipelineLayout(new()
-    {
-        BindGroupLayouts = new[] { computeBindGroupLayout },
-    });
+
 
     ComputePipeline? computePipeline = device.CreateComputePipeline(new()
     {
@@ -264,8 +263,11 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     {
         return device.CreateComputePipeline(new()
         {
-            Layout = computePipelineLayout,
-            Compute = new ComputeState
+            Layout = device.CreatePipelineLayout(new()
+            {
+                BindGroupLayouts = new[] { computeBindGroupLayout },
+            }),
+            Compute = new()
             {
                 Module = device.CreateShaderModuleWGSL(new() { Code = BitonicCompute.NaiveBitonicCompute(settings.WorkgroupSize) })
             },
@@ -274,10 +276,13 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
     var atomicResetPipeline = device.CreateComputePipeline(new()
     {
-        Layout = computePipelineLayout,
-        Compute = new ComputeState
+        Layout = device.CreatePipelineLayout(new()
         {
-            Module = device.CreateShaderModuleWGSL(new() { Code = atomicResetWGSL }),
+            BindGroupLayouts = new[] { computeBindGroupLayout },
+        }),
+        Compute = new()
+        {
+            Module = device.CreateShaderModuleWGSL(new() { Code = atomicToZeroWGSL }),
         },
     });
 
@@ -292,22 +297,30 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     {
         settings.StepTimeMs = stepDurationMs;
         settings.SortTimeMs += stepDurationMs;
-        if (averageUpdatePending && sortCompleted)
+        if (pendingAverageUpdate && sortCompleted)
         {
             RegisterSortCompletion();
-            averageUpdatePending = false;
+            pendingAverageUpdate = false;
+            sortCompleted = false;
         }
     });
     timestampSupported = timestampRecorder.Supported;
 
-    void EnsureConfigEntry()
+    void UpdateConfigKey()
     {
-        if (!configStats.ContainsKey(settings.CurrentConfigKey))
+        if (!settings.ConfigToCompleteSwapsMap.ContainsKey(settings.ConfigKey))
         {
-            configStats[settings.CurrentConfigKey] = new ConfigStats();
+            settings.ConfigToCompleteSwapsMap[settings.ConfigKey] = (0, 0);
         }
-        var stats = configStats[settings.CurrentConfigKey];
+        var stats = settings.ConfigToCompleteSwapsMap[settings.ConfigKey];
         settings.AverageSortTimeMs = stats.Sorts == 0 ? 0 : stats.TotalTimeMs / stats.Sorts;
+    }
+
+    void ResetTimeInfo()
+    {
+        settings.StepTimeMs = 0;
+        settings.SortTimeMs = 0;
+        UpdateConfigKey();
     }
 
     void ResetSwapCounter()
@@ -322,7 +335,14 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         settings.TotalSwaps = 0;
     }
 
-    void RandomizeElements()
+    void UploadElementsToGpu()
+    {
+        var active = elements.AsSpan(0, (int)settings.TotalElements);
+        queue.WriteBuffer(elementsInputBuffer, 0, active);
+        queue.WriteBuffer(elementsOutputBuffer, 0, active);
+    }
+
+    void RandomizeElementArray()
     {
         int length = (int)settings.TotalElements;
         for (int i = 0; i < length; i++)
@@ -334,10 +354,9 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
             int j = Random.Shared.Next(i + 1);
             (elements[i], elements[j]) = (elements[j], elements[i]);
         }
-        queue.WriteBuffer(elementsInputBuffer, 0, elements.AsSpan(0, length));
     }
 
-    void UpdateSwappedCell()
+    void SetSwappedCell()
     {
         if (settings.TotalElements == 0)
         {
@@ -347,8 +366,8 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
         var hovered = Math.Clamp(settings.HoveredCell, 0, (int)settings.TotalElements - 1);
         settings.HoveredCell = hovered;
-        var span = settings.NextSwapSpan;
         var swapped = hovered;
+        var span = settings.NextSwapSpan;
 
         if (span > 0)
         {
@@ -373,15 +392,18 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
                         }
                         break;
                     }
+                case StepType.None:
+                    swapped = hovered;
+                    break;
             }
         }
 
-        swapped = Math.Clamp(swapped, 0, (int)settings.TotalElements - 1);
-        settings.SwappedCell = swapped;
+        settings.SwappedCell = Math.Clamp(swapped, 0, (int)settings.TotalElements - 1);
     }
 
-    void ResetExecutionState(bool randomize)
+    void ResetExecutionInformation(bool randomizeValues, bool recreatePipeline)
     {
+        UpdateConfigKey();
         settings.WorkgroupSize = BitonicMath.ComputeWorkgroupSize(settings.TotalElements, settings.SizeLimit);
         settings.WorkgroupsPerStep = BitonicMath.ComputeWorkgroupsPerStep(settings.TotalElements, settings.WorkgroupSize);
         settings.TotalSteps = BitonicMath.GetNumSteps(settings.TotalElements);
@@ -391,23 +413,36 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         settings.PrevSwapSpan = 0;
         settings.NextSwapSpan = 2;
         settings.TotalSwaps = 0;
-        settings.SortTimeMs = 0;
-        settings.StepTimeMs = 0;
-        autoSortAccumulatorMs = 0;
-        sortCompleted = false;
-        averageUpdatePending = false;
+        settings.ExecuteStep = false;
         highestBlockHeight = 2;
+        sortCompleted = false;
+        pendingAverageUpdate = false;
+        autoSortAccumulatorMs = 0;
         var dims = BitonicMath.GetGridDimensions(settings.TotalElements);
         settings.GridWidth = dims.Width;
         settings.GridHeight = dims.Height;
-        EnsureConfigEntry();
-        UpdateSwappedCell();
-        ResetSwapCounter();
-        if (randomize)
+        sizeLimitLocked = false;
+
+        if (randomizeValues)
         {
-            RandomizeElements();
+            RandomizeElementArray();
+            UploadElementsToGpu();
         }
-        computePipeline = CreateBitonicPipeline();
+
+        ResetSwapCounter();
+        SetSwappedCell();
+
+        if (recreatePipeline)
+        {
+            computePipeline = CreateBitonicPipeline();
+        }
+    }
+
+    void ResizeElementArray()
+    {
+        elements = Enumerable.Range(0, (int)settings.TotalElements).Select(i => (uint)i).ToArray();
+        ResetExecutionInformation(randomizeValues: true, recreatePipeline: true);
+        ResetTimeInfo();
     }
 
     void RegisterSortCompletion()
@@ -417,43 +452,52 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
             return;
         }
 
-        var stats = configStats[settings.CurrentConfigKey];
-        stats.Sorts++;
+        var stats = settings.ConfigToCompleteSwapsMap[settings.ConfigKey];
         stats.TotalTimeMs += settings.SortTimeMs;
-        configStats[settings.CurrentConfigKey] = stats;
+        settings.ConfigToCompleteSwapsMap[settings.ConfigKey] = stats;
         settings.AverageSortTimeMs = stats.TotalTimeMs / stats.Sorts;
     }
 
-    bool EvaluateStepRequest(double deltaMs)
+    void StartAutoSort()
     {
         if (settings.NextStep == StepType.None)
         {
-            autoSortEnabled = false;
-            manualStepRequested = false;
-            return false;
+            return;
         }
 
-        if (manualStepRequested)
-        {
-            manualStepRequested = false;
-            UpdateSwappedCell();
-            return true;
-        }
+        autoSortRunning = true;
+        autoSortAccumulatorMs = 0;
+        sizeLimitLocked = true;
+    }
 
-        if (!autoSortEnabled)
+    void EndAutoSort()
+    {
+        autoSortRunning = false;
+        autoSortAccumulatorMs = 0;
+    }
+
+    void RequestManualStep()
+    {
+        sizeLimitLocked = true;
+        EndAutoSort();
+        settings.ExecuteStep = true;
+        SetSwappedCell();
+    }
+
+    void UpdateAutoSort(double deltaMs)
+    {
+        if (!autoSortRunning || settings.NextStep == StepType.None)
         {
-            return false;
+            return;
         }
 
         autoSortAccumulatorMs += deltaMs;
-        if (autoSortAccumulatorMs >= settings.AutoSortSpeedMs)
+        if (autoSortAccumulatorMs >= Math.Max(1, settings.AutoSortSpeedMs))
         {
             autoSortAccumulatorMs = 0;
-            UpdateSwappedCell();
-            return true;
+            settings.ExecuteStep = true;
+            SetSwappedCell();
         }
-
-        return false;
     }
 
     void AdvanceSortState()
@@ -472,13 +516,17 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         else
         {
             highestBlockHeight *= 2;
-            if (highestBlockHeight >= settings.TotalElements * 2)
+            if (highestBlockHeight == settings.TotalElements * 2)
             {
                 settings.NextStep = StepType.None;
                 settings.NextSwapSpan = 0;
+                var stats = settings.ConfigToCompleteSwapsMap[settings.ConfigKey];
+                stats.Sorts++;
+                settings.ConfigToCompleteSwapsMap[settings.ConfigKey] = stats;
                 sortCompleted = true;
-                averageUpdatePending = timestampSupported;
-                autoSortEnabled = false;
+                pendingAverageUpdate = timestampSupported;
+                sizeLimitLocked = false;
+                EndAutoSort();
             }
             else
             {
@@ -489,55 +537,43 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
             }
         }
 
-        UpdateSwappedCell();
+        SetSwappedCell();
     }
 
-    void TryDownloadSwapCount()
+    void ScheduleReadbacks()
     {
-        if (!swapReadbackPending)
+        if (!elementsReadbackPending && elementsStagingBuffer.GetMapState() == BufferMapState.Unmapped)
         {
-            return;
-        }
-        if (swapReadbackBuffer.GetMapState() != BufferMapState.Unmapped)
-        {
-            return;
-        }
-
-        swapReadbackPending = false;
-        _ = swapReadbackBuffer.MapAsync(MapMode.Read).ContinueWith(task =>
-        {
-            if (task.Result == MapAsyncStatus.Success)
+            var activeElements = (nuint)settings.TotalElements;
+            elementsReadbackPending = true;
+            _ = elementsStagingBuffer.MapAsync(MapMode.Read).ContinueWith(task =>
             {
-                swapReadbackBuffer.GetConstMappedRange<uint>(0, 1, span => settings.TotalSwaps = span[0]);
-            }
-            swapReadbackBuffer.Unmap();
-        });
-    }
-
-    void TryDownloadElementsLog()
-    {
-        if (!logReadbackPending)
-        {
-            return;
-        }
-        if (elementsReadbackBuffer.GetMapState() != BufferMapState.Unmapped)
-        {
-            return;
-        }
-
-        logReadbackPending = false;
-        logCopyInFlight = false;
-        _ = elementsReadbackBuffer.MapAsync(MapMode.Read).ContinueWith(task =>
-        {
-            if (task.Result == MapAsyncStatus.Success)
-            {
-                elementsReadbackBuffer.GetConstMappedRange<uint>(0, (nuint)settings.TotalElements, span =>
+                if (task.Result == MapAsyncStatus.Success)
                 {
-                    Console.WriteLine($"[{string.Join(", ", span.ToArray())}]");
-                });
-            }
-            elementsReadbackBuffer.Unmap();
-        });
+                    elementsStagingBuffer.GetConstMappedRange<uint>(0, activeElements, span =>
+                    {
+                        span.CopyTo(elements.AsSpan(0, (int)activeElements));
+                    });
+                }
+                elementsStagingBuffer.Unmap();
+                elementsReadbackPending = false;
+                SetSwappedCell();
+            });
+        }
+
+        if (!swapReadbackPending && atomicSwapsStagingBuffer.GetMapState() == BufferMapState.Unmapped)
+        {
+            swapReadbackPending = true;
+            _ = atomicSwapsStagingBuffer.MapAsync(MapMode.Read).ContinueWith(task =>
+            {
+                if (task.Result == MapAsyncStatus.Success)
+                {
+                    atomicSwapsStagingBuffer.GetConstMappedRange<uint>(0, 1, span => settings.TotalSwaps = span[0]);
+                }
+                atomicSwapsStagingBuffer.Unmap();
+                swapReadbackPending = false;
+            });
+        }
     }
 
     CommandBuffer DrawGui()
@@ -555,10 +591,11 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         {
             totalElementsIndex = currentTotalIndex;
             settings.TotalElements = totalElementOptions[currentTotalIndex];
-            ResetExecutionState(true);
+            EndAutoSort();
+            ResizeElementArray();
         }
 
-        bool disableSizeLimit = settings.StepIndex > 0 && settings.NextStep != StepType.None;
+        bool disableSizeLimit = sizeLimitLocked;
         if (disableSizeLimit)
         {
             ImGui.BeginDisabled();
@@ -568,34 +605,38 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         {
             sizeLimitIndex = currentSizeLimitIndex;
             settings.SizeLimit = sizeLimitOptions[currentSizeLimitIndex];
-            ResetExecutionState(false);
+            EndAutoSort();
+            ResetExecutionInformation(randomizeValues: false, recreatePipeline: true);
+            ResetTimeInfo();
         }
         if (disableSizeLimit)
         {
             ImGui.EndDisabled();
         }
 
-        ImGui.Text($"Grid: {settings.GridWidth} x {settings.GridHeight}");
+        ImGui.Text($"Grid Dimensions: {settings.GridDimensions}");
         ImGui.Text($"Workgroup Size: {settings.WorkgroupSize}");
         ImGui.Text($"Workgroups / Step: {settings.WorkgroupsPerStep}");
 
         ImGui.Dummy(new(0, 10));
         ImGui.Text("Controls");
         ImGui.Separator();
-        if (ImGui.Button("Execute Step"))
+        if (ImGui.Button("Execute Sort Step"))
         {
-            manualStepRequested = true;
+            RequestManualStep();
         }
         ImGui.SameLine();
-        if (ImGui.Button("Randomize"))
+        if (ImGui.Button("Randomize Values"))
         {
-            ResetExecutionState(true);
+            EndAutoSort();
+            ResetExecutionInformation(randomizeValues: true, recreatePipeline: false);
+            ResetTimeInfo();
+            sizeLimitLocked = false;
         }
 
-        if (ImGui.Button(autoSortEnabled ? "Stop Auto Sort" : "Start Auto Sort"))
+        if (ImGui.Button("Auto Sort"))
         {
-            autoSortEnabled = !autoSortEnabled;
-            autoSortAccumulatorMs = 0;
+            StartAutoSort();
         }
 
         int autoSpeed = settings.AutoSortSpeedMs;
@@ -606,7 +647,8 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
         if (ImGui.Button("Log Elements"))
         {
-            logCopyRequested = true;
+            var slice = elements.AsSpan(0, (int)settings.TotalElements).ToArray();
+            Console.WriteLine($"[{string.Join(", ", slice)}]");
         }
 
         int displayMode = (int)settings.DisplayMode;
@@ -616,19 +658,19 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         }
 
         ImGui.Dummy(new(0, 10));
-        ImGui.Text("Execution");
+        ImGui.Text("Execution Information");
         ImGui.Separator();
-        ImGui.Text($"Step: {settings.StepIndex} / {settings.TotalSteps}");
+        ImGui.Text($"Current Step: {settings.CurrentStep.Current} of {settings.CurrentStep.Total}");
         ImGui.Text($"Prev Step: {settings.PrevStep}");
         ImGui.Text($"Next Step: {settings.NextStep}");
-        ImGui.Text($"Prev Span: {settings.PrevSwapSpan}");
-        ImGui.Text($"Next Span: {settings.NextSwapSpan}");
+        ImGui.Text($"Prev Swap Span: {settings.PrevSwapSpan}");
+        ImGui.Text($"Next Swap Span: {settings.NextSwapSpan}");
         ImGui.Text($"Hovered Cell: {settings.HoveredCell}");
         ImGui.Text($"Swapped Cell: {settings.SwappedCell}");
         ImGui.Text($"Total Swaps: {settings.TotalSwaps}");
-        ImGui.Text(timestampSupported ? $"Step Time: {settings.StepTimeMs:0.#####} ms" : "Step Time: N/A");
-        ImGui.Text(timestampSupported ? $"Sort Time: {settings.SortTimeMs:0.#####} ms" : "Sort Time: N/A");
-        ImGui.Text(timestampSupported ? $"Avg Sort Time: {settings.AverageSortTimeMs:0.#####} ms" : "Avg Sort Time: N/A");
+        ImGui.Text(timestampSupported ? $"Step Time: {settings.StepTimeMs:0.#####}ms" : "Step Time: N/A");
+        ImGui.Text(timestampSupported ? $"Sort Time: {settings.SortTimeMs:0.#####}ms" : "Sort Time: N/A");
+        ImGui.Text(timestampSupported ? $"Average Sort Time: {settings.AverageSortTimeMs:0.#####}ms" : "Average Sort Time: N/A");
 
         ImGui.End();
         guiContext.EndFrame();
@@ -644,7 +686,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         var deltaMs = (nowTicks - previousTicks) * 1000.0 / Stopwatch.Frequency;
         previousTicks = nowTicks;
 
-        var shouldDispatch = EvaluateStepRequest(deltaMs);
+        UpdateAutoSort(deltaMs);
 
         queue.WriteBuffer(computeUniformsBuffer, new ComputeUniforms
         {
@@ -657,6 +699,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         var currentTexture = surface.GetCurrentTexture();
         if (currentTexture.Texture is null)
         {
+            settings.ExecuteStep = false;
             return;
         }
 
@@ -665,33 +708,21 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
         displayRenderer.Render(commandEncoder, targetView, computeBindGroup, settings.DisplayMode);
 
-        if (shouldDispatch)
+        bool dispatched = false;
+        if (settings.ExecuteStep && highestBlockHeight < settings.TotalElements * 2)
         {
+            dispatched = true;
+            var activeBytes = (ulong)(settings.TotalElements * sizeof(uint));
             var computePass = timestampRecorder.BeginPass(commandEncoder);
             computePass.SetPipeline(computePipeline!);
             computePass.SetBindGroup(0, computeBindGroup);
             computePass.DispatchWorkgroups(settings.WorkgroupsPerStep);
             computePass.End();
             timestampRecorder.Resolve(commandEncoder);
-            commandEncoder.CopyBufferToBuffer(elementsOutputBuffer, 0, elementsInputBuffer, 0, elementBufferSize);
-            if (swapReadbackBuffer.GetMapState() == BufferMapState.Unmapped)
-            {
-                commandEncoder.CopyBufferToBuffer(swapCounterBuffer, 0, swapReadbackBuffer, 0, sizeof(uint));
-                swapReadbackPending = true;
-            }
+            commandEncoder.CopyBufferToBuffer(elementsOutputBuffer, 0, elementsInputBuffer, 0, activeBytes);
+            commandEncoder.CopyBufferToBuffer(elementsOutputBuffer, 0, elementsStagingBuffer, 0, activeBytes);
+            commandEncoder.CopyBufferToBuffer(atomicSwapsOutputBuffer, 0, atomicSwapsStagingBuffer, 0, sizeof(uint));
             AdvanceSortState();
-        }
-
-        if (logCopyRequested && !logCopyInFlight)
-        {
-            if (elementsReadbackBuffer.GetMapState() == BufferMapState.Unmapped)
-            {
-                logCopyRequested = false;
-                logCopyInFlight = true;
-                logReadbackPending = true;
-                var activeBytes = (ulong)(settings.TotalElements * sizeof(uint));
-                commandEncoder.CopyBufferToBuffer(elementsInputBuffer, 0, elementsReadbackBuffer, 0, activeBytes);
-            }
         }
 
         var commandBuffer = commandEncoder.Finish();
@@ -699,16 +730,18 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         queue.Submit(new[] { commandBuffer, guiCommandBuffer });
         surface.Present();
 
-        if (shouldDispatch)
+        if (dispatched)
         {
             timestampRecorder.TryDownload();
+            ScheduleReadbacks();
         }
 
-        TryDownloadSwapCount();
-        TryDownloadElementsLog();
+        settings.ExecuteStep = false;
     }
 
-    ResetExecutionState(true);
+    ResetExecutionInformation(randomizeValues: true, recreatePipeline: true);
+    ResetTimeInfo();
+    StartAutoSort();
     runContext.Input.OnMouseMotion += motion =>
     {
         if (ImGui.GetIO().WantCaptureMouse)
@@ -721,7 +754,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         var xIndex = Math.Clamp((int)(motion.x / cellWidth), 0, (int)settings.GridWidth - 1);
         var yIndex = Math.Clamp((int)(motion.y / cellHeight), 0, (int)settings.GridHeight - 1);
         settings.HoveredCell = (int)(settings.GridWidth * (settings.GridHeight - 1 - yIndex) + xIndex);
-        UpdateSwappedCell();
+        SetSwappedCell();
     };
 
     runContext.OnFrame += Frame;
