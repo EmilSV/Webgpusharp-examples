@@ -278,7 +278,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         });
     }
 
-    var atomicResetPipeline = device.CreateComputePipeline(new()
+    var atomicToZeroComputePipeline = device.CreateComputePipeline(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {
@@ -310,15 +310,6 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     });
     timestampSupported = timestampRecorder.Supported;
 
-    void UpdateConfigKey()
-    {
-        if (!settings.ConfigToCompleteSwapsMap.ContainsKey(settings.ConfigKey))
-        {
-            settings.ConfigToCompleteSwapsMap[settings.ConfigKey] = (0, 0);
-        }
-        var stats = settings.ConfigToCompleteSwapsMap[settings.ConfigKey];
-        settings.AverageSortTimeMs = stats.Sorts == 0 ? 0 : stats.TotalTimeMs / stats.Sorts;
-    }
 
     void ResetTimeInfo()
     {
@@ -339,18 +330,6 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         settings.AverageSortTimeMs = ast;
     }
 
-    void ResetSwapCounter()
-    {
-        var encoder = device.CreateCommandEncoder();
-        var pass = encoder.BeginComputePass();
-        pass.SetPipeline(atomicResetPipeline);
-        pass.SetBindGroup(0, computeBindGroup);
-        pass.DispatchWorkgroups(1);
-        pass.End();
-        queue.Submit(encoder.Finish());
-        settings.TotalSwaps = 0;
-    }
-
     void UploadElementsToGpu()
     {
         var active = elements.AsSpan(0, (int)settings.TotalElements);
@@ -359,66 +338,21 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
     void RandomizeElementArray()
     {
-        int length = (int)settings.TotalElements;
-        for (int i = 0; i < length; i++)
+        var currentIndex = elements.Length;
+        // While there are elements to shuffle
+        while (currentIndex != 0)
         {
-            elements[i] = (uint)i;
-        }
-        for (int i = length - 1; i > 0; i--)
-        {
-            int j = Random.Shared.Next(i + 1);
-            (elements[i], elements[j]) = (elements[j], elements[i]);
+            // Pick a remaining element
+            int randomIndex = Random.Shared.Next(currentIndex);
+            currentIndex--;
+            (elements[currentIndex], elements[randomIndex]) = (elements[randomIndex], elements[currentIndex]);
         }
     }
 
-    void SetSwappedCell()
+
+
+    void ResetExecutionInformation()
     {
-        if (settings.TotalElements == 0)
-        {
-            settings.SwappedCell = 0;
-            return;
-        }
-
-        var hovered = Math.Clamp(settings.HoveredCell, 0, (int)settings.TotalElements - 1);
-        settings.HoveredCell = hovered;
-        var swapped = hovered;
-        var span = settings.NextSwapSpan;
-
-        if (span > 0)
-        {
-            switch (settings.NextStep)
-            {
-                case StepType.FlipLocal:
-                case StepType.FlipGlobal:
-                    {
-                        var blockHeight = (int)span;
-                        var blockIndex = hovered / blockHeight + 1;
-                        var offset = hovered % blockHeight;
-                        swapped = blockHeight * blockIndex - offset - 1;
-                        break;
-                    }
-                case StepType.DisperseLocal:
-                case StepType.DisperseGlobal:
-                    {
-                        var half = (int)(span / 2);
-                        if (half > 0)
-                        {
-                            swapped = hovered % (int)span < half ? hovered + half : hovered - half;
-                        }
-                        break;
-                    }
-                case StepType.None:
-                    swapped = hovered;
-                    break;
-            }
-        }
-
-        settings.SwappedCell = Math.Clamp(swapped, 0, (int)settings.TotalElements - 1);
-    }
-
-    void ResetExecutionInformation(bool randomizeValues, bool recreatePipeline)
-    {
-        UpdateConfigKey();
         // The workgroup size is either elements / 2 or Size Limit
         settings.WorkgroupSize = Math.Min(settings.TotalElements / 2, settings.SizeLimit);
 
@@ -437,35 +371,21 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         uint newCellHeight = settings.TotalElements / newCellWidth;
         settings.GridWidth = newCellWidth;
         settings.GridHeight = newCellHeight;
-        
+
         // Set prevStep to None (restart) and next step to FLIP
         settings.PrevStep = StepType.None;
         settings.NextStep = StepType.FlipLocal;
-        
+
         settings.PrevSwapSpan = 0;
         settings.NextSwapSpan = 2;
 
-       // settings.ExecuteStep = false;
-        sortCompleted = false;
-        pendingAverageUpdate = false;
-        autoSortAccumulatorMs = 0;
-        var dims = BitonicMath.GetGridDimensions(settings.TotalElements);
-        sizeLimitLocked = false;
-
-        if (randomizeValues)
-        {
-            RandomizeElementArray();
-            UploadElementsToGpu();
-        }
-
-        ResetSwapCounter();
-        SetSwappedCell();
-
-        if (recreatePipeline)
-        {
-            computePipeline = CreateBitonicPipeline();
-        }
-
+        var commandEncoder = device.CreateCommandEncoder();
+        var computePassEncoder = commandEncoder.BeginComputePass();
+        computePassEncoder.SetPipeline(atomicToZeroComputePipeline);
+        computePassEncoder.SetBindGroup(0, computeBindGroup);
+        computePassEncoder.DispatchWorkgroups(1);
+        computePassEncoder.End();
+        queue.Submit(commandEncoder.Finish());
         settings.TotalSwaps = 0;
 
         highestBlockHeight = 2;
@@ -474,9 +394,106 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     void ResizeElementArray()
     {
         elements = Enumerable.Range(0, (int)settings.TotalElements).Select(i => (uint)i).ToArray();
-        ResetExecutionInformation(randomizeValues: true, recreatePipeline: true);
-        ResetTimeInfo();
+
+        ResetExecutionInformation();
+        // Create new shader invocation with workgroupSize that reflects number of invocations
+        computePipeline = device.CreateComputePipeline(new()
+        {
+            Layout = device.CreatePipelineLayout(new()
+            {
+                BindGroupLayouts = [computeBindGroupLayout],
+            }),
+            Compute = new()
+            {
+                Module = device.CreateShaderModuleWGSL(new()
+                {
+                    Code = BitonicCompute.NaiveBitonicCompute(
+                        Math.Min(settings.TotalElements / 2, settings.SizeLimit)
+                    )
+                })
+            },
+        });
+
+        RandomizeElementArray();
+        highestBlockHeight = 2;
     }
+
+    RandomizeElementArray();
+
+    void SetSwappedCell()
+    {
+        switch (settings.NextStep)
+        {
+            case StepType.FlipLocal:
+            case StepType.FlipGlobal:
+                {
+                    var blockHeight = settings.NextSwapSpan;
+                    var p2 = (settings.HoveredCell / blockHeight) + 1;
+                    var p3 = settings.HoveredCell % blockHeight;
+                    settings.SwappedCell = (int)(blockHeight * p2 - p3 - 1);
+                }
+                break;
+            case StepType.DisperseLocal:
+                {
+                    var blockHeight = settings.NextSwapSpan;
+                    var halfHeight = blockHeight / 2;
+                    settings.SwappedCell = (int)(settings.HoveredCell % blockHeight < halfHeight
+                        ? settings.HoveredCell + halfHeight
+                        : settings.HoveredCell - halfHeight);
+                }
+                break;
+            case StepType.None:
+            default:
+                settings.SwappedCell = settings.HoveredCell;
+                break;
+        }
+    }
+
+
+    Timer? autoSortTimer = null;
+    void EndSortTimer()
+    {
+        autoSortTimer?.Dispose();
+        autoSortTimer = null;
+    }
+
+    void StartSortTimer()
+    {
+        var currentTimerSpeed = settings.AutoSortSpeedMs;
+        var currentTimerTimeSpan = TimeSpan.FromMilliseconds(currentTimerSpeed);
+        autoSortTimer = new Timer(_ =>
+        {
+            if (settings.NextStep == StepType.None)
+            {
+                EndSortTimer();
+                return;
+            }
+            if (settings.AutoSortSpeedMs != currentTimerSpeed)
+            {
+                EndSortTimer();
+                StartSortTimer();
+                return;
+            }
+            settings.ExecuteStep = true;
+            SetSwappedCell();
+        }, null, currentTimerTimeSpan, currentTimerTimeSpan);
+    }
+
+    runContext.Input.OnMouseMotion += events =>
+    {
+        if (ImGui.GetIO().WantCaptureMouse)
+        {
+            return;
+        }
+
+        var cellWidth = WindowWidth / (double)settings.GridWidth;
+        var cellHeight = WindowHeight / (double)settings.GridHeight;
+        var xIndex = Math.Floor(events.x / cellWidth);
+        var yIndex = settings.GridHeight - 1 - Math.Floor(events.y / cellHeight);
+        settings.HoveredCell = (int)(yIndex * settings.GridWidth + xIndex);
+        SetSwappedCell();
+    };
+
 
     void RegisterSortCompletion()
     {
@@ -775,20 +792,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     ResetExecutionInformation(randomizeValues: true, recreatePipeline: true);
     ResetTimeInfo();
     StartAutoSort();
-    runContext.Input.OnMouseMotion += motion =>
-    {
-        if (ImGui.GetIO().WantCaptureMouse)
-        {
-            return;
-        }
 
-        var cellWidth = settings.GridWidth > 0 ? WindowWidth / (double)settings.GridWidth : 1;
-        var cellHeight = settings.GridHeight > 0 ? WindowHeight / (double)settings.GridHeight : 1;
-        var xIndex = Math.Clamp((int)(motion.x / cellWidth), 0, (int)settings.GridWidth - 1);
-        var yIndex = Math.Clamp((int)(motion.y / cellHeight), 0, (int)settings.GridHeight - 1);
-        settings.HoveredCell = (int)(settings.GridWidth * (settings.GridHeight - 1 - yIndex) + xIndex);
-        SetSwappedCell();
-    };
 
     runContext.OnFrame += Frame;
 });
