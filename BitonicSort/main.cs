@@ -149,8 +149,6 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     bool sizeLimitLocked = false;
     bool pendingAverageUpdate = false;
     bool sortCompleted = false;
-    bool elementsReadbackPending = false;
-    bool swapReadbackPending = false;
     int totalElementsIndex = 0;
     int sizeLimitIndex = 0;
 
@@ -197,7 +195,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     var computeUniformsBuffer = device.CreateBuffer(new()
     {
         Label = "BitonicSort.ComputeUniformsBuffer",
-        Size = (ulong)Unsafe.SizeOf<ComputeUniforms>(),
+        Size = (ulong)Unsafe.SizeOf<BitonicComputeUniforms>(),
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
 
@@ -678,72 +676,151 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         return guiContext.Render(surface)!.Value!;
     }
 
-    async void FrameAsync(double deltaTimeMs)
-    {
-        // Write elements buffer
-        var activeElements = elements.AsSpan(0, (int)settings.TotalElements);
-        queue.WriteBuffer(elementsInputBuffer, 0, activeElements);
+    StartSortTimer();
 
-        // Write compute uniforms
-        var computeUniforms = new ComputeUniforms
+    int isStillExecutingFrame = 0;
+
+    async Task Frame()
+    {
+        var previousValue = Interlocked.Exchange(ref isStillExecutingFrame, 1);
+        if (previousValue == 1)
         {
-            Width = settings.GridWidth,
-            Height = settings.GridHeight,
-            Algo = (uint)settings.NextStep,
-            BlockHeight = settings.NextSwapSpan,
-        };
-        queue.WriteBuffer(computeUniformsBuffer, computeUniforms);
+            return;
+        }
+        // Draw ImGui
+        var imguiCommandBuffer = DrawImGui(surface);
+
+        // Write elements buffer
+        queue.WriteBuffer(
+            elementsInputBuffer,
+            0,
+            elements
+        );
+
+        queue.WriteBuffer(
+            computeUniformsBuffer,
+            0,
+            new BitonicComputeUniforms
+            {
+                Width = settings.GridWidth,
+                Height = settings.GridHeight,
+                Algo = (uint)settings.NextStep,
+                BlockHeight = settings.NextSwapSpan,
+            }
+        );
 
         var surfaceTexture = surface.GetCurrentTexture();
-        var surfaceTextureView = surfaceTexture.Texture!.CreateView();
+        var renderPassDescriptor = new RenderPassDescriptor
+        {
+            ColorAttachments = new[]
+            {
+                new RenderPassColorAttachment
+                {
+                    View = surfaceTexture.Texture!.CreateView(),
+                    LoadOp = LoadOp.Clear,
+                    StoreOp = StoreOp.Store,
+                    ClearValue = new Color { R = 0.1, G = 0.4, B = 0.5, A = 1.0 }
+                }
+            }
+        };
 
         var commandEncoder = device.CreateCommandEncoder();
+        displayRenderer.Render(
+            commandEncoder,
+            renderPassDescriptor.ColorAttachments[0].View!,
+            computeBindGroup,
+            settings.DisplayMode
+        );
 
-        // Execute sort step if needed
-        if (settings.ExecuteStep && highestBlockHeight < settings.TotalElements * 2)
+        if (
+            settings.ExecuteStep &&
+            highestBlockHeight < settings.TotalElements * 2
+        )
         {
-            var computePassEncoder = timestampRecorder.BeginPass(commandEncoder);
+            ComputePassEncoder computePassEncoder;
+            if (timestampQueryAvailable)
+            {
+                computePassEncoder = commandEncoder.BeginComputePass(new()
+                {
+                    TimestampWrites = new()
+                    {
+                        QuerySet = querySet!,
+                        BeginningOfPassWriteIndex = 0,
+                        EndOfPassWriteIndex = 1,
+                    }
+                });
+            }
+            else
+            {
+                computePassEncoder = commandEncoder.BeginComputePass();
+            }
+
             computePassEncoder.SetPipeline(computePipeline);
             computePassEncoder.SetBindGroup(0, computeBindGroup);
             computePassEncoder.DispatchWorkgroups(settings.WorkgroupsPerStep);
             computePassEncoder.End();
 
-            // Resolve timestamps
-            timestampRecorder.Resolve(commandEncoder);
+            // Resolve time passed in between beginning and end of computePass
+            if (timestampQueryAvailable)
+            {
+                commandEncoder.ResolveQuerySet(
+                    querySet!,
+                    0,
+                    2,
+                    timestampQueryResolveBuffer!,
+                    0
+                );
+                commandEncoder.CopyBufferToBuffer(
+                    timestampQueryResolveBuffer!,
+                    timestampQueryResultBuffer!
+                );
+            }
 
-            // Update step information
-            settings.StepIndex++;
+            settings.StepIndex = settings.StepIndex + 1;
             settings.PrevStep = settings.NextStep;
             settings.PrevSwapSpan = settings.NextSwapSpan;
-            settings.NextSwapSpan /= 2;
+            settings.NextSwapSpan = settings.NextSwapSpan / 2;
 
-            // Determine next step type
-            if (settings.NextSwapSpan == 0)
+            // Each cycle of a bitonic sort contains a flip operation followed by multiple disperse operations
+            // Next Swap Span will equal one when the sort needs to begin a new cycle of flip and disperse operations
+            if (settings.NextSwapSpan == 1)
             {
-                // Begin new cycle
+                // The next cycle's flip operation will have a maximum swap span 2 times that of the previous cycle
                 highestBlockHeight *= 2;
-                settings.NextSwapSpan = highestBlockHeight;
-
                 if (highestBlockHeight == settings.TotalElements * 2)
                 {
-                    // Sort complete
+                    // The next cycle's maximum swap span exceeds the total number of elements. Therefore, the sort is over.
+                    // Accordingly, there will be no next step.
                     settings.NextStep = StepType.None;
+                    // And if there is no next step, then there are no swaps, and no block range within which two elements are swapped.
                     settings.NextSwapSpan = 0;
-                    pendingAverageUpdate = true;
-                    sortCompleted = true;
+                    // Finally, with our sort completed, we can increment the number of total completed sorts executed with n 'Total Elements'
+                    // and x 'Size Limit', which will allow us to calculate the average time of all sorts executed with this specific
+                    // configuration of compute resources
+                    var key = settings.ConfigKey;
+                    if (!settings.ConfigToCompleteSwapsMap.TryGetValue(key, out var stats))
+                    {
+                        stats = (0, 0);
+                    }
+                    stats.Sorts += 1;
+                    settings.ConfigToCompleteSwapsMap[key] = stats;
                 }
                 else if (highestBlockHeight > settings.WorkgroupSize * 2)
                 {
+                    // The next cycle's maximum swap span exceeds the range of a single workgroup, so our next flip will operate on global indices.
                     settings.NextStep = StepType.FlipGlobal;
+                    settings.NextSwapSpan = highestBlockHeight;
                 }
                 else
                 {
+                    // The next cycle's maximum swap span can be executed on a range of indices local to the workgroup.
                     settings.NextStep = StepType.FlipLocal;
+                    settings.NextSwapSpan = highestBlockHeight;
                 }
             }
             else
             {
-                // Continue disperse operations
+                // Otherwise, execute the next disperse operation
                 if (settings.NextSwapSpan > settings.WorkgroupSize * 2)
                 {
                     settings.NextStep = StepType.DisperseGlobal;
@@ -755,66 +832,80 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
             }
 
             // Copy GPU accessible buffers to CPU accessible buffers
-            commandEncoder.CopyBufferToBuffer(elementsOutputBuffer, 0, elementsStagingBuffer, 0, elementBufferSize);
-            commandEncoder.CopyBufferToBuffer(atomicSwapsOutputBuffer, 0, atomicSwapsStagingBuffer, 0, sizeof(uint));
-
-            elementsReadbackPending = true;
-            swapReadbackPending = true;
+            commandEncoder.CopyBufferToBuffer(
+                elementsOutputBuffer,
+                elementsStagingBuffer
+            );
+            commandEncoder.CopyBufferToBuffer(
+                atomicSwapsOutputBuffer,
+                atomicSwapsStagingBuffer
+            );
         }
 
-        // Render display
-        displayRenderer.Render(commandEncoder, surfaceTextureView, computeBindGroup, settings.DisplayMode);
-
-        // Draw ImGui
-        var imguiCommandBuffer = DrawImGui(surface);
-
-        // Submit commands
         queue.Submit([commandEncoder.Finish(), imguiCommandBuffer]);
 
-        surface.Present();
-
-        // Handle async readbacks
-        if (elementsReadbackPending)
+        if (
+            settings.ExecuteStep &&
+            highestBlockHeight < settings.TotalElements * 4
+        )
         {
-            _ = elementsStagingBuffer.MapAsync(MapMode.Read).ContinueWith(task =>
-            {
-                if (task.Result == MapAsyncStatus.Success)
-                {
-                    elementsStagingBuffer.GetConstMappedRange<uint>(0, (nuint)settings.TotalElements, data =>
-                    {
-                        data.CopyTo(elements.AsSpan(0, (int)settings.TotalElements));
-                    });
-                    elementsStagingBuffer.Unmap();
-                    SetSwappedCell();
-                }
-            });
-            elementsReadbackPending = false;
-        }
+            await elementsStagingBuffer.MapAsync(MapMode.Read, 0, (nuint)elementBufferSize);
+            await atomicSwapsStagingBuffer.MapAsync(MapMode.Read, 0, sizeof(uint));
 
-        if (swapReadbackPending)
-        {
-            _ = atomicSwapsStagingBuffer.MapAsync(MapMode.Read).ContinueWith(task =>
+            Buffer.DoReadWriteOperation([elementsStagingBuffer, atomicSwapsStagingBuffer], context =>
             {
-                if (task.Result == MapAsyncStatus.Success)
-                {
-                    atomicSwapsStagingBuffer.GetConstMappedRange<uint>(0, 1, data =>
-                    {
-                        settings.TotalSwaps = data[0];
-                    });
-                    atomicSwapsStagingBuffer.Unmap();
-                }
-            });
-            swapReadbackPending = false;
-        }
 
-        // Try to download timestamp results
-        timestampRecorder.TryDownload();
+                var elementSpan = context.GetConstMappedRange<uint>(elementsStagingBuffer, 0, settings.TotalElements);
+                var swapsSpan = context.GetConstMappedRange<uint>(atomicSwapsStagingBuffer, 0, 1);
+                // Extract data
+                settings.TotalSwaps = swapsSpan[0];
+                // Elements output becomes elements input, swap accumulate
+                elements = elementSpan.ToArray();
+            });
+
+            elementsStagingBuffer.Unmap();
+            atomicSwapsStagingBuffer.Unmap();
+            SetSwappedCell();
+
+            // Handle timestamp query stuff
+            if (timestampQueryAvailable)
+            {
+                await timestampQueryResultBuffer!.MapAsync(MapMode.Read, 0, sizeof(long) * 2);
+                timestampQueryResultBuffer.GetConstMappedRange<long>(data =>
+                {
+                    // Calculate new step, sort, and average sort times
+                    var newStepTime = (double)(data[1] - data[0]) / 1000000.0;
+                    var newSortTime = settings.SortTimeMs + newStepTime;
+                    // Apply calculated times to settings object as both number and 'ms' appended string
+                    settings.StepTimeMs = newStepTime;
+                    settings.SortTimeMs = newSortTime;
+                    // Calculate new average sort upon end of final execution step of a full bitonic sort.
+                    if (highestBlockHeight == settings.TotalElements * 2)
+                    {
+                        highestBlockHeight *= 2;
+                        var key = settings.ConfigKey;
+                        if (!settings.ConfigToCompleteSwapsMap.TryGetValue(key, out var stats))
+                        {
+                            stats = (0, 0);
+                        }
+                        stats.TotalTimeMs += newSortTime;
+                        settings.ConfigToCompleteSwapsMap[key] = stats;
+                        var averageSortTime = stats.TotalTimeMs / stats.Sorts;
+                        settings.AverageSortTimeMs = averageSortTime;
+                    }
+                });
+                timestampQueryResultBuffer.Unmap();
+            }
+        }
 
         settings.ExecuteStep = false;
+
+        surface.Present();
+        isStillExecutingFrame = 0;
     }
 
-    runContext.OnFrame += () =>
+    runContext.OnFrame += (async () =>
     {
-        FrameAsync(0);
-    };
+        await Frame();
+    });
 });
