@@ -17,12 +17,18 @@ internal sealed class BitonicDisplayRenderer
     private readonly RenderPipeline _pipeline;
     private readonly Buffer _fragmentUniformBuffer;
     private readonly BindGroup _fragmentBindGroup;
+    private readonly ManagedRenderPassDescriptor _renderPassDescriptor;
+    private readonly BindGroup _computeBindGroup;
 
     public BitonicDisplayRenderer(
         Device device,
         TextureFormat presentationFormat,
+        ManagedRenderPassDescriptor renderPassDescriptor,
+        BindGroup computeBindGroup,
         BindGroupLayout computeLayout)
     {
+        _renderPassDescriptor = renderPassDescriptor;
+        _computeBindGroup = computeBindGroup;
         _queue = device.GetQueue();
         _fragmentUniformBuffer = device.CreateBuffer(new()
         {
@@ -93,31 +99,29 @@ internal sealed class BitonicDisplayRenderer
         });
     }
 
-    public void Render(CommandEncoder commandEncoder, TextureView targetView, BindGroup computeBindGroup, DisplayMode displayMode)
+    private void SetArguments(FragmentUniforms uniforms)
     {
-        var uniforms = new FragmentUniforms
-        {
-            Highlight = displayMode == DisplayMode.Elements ? 0u : 1u,
-        };
         _queue.WriteBuffer(_fragmentUniformBuffer, uniforms);
+    }
+
+    public void Render(CommandEncoder commandEncoder, TextureView targetView, FragmentUniforms args)
+    {
+        SetArguments(args);
+
+        _renderPassDescriptor.ColorAttachments[0].View = targetView;
 
         var renderPassDescriptor = new RenderPassDescriptor
         {
-            ColorAttachments =
-            [
-                new()
-                {
-                    View = targetView,
-                    LoadOp = LoadOp.Clear,
-                    StoreOp = StoreOp.Store,
-                    ClearValue = new(0.1f, 0.4f, 0.5f, 1f),
-                }
-            ]
+            Label = _renderPassDescriptor.Label,
+            ColorAttachments = _renderPassDescriptor.ColorAttachments,
+            DepthStencilAttachment = _renderPassDescriptor.DepthStencilAttachment,
+            OcclusionQuerySet = _renderPassDescriptor.OcclusionQuerySet,
+            TimestampWrites = _renderPassDescriptor.TimestampWrites,
         };
 
         var pass = commandEncoder.BeginRenderPass(renderPassDescriptor);
         pass.SetPipeline(_pipeline);
-        pass.SetBindGroup(0, computeBindGroup);
+        pass.SetBindGroup(0, _computeBindGroup);
         pass.SetBindGroup(1, _fragmentBindGroup);
         pass.Draw(6);
         pass.End();

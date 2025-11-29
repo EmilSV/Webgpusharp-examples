@@ -147,8 +147,6 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
     uint highestBlockHeight = 2;
     bool sizeLimitLocked = false;
-    bool pendingAverageUpdate = false;
-    bool sortCompleted = false;
     int totalElementsIndex = 0;
     int sizeLimitIndex = 0;
 
@@ -287,26 +285,28 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         },
     });
 
+    var renderPassDescriptor = new ManagedRenderPassDescriptor
+    {
+        ColorAttachments =
+        [
+            new()
+            {
+                View = null,
+                LoadOp = LoadOp.Clear,
+                StoreOp = StoreOp.Store,
+                ClearValue = new Color { R = 0.1, G = 0.4, B = 0.5, A = 1.0 },
+            }
+        ]
+    };
+
+
     var displayRenderer = new BitonicDisplayRenderer(
         device: device,
         presentationFormat: surfaceFormat,
+        renderPassDescriptor: renderPassDescriptor,
+        computeBindGroup: computeBindGroup,
         computeLayout: computeBindGroupLayout
     );
-
-    bool timestampSupported = false;
-    var timestampRecorder = new TimestampRecorder(device, stepDurationMs =>
-    {
-        settings.StepTimeMs = stepDurationMs;
-        settings.SortTimeMs += stepDurationMs;
-        if (pendingAverageUpdate && sortCompleted)
-        {
-            RegisterSortCompletion();
-            pendingAverageUpdate = false;
-            sortCompleted = false;
-        }
-    });
-    timestampSupported = timestampRecorder.Supported;
-
 
     void ResetTimeInfo()
     {
@@ -486,19 +486,6 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         SetSwappedCell();
     };
 
-    void RegisterSortCompletion()
-    {
-        var key = settings.ConfigKey;
-        if (!settings.ConfigToCompleteSwapsMap.TryGetValue(key, out var stats))
-        {
-            stats = (0, 0);
-        }
-        stats.Sorts += 1;
-        stats.TotalTimeMs += settings.SortTimeMs;
-        settings.ConfigToCompleteSwapsMap[key] = stats;
-        settings.AverageSortTimeMs = stats.TotalTimeMs / stats.Sorts;
-    }
-
     CommandBuffer DrawImGui(Surface surface)
     {
         guiContext.NewFrame();
@@ -514,8 +501,8 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
                 // Total Elements
                 if (ImGui.Combo("Total Elements", ref totalElementsIndex, totalElementLabels, totalElementLabels.Length))
                 {
-                    EndSortTimer();
                     settings.TotalElements = totalElementOptions[totalElementsIndex];
+                    EndSortTimer();
                     ResizeElementArray();
                     sizeLimitLocked = false;
                     ResetTimeInfo();
@@ -530,7 +517,22 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
                     settings.WorkgroupSize = Math.Min(settings.TotalElements / 2, settings.SizeLimit);
                     settings.WorkgroupsPerStep = (uint)Math.Ceiling(settings.TotalElements / (double)(settings.SizeLimit * 2));
                     // Apply new compute resources values to the sort's compute pipeline
-                    computePipeline = CreateBitonicPipeline();
+                    computePipeline = device.CreateComputePipeline(new()
+                    {
+                        Layout = device.CreatePipelineLayout(new()
+                        {
+                            BindGroupLayouts = [computeBindGroupLayout],
+                        }),
+                        Compute = new()
+                        {
+                            Module = device.CreateShaderModuleWGSL(new()
+                            {
+                                Code = BitonicCompute.NaiveBitonicCompute(
+                                    Math.Min(settings.TotalElements / 2, settings.SizeLimit)
+                                )
+                            })
+                        },
+                    });
                     ResetTimeInfo();
                 }
                 ImGui.EndDisabled();
@@ -710,26 +712,14 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         );
 
         var surfaceTexture = surface.GetCurrentTexture();
-        var renderPassDescriptor = new RenderPassDescriptor
-        {
-            ColorAttachments = new[]
-            {
-                new RenderPassColorAttachment
-                {
-                    View = surfaceTexture.Texture!.CreateView(),
-                    LoadOp = LoadOp.Clear,
-                    StoreOp = StoreOp.Store,
-                    ClearValue = new Color { R = 0.1, G = 0.4, B = 0.5, A = 1.0 }
-                }
-            }
-        };
-
         var commandEncoder = device.CreateCommandEncoder();
         displayRenderer.Render(
             commandEncoder,
-            renderPassDescriptor.ColorAttachments[0].View!,
-            computeBindGroup,
-            settings.DisplayMode
+            surfaceTexture.Texture!.CreateView(),
+            new()
+            {
+                Highlight = settings.DisplayMode == DisplayMode.Elements ? 0u : 1u,
+            }
         );
 
         if (
