@@ -144,6 +144,7 @@ CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
             }
             ImGui.TreePop();
         }
+        ImGui.TreePop();
     }
     ImGui.End();
 
@@ -377,7 +378,7 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
     var texturedSquarePipeline = device.CreateRenderPipeline(new()
     {
         Layout = null, // Autogenerate the pipeline layout,
-        Vertex = new ()
+        Vertex = new()
         {
             Module = texturedSquareModule,
             Constants = [
