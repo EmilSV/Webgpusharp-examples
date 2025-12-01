@@ -32,7 +32,6 @@
         <Project Path="GraphicsTechniques/ShadowMapping/ShadowMapping.csproj"/>
     </Folder>
     <Folder Name="/WebGPUFeatures/">
-        <Project Path="WebGPUFeatures/Blending/Blending.csproj"/>
         <Project Path="WebGPUFeatures/RenderBundles/RenderBundles.csproj"/>
         <Project Path="WebGPUFeatures/ReversedZ/ReversedZ.csproj"/>
         <Project Path="WebGPUFeatures/TimestampQuery/TimestampQuery.csproj"/>
