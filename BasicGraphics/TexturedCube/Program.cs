@@ -1,20 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-
-static byte[] ToByteArray(Stream input)
-{
-    using (MemoryStream ms = new MemoryStream())
-    {
-        input.CopyTo(ms);
-        return ms.ToArray();
-    }
-}
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
@@ -23,8 +13,8 @@ return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 {
     var startTimeStamp = Stopwatch.GetTimestamp();
     var executingAssembly = Assembly.GetExecutingAssembly();
-    var basicVertWgsl = ToByteArray(executingAssembly.GetManifestResourceStream("TexturedCube.basic.vert.wgsl")!);
-    var sampleTextureMixColor = ToByteArray(executingAssembly.GetManifestResourceStream("TexturedCube.sampleTextureMixColor.frag.wgsl")!);
+    var basicVertWgsl = ResourceUtils.GetEmbeddedResource("TexturedCube.shaders.basic.vert.wgsl", executingAssembly);
+    var sampleTextureMixColor = ResourceUtils.GetEmbeddedResource("TexturedCube.shaders.sampleTextureMixColor.frag.wgsl", executingAssembly);
 
     var adapter = (await instance.RequestAdapterAsync(new()
     {

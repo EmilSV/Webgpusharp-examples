@@ -1,11 +1,11 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
         <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj"/>
         <ProjectReference Include="..\..\Setup\Setup.csproj"/>
-        <EmbeddedResource Include="basic.vert.wgsl"/>
-        <EmbeddedResource Include="sampleTextureMixColor.frag.wgsl"/>
-        <EmbeddedResource Include="assets\Di-3d.png"/>
+        <EmbeddedResource Include="shaders\**\*.wgsl"/>
+        <EmbeddedResource Include="assets\**\*.png"/>
+        <EmbeddedResource Include="assets\**\*.jpg"/>
     </ItemGroup>
     <PropertyGroup>
         <OutputType>Exe</OutputType>

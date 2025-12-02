@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Reflection;
 using System.Text;
+using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
@@ -24,12 +25,8 @@ return Run(
     {
         var startTimeStamp = Stopwatch.GetTimestamp();
         var executingAssembly = Assembly.GetExecutingAssembly();
-        var basicVertWgsl = ToByteArray(
-            executingAssembly.GetManifestResourceStream("FractalCube.basic.vert.wgsl")!
-        );
-        var vertexPositionColorWgsl = ToByteArray(
-            executingAssembly.GetManifestResourceStream("FractalCube.sampleSelf.frag.wgsl")!
-        );
+        var basicVertWgsl = ResourceUtils.GetEmbeddedResource("FractalCube.shaders.basic.vert.wgsl", executingAssembly);
+        var vertexPositionColorWgsl = ResourceUtils.GetEmbeddedResource("FractalCube.shaders.sampleSelf.frag.wgsl", executingAssembly);
 
         var adapter = (await instance.RequestAdapterAsync(new() { CompatibleSurface = surface }))!;
 

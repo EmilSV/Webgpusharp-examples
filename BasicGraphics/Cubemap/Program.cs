@@ -7,13 +7,6 @@ using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
-static byte[] ToByteArray(Stream input)
-{
-    using MemoryStream ms = new();
-    input.CopyTo(ms);
-    return ms.ToArray();
-}
-
 const int WIDTH = 600;
 const int HEIGHT = 600;
 
@@ -26,12 +19,8 @@ return Run(
         var startTimeStamp = Stopwatch.GetTimestamp();
 
         var executingAssembly = Assembly.GetExecutingAssembly();
-        var basicVertWGSL = ToByteArray(
-            executingAssembly.GetManifestResourceStream("Cubemap.basic.vert.wgsl")!
-        );
-        var sampleCubemapWGSL = ToByteArray(
-            executingAssembly.GetManifestResourceStream("Cubemap.sampleCubemap.frag.wgsl")!
-        );
+        var basicVertWGSL = ResourceUtils.GetEmbeddedResource("Cubemap.shaders.basic.vert.wgsl", executingAssembly);
+        var sampleCubemapWGSL = ResourceUtils.GetEmbeddedResource("Cubemap.shaders.sampleCubemap.frag.wgsl", executingAssembly);
 
         var adapter = (await instance.RequestAdapterAsync(new() { CompatibleSurface = surface }))!;
 
@@ -155,12 +144,12 @@ return Run(
         {
             string[] imgSrcs =
             [
-                "Cubemap.cubemap.posx.jpg",
-                "Cubemap.cubemap.negx.jpg",
-                "Cubemap.cubemap.posy.jpg",
-                "Cubemap.cubemap.negy.jpg",
-                "Cubemap.cubemap.posz.jpg",
-                "Cubemap.cubemap.negz.jpg",
+                "Cubemap.assets.cubemap.posx.jpg",
+                "Cubemap.assets.cubemap.negx.jpg",
+                "Cubemap.assets.cubemap.posy.jpg",
+                "Cubemap.assets.cubemap.negy.jpg",
+                "Cubemap.assets.cubemap.posz.jpg",
+                "Cubemap.assets.cubemap.negz.jpg",
             ];
 
             var imgTasks = imgSrcs
@@ -178,7 +167,7 @@ return Run(
                 new()
                 {
                     Dimension = TextureDimension.D2,
-                    Size = new Extent3D((uint)width, (uint)height, (uint)imgTasks.Length),
+                    Size = new Extent3D(width, height, (uint)imgTasks.Length),
                     Format = TextureFormat.RGBA8Unorm,
                     Usage =
                         TextureUsage.TextureBinding
@@ -193,8 +182,8 @@ return Run(
                 queue.WriteTexture(
                     destination: new() { Texture = cubemapTexture, Origin = new(0, 0, (uint)i) },
                     data: bytes,
-                    dataLayout: new() { BytesPerRow = 4 * (uint)width, RowsPerImage = (uint)height },
-                    writeSize: new((uint)width, (uint)height)
+                    dataLayout: new() { BytesPerRow = 4 * width, RowsPerImage = height },
+                    writeSize: new(width, height)
                 );
             }
         }
@@ -225,8 +214,7 @@ return Run(
                     {
                         Binding = 2,
                         TextureView = cubemapTexture.CreateView(
-                            new() {
-                                Dimension = TextureViewDimension.Cube }
+                            new() { Dimension = TextureViewDimension.Cube }
                         ),
                     },
                 ],

@@ -9,9 +9,9 @@
     <ItemGroup>
         <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj"/>
         <ProjectReference Include="..\..\Setup\Setup.csproj"/>
-        <EmbeddedResource Include="cubemap\*.jpg"/>
-        <EmbeddedResource Include="sampleCubemap.frag.wgsl"/>
-        <EmbeddedResource Include="basic.vert.wgsl"/>
+        <EmbeddedResource Include="shaders\**\*.wgsl"/>
+        <EmbeddedResource Include="assets\**\*.png"/>
+        <EmbeddedResource Include="assets\**\*.jpg"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2"/>

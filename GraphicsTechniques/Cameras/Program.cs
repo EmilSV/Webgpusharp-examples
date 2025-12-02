@@ -13,16 +13,8 @@ const int WIDTH = 640;
 const int HEIGHT = 480;
 const float ASPECT = (float)WIDTH / HEIGHT;
 
-static byte[] ToBytes(Stream s)
-{
-    using MemoryStream ms = new();
-    s.CopyTo(ms);
-    return ms.ToArray();
-}
-
-
 var asm = Assembly.GetExecutingAssembly();
-var cubeWGSL = ToBytes(asm.GetManifestResourceStream("Cameras.shaders.cube.wgsl")!);
+var cubeWGSL = ResourceUtils.GetEmbeddedResource("Cameras.shaders.cube.wgsl", asm)!;
 var currentCameraType = CameraType.WASD;
 
 CommandBuffer DrawGUI(GuiContext guiContext, Surface surface, out bool changeCameraType)
@@ -173,7 +165,7 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
     // Fetch the image and upload it into a GPUTexture.
     Texture cubeTexture;
 
-    using var imageStream = ResourceUtils.GetEmbeddedResourceStream("Cameras.img.Di-3d.png", asm);
+    using var imageStream = ResourceUtils.GetEmbeddedResourceStream("Cameras.assets.Di-3d.png", asm);
     var imageBitmap = ResourceUtils.LoadImage(imageStream!);
 
     cubeTexture = device.CreateTexture(new()

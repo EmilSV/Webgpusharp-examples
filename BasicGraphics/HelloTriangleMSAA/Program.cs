@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Text;
+using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
@@ -21,11 +22,13 @@ return Run(
     async (instance, surface, onFrame) =>
     {
         var executingAssembly = Assembly.GetExecutingAssembly();
-        var triangleVertShaderWgsl = ToByteArray(
-            executingAssembly.GetManifestResourceStream("HelloTriangleMSAA.triangle.vert.wgsl")!
+        var triangleVertShaderWgsl = ResourceUtils.GetEmbeddedResource(
+            "HelloTriangleMSAA.shaders.triangle.vert.wgsl",
+            executingAssembly
         );
-        var redFragShaderWgsl = ToByteArray(
-            executingAssembly.GetManifestResourceStream("HelloTriangleMSAA.red.frag.wgsl")!
+        var redFragShaderWgsl = ResourceUtils.GetEmbeddedResource(
+            "HelloTriangleMSAA.shaders.red.frag.wgsl",
+            executingAssembly
         );
 
         var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });

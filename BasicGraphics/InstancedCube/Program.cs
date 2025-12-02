@@ -2,15 +2,9 @@
 using System.Numerics;
 using System.Reflection;
 using System.Text;
+using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
-
-static byte[] ToByteArray(Stream input)
-{
-    using MemoryStream ms = new();
-    input.CopyTo(ms);
-    return ms.ToArray();
-}
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
@@ -19,8 +13,8 @@ return Run("Instanced Cube", WIDTH, HEIGHT, async (instance, surface, onFrame) =
 {
     var startTimeStamp = Stopwatch.GetTimestamp();
     var executingAssembly = Assembly.GetExecutingAssembly();
-    var instancedVertWGSL = ToByteArray(executingAssembly.GetManifestResourceStream("InstancedCube.basic.vert.wgsl")!);
-    var vertexPositionColorWgsl = ToByteArray(executingAssembly.GetManifestResourceStream("InstancedCube.vertexPositionColor.frag.wgsl")!);
+    var instancedVertWGSL = ResourceUtils.GetEmbeddedResource("InstancedCube.shaders.basic.vert.wgsl", executingAssembly);
+    var vertexPositionColorWgsl = ResourceUtils.GetEmbeddedResource("InstancedCube.shaders.vertexPositionColor.frag.wgsl", executingAssembly);
 
     var adapter = await instance.RequestAdapterAsync(new()
     {
