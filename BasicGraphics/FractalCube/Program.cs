@@ -6,13 +6,6 @@ using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
-static byte[] ToByteArray(Stream input)
-{
-    using MemoryStream ms = new();
-    input.CopyTo(ms);
-    return ms.ToArray();
-}
-
 const int WIDTH = 640;
 const int HEIGHT = 480;
 const float ASPECT = WIDTH / (float)HEIGHT;

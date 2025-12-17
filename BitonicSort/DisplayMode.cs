@@ -1,5 +1,0 @@
-enum DisplayMode
-{
-	Elements,
-	SwapHighlight,
-}
