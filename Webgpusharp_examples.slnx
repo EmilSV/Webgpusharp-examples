@@ -1,43 +1,44 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+
 <Solution>
     <Configurations>
-        <Platform Name="Any CPU"/>
-        <Platform Name="x64"/>
-        <Platform Name="x86"/>
+        <Platform Name="Any CPU" />
+        <Platform Name="x64" />
+        <Platform Name="x86" />
     </Configurations>
     <Folder Name="/BasicGraphics/">
-        <Project Path="BasicGraphics/Cubemap/Cubemap.csproj"/>
-        <Project Path="BasicGraphics/FractalCube/FractalCube.csproj"/>
-        <Project Path="BasicGraphics/HelloTriangle/HelloTriangle.csproj"/>
-        <Project Path="BasicGraphics/HelloTriangleMSAA/HelloTriangleMSAA.csproj"/>
-        <Project Path="BasicGraphics/InstancedCube/InstancedCube.csproj"/>
-        <Project Path="BasicGraphics/RotatingCube/RotatingCube.csproj"/>
-        <Project Path="BasicGraphics/TexturedCube/TexturedCube.csproj"/>
-        <Project Path="BasicGraphics/TwoCubes/TwoCubes.csproj"/>
+        <Project Path="BasicGraphics/Cubemap/Cubemap.csproj" />
+        <Project Path="BasicGraphics/FractalCube/FractalCube.csproj" />
+        <Project Path="BasicGraphics/HelloTriangle/HelloTriangle.csproj" />
+        <Project Path="BasicGraphics/HelloTriangleMSAA/HelloTriangleMSAA.csproj" />
+        <Project Path="BasicGraphics/InstancedCube/InstancedCube.csproj" />
+        <Project Path="BasicGraphics/RotatingCube/RotatingCube.csproj" />
+        <Project Path="BasicGraphics/TexturedCube/TexturedCube.csproj" />
+        <Project Path="BasicGraphics/TwoCubes/TwoCubes.csproj" />
     </Folder>
     <Folder Name="/GPGPUDemos/">
-        <Project Path="GPGPUDemos/BitonicSort/BitonicSort.csproj"/>
-        <Project Path="GPGPUDemos/ComputeBoids/ComputeBoids.csproj"/>
-        <Project Path="GPGPUDemos/ConwaysGameOfLife/ConwaysGameOfLife.csproj"/>
+        <Project Path="GPGPUDemos/BitonicSort/BitonicSort.csproj" />
+        <Project Path="GPGPUDemos/ComputeBoids/ComputeBoids.csproj" />
+        <Project Path="GPGPUDemos/ConwaysGameOfLife/ConwaysGameOfLife.csproj" />
     </Folder>
     <Folder Name="/GraphicsTechniques/">
-        <Project Path="GraphicsTechniques/Cameras/Cameras.csproj"/>
-        <Project Path="GraphicsTechniques/Cornell/Cornell.csproj"/>
-        <Project Path="GraphicsTechniques/DeferredRendering/DeferredRendering.csproj"/>
-        <Project Path="GraphicsTechniques/ImageBlur/ImageBlur.csproj"/>
-        <Project Path="GraphicsTechniques/NormalMap/NormalMap.csproj"/>
-        <Project Path="GraphicsTechniques/Particles/Particles.csproj"/>
-        <Project Path="GraphicsTechniques/Points/Points.csproj"/>
-        <Project Path="GraphicsTechniques/PrimitivePicking/PrimitivePicking.csproj"/>
-        <Project Path="GraphicsTechniques/ShadowMapping/ShadowMapping.csproj"/>
+        <Project Path="GraphicsTechniques/ABuffer/ABuffer.csproj" />
+        <Project Path="GraphicsTechniques/Cameras/Cameras.csproj" />
+        <Project Path="GraphicsTechniques/Cornell/Cornell.csproj" />
+        <Project Path="GraphicsTechniques/DeferredRendering/DeferredRendering.csproj" />
+        <Project Path="GraphicsTechniques/ImageBlur/ImageBlur.csproj" />
+        <Project Path="GraphicsTechniques/NormalMap/NormalMap.csproj" />
+        <Project Path="GraphicsTechniques/Particles/Particles.csproj" />
+        <Project Path="GraphicsTechniques/Points/Points.csproj" />
+        <Project Path="GraphicsTechniques/PrimitivePicking/PrimitivePicking.csproj" />
+        <Project Path="GraphicsTechniques/ShadowMapping/ShadowMapping.csproj" />
     </Folder>
     <Folder Name="/WebGPUFeatures/">
-        <Project Path="WebGPUFeatures/RenderBundles/RenderBundles.csproj"/>
-        <Project Path="WebGPUFeatures/ReversedZ/ReversedZ.csproj"/>
-        <Project Path="WebGPUFeatures/TimestampQuery/TimestampQuery.csproj"/>
-        <Project Path="WebGPUFeatures/OcclusionQuery/OcclusionQuery.csproj"/>
-        <Project Path="WebGPUFeatures/SamplerParameters/SamplerParameters.csproj"/>
+        <Project Path="WebGPUFeatures/RenderBundles/RenderBundles.csproj" />
+        <Project Path="WebGPUFeatures/ReversedZ/ReversedZ.csproj" />
+        <Project Path="WebGPUFeatures/TimestampQuery/TimestampQuery.csproj" />
+        <Project Path="WebGPUFeatures/OcclusionQuery/OcclusionQuery.csproj" />
+        <Project Path="WebGPUFeatures/SamplerParameters/SamplerParameters.csproj" />
     </Folder>
-    <Project Path="Setup/Setup.csproj"/>
-    <Project Path="WebGPUSharp/WebGpuSharp.csproj"/>
+    <Project Path="Setup/Setup.csproj" />
+    <Project Path="WebGPUSharp/WebGpuSharp.csproj" />
 </Solution>
