@@ -188,7 +188,7 @@ public static class ImGui_Impl_WebGPUSharp
 
     public static nint GetTextureViewID(TextureView view)
     {
-        return unchecked((nint)WebGPUMarshal.GetBorrowHandle(view).GetAddress());
+        return unchecked((nint)WebGPUMarshal.GetHandle(view).GetAddress());
     }
 
     #endregion
@@ -784,7 +784,7 @@ public static class ImGui_Impl_WebGPUSharp
                         }
                         else
                         {
-                            TextureView tex = new TextureViewHandle(u).ToSafeHandle(false)!;
+                            TextureView tex = new TextureViewHandle(u).ToSafeHandle()!;
                             BindGroup image_bind_group = ImGui_ImplWGPU_CreateImageBindGroup(bd.renderResources.ImageBindGroupLayout, tex);
 
                             bd.renderResources.ImageBindGroups.Add(tex_id, image_bind_group);
