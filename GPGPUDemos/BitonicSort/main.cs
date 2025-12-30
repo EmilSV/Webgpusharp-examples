@@ -230,6 +230,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         ],
     });
 
+    await elementsStagingBuffer.MapAsync(MapMode.Read, 0, (nuint)elementBufferSize);
     var computeBindGroup = device.CreateBindGroup(new()
     {
         Label = "BitonicSort.ComputeBindGroup",

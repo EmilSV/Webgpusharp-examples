@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/BitonicSort/bin/Debug/net10.0/BitonicSort.dll",
+            "program": "${workspaceFolder}/GPGPUDemos/BitonicSort/bin/Debug/net10.0/BitonicSort.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/BitonicSort",
+            "cwd": "${workspaceFolder}/GPGPUDemos/BitonicSort",
             "console": "internalConsole",
             "stopAtEntry": false
         },
