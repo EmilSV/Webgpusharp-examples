@@ -227,14 +227,14 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
             DepthCompare = depthCompareFuncs![DepthBufferMode.Default]
         };
 
-        var defaultPipeline = device.CreateRenderPipeline(depthPrePassRenderPipelineDescriptorBase);
+        var defaultPipeline = device.CreateRenderPipelineSync(depthPrePassRenderPipelineDescriptorBase);
 
         depthPrePassRenderPipelineDescriptorBase.DepthStencil = depthStencil with
         {
             DepthCompare = depthCompareFuncs![DepthBufferMode.Reversed]
         };
 
-        var reversedPipeline = device.CreateRenderPipeline(depthPrePassRenderPipelineDescriptorBase);
+        var reversedPipeline = device.CreateRenderPipelineSync(depthPrePassRenderPipelineDescriptorBase);
 
         return FrozenDictionary.ToFrozenDictionary<DepthBufferMode, RenderPipeline>([
             new (DepthBufferMode.Default, defaultPipeline),
@@ -315,14 +315,14 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
             DepthCompare = depthCompareFuncs![DepthBufferMode.Default]
         };
 
-        var defaultPipeline = device.CreateRenderPipeline(precisionPassRenderPipelineDescriptorBase);
+        var defaultPipeline = device.CreateRenderPipelineSync(precisionPassRenderPipelineDescriptorBase);
 
         precisionPassRenderPipelineDescriptorBase.DepthStencil = DepthStencil with
         {
             DepthCompare = depthCompareFuncs![DepthBufferMode.Reversed]
         };
 
-        var reversedPipeline = device.CreateRenderPipeline(precisionPassRenderPipelineDescriptorBase);
+        var reversedPipeline = device.CreateRenderPipelineSync(precisionPassRenderPipelineDescriptorBase);
 
         return FrozenDictionary.ToFrozenDictionary<DepthBufferMode, RenderPipeline>([
             new (DepthBufferMode.Default, defaultPipeline),
@@ -409,14 +409,14 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
             DepthCompare = depthCompareFuncs![DepthBufferMode.Default]
         };
 
-        var defaultPipeline = device.CreateRenderPipeline(colorPassRenderPipelineDescriptorBase);
+        var defaultPipeline = device.CreateRenderPipelineSync(colorPassRenderPipelineDescriptorBase);
 
         colorPassRenderPipelineDescriptorBase.DepthStencil = DepthStencil with
         {
             DepthCompare = depthCompareFuncs![DepthBufferMode.Reversed]
         };
 
-        var reversedPipeline = device.CreateRenderPipeline(colorPassRenderPipelineDescriptorBase);
+        var reversedPipeline = device.CreateRenderPipelineSync(colorPassRenderPipelineDescriptorBase);
 
         return FrozenDictionary.ToFrozenDictionary<DepthBufferMode, RenderPipeline>([
             new (DepthBufferMode.Default, defaultPipeline),
@@ -435,7 +435,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
         ],
     });
 
-    var textureQuadPassPipline = device.CreateRenderPipeline(new()
+    var textureQuadPassPipline = device.CreateRenderPipelineSync(new()
     {
         Layout = textureQuadPassPiplineLayout,
         Vertex = new()

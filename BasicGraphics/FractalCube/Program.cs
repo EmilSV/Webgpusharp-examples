@@ -73,7 +73,7 @@ return Run(
         });
         verticesBuffer.Unmap();
 
-        var pipeline = device.CreateRenderPipeline(
+        var pipeline = device.CreateRenderPipelineSync(
             new()
             {
                 Layout = null,

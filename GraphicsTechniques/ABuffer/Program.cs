@@ -107,7 +107,7 @@ return Run("A-Buffer", WIDTH, HEIGHT, async runContext =>
     });
 
 
-    var opaquePipeline = device.CreateRenderPipeline(new()
+    var opaquePipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null, // "auto"
         Vertex = new()

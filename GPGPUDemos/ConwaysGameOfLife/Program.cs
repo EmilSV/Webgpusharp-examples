@@ -242,7 +242,7 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
 
     void ResetGameData()
     {
-        var computePipeline = device.CreateComputePipeline(new()
+        var computePipeline = device.CreateComputePipelineSync(new()
         {
             Layout = device.CreatePipelineLayout(new()
             {
@@ -348,7 +348,7 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
         bufferAndBindGroups[0] = (buffer0, bindGroup0);
         bufferAndBindGroups[1] = (buffer1, bindGroup1);
 
-        var renderPipeline = device.CreateRenderPipeline(new()
+        var renderPipeline = device.CreateRenderPipelineSync(new()
         {
             Layout = device.CreatePipelineLayout(new()
             {

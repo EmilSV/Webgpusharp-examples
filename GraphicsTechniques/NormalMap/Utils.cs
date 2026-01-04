@@ -180,7 +180,7 @@ static class Utils
             };
         }
 
-        return device.CreateRenderPipeline(pipelineDescriptor);
+        return device.CreateRenderPipelineSync(pipelineDescriptor);
     }
 
     public static VertexBufferLayout CreateVBuffer(VertexFormat[] vertexFormats)

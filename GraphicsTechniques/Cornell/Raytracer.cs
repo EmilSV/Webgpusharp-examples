@@ -103,7 +103,7 @@ public sealed class Raytracer
 			],
 		});
 
-		_pipeline = device.CreateComputePipeline(new()
+		_pipeline = device.CreateComputePipelineSync(new()
 		{
 			Label = "raytracerPipeline",
 			Layout = device.CreatePipelineLayout(new()

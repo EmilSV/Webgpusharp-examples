@@ -72,7 +72,7 @@ return Run(
         );
 
 
-        var pipeline = device.CreateRenderPipeline(
+        var pipeline = device.CreateRenderPipelineSync(
             new()
             {
                 Layout = null, // Auto-layout

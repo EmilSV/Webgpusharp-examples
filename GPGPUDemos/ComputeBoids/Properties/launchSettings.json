@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ComputeBoids": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

@@ -175,7 +175,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContex
         Code = solidColorLitWGSL
     });
 
-    var pipeline = device.CreateRenderPipeline(new()
+    var pipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null,
         Vertex = new()

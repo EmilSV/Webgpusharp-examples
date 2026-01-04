@@ -107,7 +107,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
         Code = meshWGSL
     });
 
-    var pipeline = device.CreateRenderPipeline(new()
+    var pipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null,
         Vertex = new()

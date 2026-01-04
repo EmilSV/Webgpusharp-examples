@@ -64,7 +64,7 @@ return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
     });
     verticesBuffer.Unmap();
 
-    var pipeline = device.CreateRenderPipeline(new()
+    var pipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null, // Auto-layout
         Vertex = new()

@@ -226,7 +226,7 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
     var pixelBlitWGSL = ToBytes(asm.GetManifestResourceStream("SamplerParameters.shaders.pixelBlitNearest.wgsl")!);
     var pixelBlitModule = device.CreateShaderModuleWGSL(new() { Code = pixelBlitWGSL });
 
-    var blitPipeline = device.CreateRenderPipeline(new()
+    var blitPipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null,
         Vertex = new()
@@ -323,7 +323,7 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
         Code = showTextureWGSL
     });
 
-    var showTexturePipeline = device.CreateRenderPipeline(new()
+    var showTexturePipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null, // Autogenerate the pipeline layout,
         Vertex = new()
@@ -375,7 +375,7 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
         Code = texturedSquareWGSL
     });
 
-    var texturedSquarePipeline = device.CreateRenderPipeline(new()
+    var texturedSquarePipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null, // Autogenerate the pipeline layout,
         Vertex = new()

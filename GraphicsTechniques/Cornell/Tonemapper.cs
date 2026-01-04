@@ -99,7 +99,7 @@ public sealed class Tonemapper
 			BindGroupLayouts = [bindGroupLayout],
 		});
 
-		_pipeline = device.CreateComputePipeline(new()
+		_pipeline = device.CreateComputePipelineSync(new()
 		{
 			Label = "Tonemapper.pipeline",
 			Layout = pipelineLayout,

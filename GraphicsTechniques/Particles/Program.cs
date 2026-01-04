@@ -112,7 +112,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
         Usage = BufferUsage.Vertex | BufferUsage.Storage,
     });
 
-    var renderPipeline = device.CreateRenderPipeline(new()
+    var renderPipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null, // Auto-layout
         Vertex = new()
@@ -270,7 +270,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
     // probabilities up to the top 1x1 mip level.
     //////////////////////////////////////////////////////////////////////////////
     {
-        var probabilityMapImportLevelPipeline = device.CreateComputePipeline(new()
+        var probabilityMapImportLevelPipeline = device.CreateComputePipelineSync(new()
         {
             Layout = null!,
             Compute = new()
@@ -282,7 +282,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
                 EntryPoint = "import_level",
             },
         });
-        var probabilityMapExportLevelPipeline = device.CreateComputePipeline(new()
+        var probabilityMapExportLevelPipeline = device.CreateComputePipelineSync(new()
         {
             Layout = null!,
             Compute = new()
@@ -392,7 +392,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
     });
 
 
-    var computePipeline = device.CreateComputePipeline(new()
+    var computePipeline = device.CreateComputePipelineSync(new()
     {
         Layout = null!,
         Compute = new()

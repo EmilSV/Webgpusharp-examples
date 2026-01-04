@@ -87,7 +87,7 @@ return Run("Image Blur", windowWidth, windowHeight, async runContext =>
 	var blurModule = device.CreateShaderModuleWGSL(new() { Code = blurWGSL });
 	var fullscreenModule = device.CreateShaderModuleWGSL(new() { Code = fullscreenTexturedQuadWGSL });
 
-	var blurPipeline = device.CreateComputePipeline(new()
+	var blurPipeline = device.CreateComputePipelineSync(new()
 	{
 		Layout = null,
 		Compute = new()
@@ -96,7 +96,7 @@ return Run("Image Blur", windowWidth, windowHeight, async runContext =>
 		},
 	});
 
-	var fullscreenPipeline = device.CreateRenderPipeline(new()
+	var fullscreenPipeline = device.CreateRenderPipelineSync(new()
 	{
 		Layout = null,
 		Vertex = new()

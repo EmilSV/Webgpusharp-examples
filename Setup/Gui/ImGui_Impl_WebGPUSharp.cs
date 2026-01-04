@@ -408,7 +408,7 @@ public static class ImGui_Impl_WebGPUSharp
                 DepthStencil = bd.depthStencilFormat == TextureFormat.Undefined ? null : depthStencilState, // TODO set defaults not this is not needed
                 Multisample = bd.InitInfo.PipelineMultisampleState
             };
-            bd.pipeline = bd.device.CreateRenderPipeline(descriptor_pipeline)!;
+            bd.pipeline = bd.device.CreateRenderPipelineSync(descriptor_pipeline)!;
         }
 
 

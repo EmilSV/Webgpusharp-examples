@@ -73,7 +73,7 @@ internal sealed class BitonicDisplayRenderer
         var vertexModule = device.CreateShaderModuleWGSL(new() { Code = _fullscreenTexturedQuadWGSL.Value });
         var fragmentModule = device.CreateShaderModuleWGSL(new() { Code = _bitonicDisplayFragmentWGSL.Value });
 
-        _pipeline = device.CreateRenderPipeline(new()
+        _pipeline = device.CreateRenderPipelineSync(new()
         {
             Layout = pipelineLayout,
             Vertex = new()

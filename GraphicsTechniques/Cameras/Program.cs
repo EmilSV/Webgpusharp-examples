@@ -102,7 +102,7 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
     );
     verticesBuffer.Unmap();
 
-    var pipeline = device.CreateRenderPipeline(new()
+    var pipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null!,
         Vertex = new()

@@ -66,7 +66,7 @@ return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
     });
 
 
-    var pipeline = device.CreateRenderPipeline(new()
+    var pipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null, // Auto-layout
         Vertex = new()

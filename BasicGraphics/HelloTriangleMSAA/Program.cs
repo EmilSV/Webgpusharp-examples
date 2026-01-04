@@ -8,13 +8,6 @@ const int WIDTH = 640;
 const int HEIGHT = 480;
 const int SAMPLE_COUNT = 4;
 
-static byte[] ToByteArray(Stream input)
-{
-    using MemoryStream ms = new();
-    input.CopyTo(ms);
-    return ms.ToArray();
-}
-
 return Run(
     "Hello Triangle",
     WIDTH,
@@ -66,7 +59,7 @@ return Run(
             }
         );
 
-        var pipeline = device.CreateRenderPipeline(
+        var pipeline = device.CreateRenderPipelineSync(
             new()
             {
                 Layout = null!,

@@ -212,7 +212,7 @@ return Run("Deferred Rendering", WIDTH, HEIGHT, async runContext =>
         CullMode = CullMode.Back,
     };
 
-    var writeGBuffersPipeline = device.CreateRenderPipeline(new()
+    var writeGBuffersPipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null, // Auto-layout
         Vertex = new()
@@ -314,7 +314,7 @@ return Run("Deferred Rendering", WIDTH, HEIGHT, async runContext =>
         ],
     });
 
-    var gBuffersDebugViewPipeline = device.CreateRenderPipeline(new()
+    var gBuffersDebugViewPipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {
@@ -348,7 +348,7 @@ return Run("Deferred Rendering", WIDTH, HEIGHT, async runContext =>
 
 
 
-    var deferredRenderPipeline = device.CreateRenderPipeline(new()
+    var deferredRenderPipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {
@@ -545,7 +545,7 @@ return Run("Deferred Rendering", WIDTH, HEIGHT, async runContext =>
         }
     );
 
-    var lightUpdateComputePipeline = device.CreateComputePipeline(new()
+    var lightUpdateComputePipeline = device.CreateComputePipelineSync(new()
     {
         Layout = null!,
         Compute = new()

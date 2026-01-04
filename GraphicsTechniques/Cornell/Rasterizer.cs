@@ -125,7 +125,7 @@ public sealed class Rasterizer
 		});
 
 
-		_pipeline = device.CreateRenderPipeline(new()
+		_pipeline = device.CreateRenderPipelineSync(new()
 		{
 			Label = "Rasterizer.pipeline",
 			Layout = device.CreatePipelineLayout(new()

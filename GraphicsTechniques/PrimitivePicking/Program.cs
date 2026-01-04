@@ -199,7 +199,7 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
         CullMode = CullMode.None,
     };
 
-    var forwardRenderingPipeline = device.CreateRenderPipeline(new()
+    var forwardRenderingPipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null, // Auto-layout
         Vertex = new()
@@ -255,7 +255,7 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
     });
 
 
-    var primitivesDebugViewPipeline = device.CreateRenderPipeline(new()
+    var primitivesDebugViewPipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {
@@ -306,7 +306,7 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
     });
 
 
-    var pickPipeline = device.CreateComputePipeline(new()
+    var pickPipeline = device.CreateComputePipelineSync(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {

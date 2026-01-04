@@ -186,7 +186,7 @@ return Run("Points", WIDTH, HEIGHT, async runContext =>
 
     var pipelines = vertModules.Select(vertModule =>
         fragModules.Select(fragModule =>
-            device.CreateRenderPipeline(new()
+            device.CreateRenderPipelineSync(new()
             {
                 Layout = pipelineLayout,
                 Vertex = new()

@@ -187,7 +187,7 @@ public sealed class Radiosity
 			BindGroupLayouts = [common.UniformBindGroupLayout, bindGroupLayout],
 		});
 
-		_radiosityPipeline = device.CreateComputePipeline(new()
+		_radiosityPipeline = device.CreateComputePipelineSync(new()
 		{
 			Label = "Radiosity.compute",
 			Layout = pipelineLayout,
@@ -203,7 +203,7 @@ public sealed class Radiosity
 			},
 		});
 
-		_accumulationToLightmapPipeline = device.CreateComputePipeline(new()
+		_accumulationToLightmapPipeline = device.CreateComputePipelineSync(new()
 		{
 			Label = "Radiosity.accumulationToLightmap",
 			Layout = pipelineLayout,

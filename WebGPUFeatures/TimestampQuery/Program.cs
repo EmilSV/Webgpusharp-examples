@@ -128,7 +128,7 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, guiContex
     verticesBuffer.Unmap();
 
 
-    var pipeline = device.CreateRenderPipeline(new()
+    var pipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null, // Auto-layout
         Vertex = new()

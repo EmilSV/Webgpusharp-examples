@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "BitonicSort": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

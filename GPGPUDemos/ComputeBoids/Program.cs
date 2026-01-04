@@ -19,6 +19,23 @@ static byte[] ToBytes(Stream s)
     return ms.ToArray();
 }
 
+
+NativeLibrary.Load("C:\\Users\\emils\\git_repos\\webgpu-dawn-build\\dawn\\dawn_build_x64\\Debug\\webgpu_dawn.dll");
+Environment.SetEnvironmentVariable("DAWN_DEBUG_BREAK_ON_ERROR", "1");
+//intercept whenever WebGpuSharp request webgpu_dawn.dll
+NativeLibrary.SetDllImportResolver(
+    assembly: typeof(WebGpuSharp.WebGPU).Assembly,
+    resolver: (libraryName, assembly, searchPath) =>
+    {
+        if (libraryName == "webgpu_dawn")
+        {
+            return NativeLibrary.Load("C:\\Users\\emils\\git_repos\\webgpu-dawn-build\\dawn\\dawn_build_x64\\Debug\\webgpu_dawn.dll");
+        }
+        return IntPtr.Zero;
+    }
+);
+
+
 string perfDisplayText = "";
 var asm = Assembly.GetExecutingAssembly();
 var spriteWGSL = ToBytes(asm.GetManifestResourceStream("ComputeBoids.shaders.sprite.wgsl")!);
@@ -58,6 +75,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
     var adapter = await instance.RequestAdapterAsync(new()
     {
         CompatibleSurface = surface,
+        BackendType = BackendType.Vulkan,
         FeatureLevel = FeatureLevel.Compatibility
     });
 
@@ -102,7 +120,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
         Code = spriteWGSL
     });
 
-    var renderPipeline = device.CreateRenderPipeline(new()
+    var renderPipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = null,
         Vertex = new()
@@ -156,7 +174,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
         }
     });
 
-    var computePipeline = device.CreateComputePipeline(new()
+    var computePipeline = device.CreateComputePipelineSync(new()
     {
         Layout = null,
         Compute = new()
@@ -228,7 +246,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
 
     void UpdateSimParams()
     {
-        query.WriteBuffer(simParamBuffer, 0, simParams);
+        device.GetQueue().WriteBuffer(simParamBuffer, 0, simParams);
     }
     UpdateSimParams();
 
@@ -364,7 +382,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
             UpdateSimParams();
         }
 
-        query.Submit([commandEncoder.Finish(), guiCommanderBuffer]);
+        device.GetQueue().Submit([commandEncoder.Finish(), guiCommanderBuffer]);
         surface.Present();
 
         if (hasTimestampQuery)

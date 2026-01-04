@@ -173,7 +173,7 @@ return Run("Shadow Mapping", WIDTH, HEIGHT, async runContext =>
         ]
     });
 
-    var shadowPipeline = device.CreateRenderPipeline(new()
+    var shadowPipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {
@@ -237,7 +237,7 @@ return Run("Shadow Mapping", WIDTH, HEIGHT, async runContext =>
         ]
     });
 
-    var pipeline = device.CreateRenderPipeline(new()
+    var pipeline = device.CreateRenderPipelineSync(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {
