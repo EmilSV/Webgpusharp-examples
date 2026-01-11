@@ -1,5 +1,7 @@
-﻿using System.Numerics;
+﻿using System.Collections.Concurrent;
+using System.Numerics;
 using System.Reflection;
+using System.Resources;
 using System.Runtime.InteropServices;
 using System.Text;
 using ImGuiNET;
@@ -12,34 +14,10 @@ using GPUBuffer = WebGpuSharp.Buffer;
 const int WIDTH = 1280;
 const int HEIGHT = 720;
 
-static byte[] ToBytes(Stream s)
-{
-    using MemoryStream ms = new();
-    s.CopyTo(ms);
-    return ms.ToArray();
-}
-
-
-NativeLibrary.Load("C:\\Users\\emils\\git_repos\\webgpu-dawn-build\\dawn\\dawn_build_x64\\Debug\\webgpu_dawn.dll");
-Environment.SetEnvironmentVariable("DAWN_DEBUG_BREAK_ON_ERROR", "1");
-//intercept whenever WebGpuSharp request webgpu_dawn.dll
-NativeLibrary.SetDllImportResolver(
-    assembly: typeof(WebGpuSharp.WebGPU).Assembly,
-    resolver: (libraryName, assembly, searchPath) =>
-    {
-        if (libraryName == "webgpu_dawn")
-        {
-            return NativeLibrary.Load("C:\\Users\\emils\\git_repos\\webgpu-dawn-build\\dawn\\dawn_build_x64\\Debug\\webgpu_dawn.dll");
-        }
-        return IntPtr.Zero;
-    }
-);
-
-
 string perfDisplayText = "";
 var asm = Assembly.GetExecutingAssembly();
-var spriteWGSL = ToBytes(asm.GetManifestResourceStream("ComputeBoids.shaders.sprite.wgsl")!);
-var updateSpritesWGSL = ToBytes(asm.GetManifestResourceStream("ComputeBoids.shaders.updateSprites.wgsl")!);
+var spriteWGSL = ResourceUtils.GetEmbeddedResource("ComputeBoids.shaders.sprite.wgsl")!;
+var updateSpritesWGSL = ResourceUtils.GetEmbeddedResource("ComputeBoids.shaders.updateSprites.wgsl")!;
 
 CommandBuffer DrawGui(GuiContext guiContext, Surface surface, ref SimParams simParams, out bool simParamsChanged)
 {
@@ -69,13 +47,11 @@ CommandBuffer DrawGui(GuiContext guiContext, Surface surface, ref SimParams simP
     return guiContext.Render(surface)!.Value!;
 }
 
-
 return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
 {
     var adapter = await instance.RequestAdapterAsync(new()
     {
         CompatibleSurface = surface,
-        BackendType = BackendType.Vulkan,
         FeatureLevel = FeatureLevel.Compatibility
     });
 
@@ -195,7 +171,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
     /// Pool of spare buffers for MAP_READing the timestamps back to CPU. A buffer
     /// is taken from the pool (if available) when a readback is needed, and placed
     /// back into the pool once the readback is done and it's unmapped.
-    Stack<GPUBuffer> spareResultBuffers = new();
+    ConcurrentStack<GPUBuffer> spareResultBuffers = new();
 
     if (hasTimestampQuery)
     {
@@ -363,10 +339,12 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
         }
 
         GPUBuffer? resultBuffer = null;
+
         if (hasTimestampQuery)
         {
-            resultBuffer = spareResultBuffers.Count > 0 ?
-                spareResultBuffers.Pop() :
+
+            resultBuffer = spareResultBuffers.TryPop(out var result) ?
+                result :
                 device.CreateBuffer(new()
                 {
                     Size = 4 * sizeof(ulong),
@@ -374,6 +352,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
                 });
             commandEncoder.ResolveQuerySet(querySet!, 0, 4, resolveBuffer!, 0);
             commandEncoder.CopyBufferToBuffer(resolveBuffer!, resultBuffer!);
+
         }
 
         var guiCommanderBuffer = DrawGui(guiContext, surface, ref simParams, out var simParamsChanged);
@@ -387,7 +366,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
 
         if (hasTimestampQuery)
         {
-            resultBuffer!.MapAsync(MapMode.Read).ContinueWith((t) =>
+            resultBuffer!.Map(MapMode.Read, (s, m) =>
             {
                 float computePassDuration = 0;
                 float renderPassDuration = 0;

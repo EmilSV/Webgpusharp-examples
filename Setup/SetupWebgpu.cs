@@ -46,7 +46,6 @@ public class SetupWebGPU
                         }
                     }
                     action();
-                    instance.ProcessEvents();
                 }
                 SDL_DestroyWindow(window);
                 SDL_Quit();
@@ -92,7 +91,6 @@ public class SetupWebGPU
                         }
                     }
                     action();
-                    instance.ProcessEvents();
                 }
                 SDL_DestroyWindow(window);
                 SDL_Quit();
@@ -137,7 +135,6 @@ public class SetupWebGPU
                         }
                     }
                     action();
-                    instance.ProcessEvents();
                 }
                 SDL_DestroyWindow(window);
                 SDL_Quit();
@@ -186,7 +183,6 @@ public class SetupWebGPU
                 }
             }
             runContext.InvokeOnFrame();
-            instance.ProcessEvents();
         }
         SDL_DestroyWindow(window);
         SDL_Quit();

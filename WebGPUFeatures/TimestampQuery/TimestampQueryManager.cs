@@ -111,7 +111,8 @@ public class TimestampQueryManager
         if (TimestampMapBuffer!.GetMapState() != BufferMapState.Unmapped) return;
 
         var buffer = TimestampMapBuffer;
-        var mapState = await buffer.MapAsync(MapMode.Read);
+        //need to configureAwait(false) else Nito.AsyncEx.AsyncContext throw away the task away and it is never awaited
+        var mapState = await buffer.MapAsync(MapMode.Read).ConfigureAwait(false); 
         ulong elapsedNs = 0;
         buffer.GetConstMappedRange<ulong, MappedRangeState>(static (timeStamps, state) =>
         {

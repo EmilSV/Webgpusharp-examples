@@ -302,21 +302,6 @@ return Run(_instance!, "Bitonic Sort", WindowWidth, WindowHeight, async runConte
         },
     });
 
-    ComputePipeline CreateBitonicPipeline()
-    {
-        return device.CreateComputePipelineSync(new()
-        {
-            Layout = device.CreatePipelineLayout(new()
-            {
-                BindGroupLayouts = new[] { computeBindGroupLayout },
-            }),
-            Compute = new()
-            {
-                Module = device.CreateShaderModuleWGSL(new() { Code = BitonicCompute.NaiveBitonicCompute(settings.WorkgroupSize) })
-            },
-        });
-    }
-
     var atomicToZeroComputePipeline = device.CreateComputePipelineSync(new()
     {
         Layout = device.CreatePipelineLayout(new()
@@ -771,23 +756,19 @@ return Run(_instance!, "Bitonic Sort", WindowWidth, WindowHeight, async runConte
             highestBlockHeight < settings.TotalElements * 2
         )
         {
-            ComputePassEncoder computePassEncoder;
-            if (timestampQueryAvailable)
-            {
-                computePassEncoder = commandEncoder.BeginComputePass(new()
-                {
-                    TimestampWrites = new()
-                    {
-                        QuerySet = querySet!,
-                        BeginningOfPassWriteIndex = 0,
-                        EndOfPassWriteIndex = 1,
-                    }
-                });
-            }
-            else
-            {
-                computePassEncoder = commandEncoder.BeginComputePass();
-            }
+            ComputePassEncoder computePassEncoder =
+             timestampQueryAvailable ?
+             commandEncoder.BeginComputePass(new()
+             {
+                 TimestampWrites = new()
+                 {
+                     QuerySet = querySet!,
+                     BeginningOfPassWriteIndex = 0,
+                     EndOfPassWriteIndex = 1,
+                 }
+             }) :
+            commandEncoder.BeginComputePass();
+
 
             computePassEncoder.SetPipeline(computePipeline);
             computePassEncoder.SetBindGroup(0, computeBindGroup);

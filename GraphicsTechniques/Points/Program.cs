@@ -408,7 +408,9 @@ struct Uniforms
     public Matrix4x4 Matrix;
     public Vector2 Resolution;
     public float Size;
+#pragma warning disable IDE0044 // Add readonly modifier
     private float _pad0;
+#pragma warning restore IDE0044 // Add readonly modifier
 }
 
 class Settings

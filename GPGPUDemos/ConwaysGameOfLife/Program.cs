@@ -405,7 +405,7 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
                     }
                 ]
             };
-            commandEncoder = device.CreateCommandEncoder();
+            var commandEncoder = device.CreateCommandEncoder();
 
             if (doCompute)
             {

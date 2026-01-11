@@ -286,7 +286,8 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
         BumpMode.DepthTexture => 2,
         BumpMode.NormalMap => 3,
         BumpMode.ParallaxScale => 4,
-        BumpMode.SteepParallax => 5
+        BumpMode.SteepParallax => 5,
+        _ => throw new InvalidOperationException("Unknown BumpMode"),
     };
 
     var texturedCubePipeline = Utils.Create3DRenderPipeline(
