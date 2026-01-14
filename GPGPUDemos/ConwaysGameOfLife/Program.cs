@@ -201,8 +201,6 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
         Code = fragWGSL
     });
 
-    CommandEncoder commandEncoder;
-
     var bindGroupLayoutRender = device.CreateBindGroupLayout(new()
     {
         Entries = [
