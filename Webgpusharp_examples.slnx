@@ -21,6 +21,7 @@
         <Project Path="GPGPUDemos/ConwaysGameOfLife/ConwaysGameOfLife.csproj" />
     </Folder>
     <Folder Name="/GraphicsTechniques/">
+        <Project Path="GraphicsTechniques/ABuffer/ABuffer.csproj" />
         <Project Path="GraphicsTechniques/Cameras/Cameras.csproj" />
         <Project Path="GraphicsTechniques/Cornell/Cornell.csproj" />
         <Project Path="GraphicsTechniques/DeferredRendering/DeferredRendering.csproj" />

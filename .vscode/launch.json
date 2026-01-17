@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/WebGPUFeatures/TimestampQuery/bin/Debug/net10.0/TimestampQuery.dll",
+            "program": "${workspaceFolder}/GraphicsTechniques/ABuffer/bin/Debug/net10.0/ABuffer.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/WebGPUFeatures/TimestampQuery",
+            "cwd": "${workspaceFolder}/GraphicsTechniques/ABuffer",
             "console": "internalConsole",
             "stopAtEntry": false
         },
