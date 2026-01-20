@@ -5,8 +5,11 @@ using static Setup.SetupWebGPU;
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-return Run("Hello Triangle", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
+return Run("Hello Triangle", WIDTH, HEIGHT, async runContext =>
 {
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
+
     const string TriangleVertShaderSource =
     """
     @vertex
@@ -96,7 +99,7 @@ return Run("Hello Triangle", WIDTH, HEIGHT, async (instance, surface, onFrame) =
         },
     })!;
 
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         var commandEncoder = device.CreateCommandEncoder(new());
         var texture = surface.GetCurrentTexture().Texture!;
@@ -121,5 +124,5 @@ return Run("Hello Triangle", WIDTH, HEIGHT, async (instance, surface, onFrame) =
 
         queue.Submit([commandEncoder.Finish()]);
         surface.Present();
-    });
+    };
 });

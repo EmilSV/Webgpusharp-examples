@@ -133,8 +133,12 @@ CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
     return guiContext.Render(surface)!.Value!;
 }
 
-return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
+return Run("Occlusion Query", WIDTH, HEIGHT, async runContext =>
 {
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
+    var guiContext = runContext.GetGuiContext();
+
     var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
     var device = await adapter.RequestDeviceAsync(new()
     {
@@ -298,7 +302,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContex
 
     double time = 0;
     long then = Stopwatch.GetTimestamp();
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         long now = Stopwatch.GetTimestamp();
         var deltaTime = Stopwatch.GetElapsedTime(then, now).TotalSeconds;
@@ -418,7 +422,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async (instance, surface, guiContex
                 resultBuf.Unmap();
             });
         }
-    });
+    };
 });
 
 

@@ -54,8 +54,12 @@ CommandBuffer DrawGUI(GuiContext guiContext, Surface surface, out bool asteroidC
     return guiContext.Render(surface)!.Value!;
 }
 
-return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
+return Run("Render Bundles", WIDTH, HEIGHT, async runContext =>
 {
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
+    var guiContext = runContext.GetGuiContext();
+
     var startTimeStamp = Stopwatch.GetTimestamp();
 
     var executingAssembly = Assembly.GetExecutingAssembly();
@@ -459,7 +463,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
     UpdateRenderBundle();
 
     fpsTimer.BeginRecording();
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         var transformationMatrix = GetTransformationMatrix();
         queue.WriteBuffer(uniformBuffer, 0, transformationMatrix);
@@ -513,7 +517,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async (instance, surface, guiContext
 
         fpsTimer.FrameEnd();
         frameTimeStats.EndFrame();
-    });
+    };
 });
 
 class Renderable

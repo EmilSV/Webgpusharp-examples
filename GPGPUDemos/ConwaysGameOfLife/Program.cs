@@ -78,8 +78,12 @@ CommandBuffer DrawGui(GuiContext guiContext, Surface surface, out bool resetGame
     return guiContext.Render(surface)!.Value!;
 }
 
-return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
+return Run("Conway's Game of Life", WIDTH, HEIGHT, async runContext =>
 {
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
+    var guiContext = runContext.GetGuiContext();
+
     var adapter = await instance.RequestAdapterAsync(new()
     {
         CompatibleSurface = surface,
@@ -436,7 +440,7 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
 
     ResetGameData();
 
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         if (shouldResetGameState)
         {
@@ -456,7 +460,7 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async (instance, surface, gui
             }
         }
         render?.Invoke(doCompute);
-    });
+    };
 });
 
 

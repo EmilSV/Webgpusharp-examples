@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Reflection;
 using System.Text;
+using Microsoft.VisualBasic;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
@@ -9,12 +10,15 @@ using static Setup.SetupWebGPU;
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
+var executingAssembly = Assembly.GetExecutingAssembly();
+var basicVertWgsl = ResourceUtils.GetEmbeddedResource("TwoCubes.shaders.basic.vert.wgsl", executingAssembly);
+var vertexPositionColorWgsl = ResourceUtils.GetEmbeddedResource("TwoCubes.shaders.vertexPositionColor.frag.wgsl", executingAssembly);
+
+
+return Run("Two Cubes", WIDTH, HEIGHT, async runContext =>
 {
-    var startTimeStamp = Stopwatch.GetTimestamp();
-    var executingAssembly = Assembly.GetExecutingAssembly();
-    var basicVertWgsl = ResourceUtils.GetEmbeddedResource("TwoCubes.shaders.basic.vert.wgsl", executingAssembly);
-    var vertexPositionColorWgsl = ResourceUtils.GetEmbeddedResource("TwoCubes.shaders.vertexPositionColor.frag.wgsl", executingAssembly);
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
 
     var adapter = await instance.RequestAdapterAsync(new()
     {
@@ -178,7 +182,7 @@ return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
 
     (Matrix4x4, Matrix4x4) getModelMatrixes()
     {
-        float now = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
+        float now = (float)TimeSpan.FromMilliseconds(Environment.TickCount64).TotalSeconds;
 
         var modelMatrix1 = Matrix4x4.CreateFromAxisAngle(new(MathF.Sin(now), MathF.Cos(now), 0), 1) with
         {
@@ -196,7 +200,7 @@ return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         return (modelMatrix1, modelMatrix2);
     }
 
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         var (modelMatrix1, modelMatrix2) = getModelMatrixes();
         queue.WriteBuffer(uniformBuffer, 0, modelMatrix1);
@@ -240,5 +244,5 @@ return Run("Two Cubes", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         queue.Submit([commandEncoder.Finish()]);
 
         surface.Present();
-    });
+    };
 });

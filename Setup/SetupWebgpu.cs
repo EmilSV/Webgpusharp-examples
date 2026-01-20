@@ -21,7 +21,7 @@ public class SetupWebGPU
             return 1;
         }
 
-        SDL_WindowFlags windowFlags = 0;
+        SDL_WindowFlags windowFlags = SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
         var window = SDL_CreateWindow(name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, windowFlags);
 
         var surface = SDLWebgpu.SDL_GetWGPUSurface(instance, window)!;
