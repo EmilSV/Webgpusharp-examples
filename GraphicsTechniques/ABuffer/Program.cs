@@ -785,9 +785,9 @@ struct Uniforms
     public Matrix4x4 ModelViewProjectionMatrix; // at byte offset 0
     public uint MaxStorableFragments; // at byte offset 64
     public uint TargetWidth; // at byte offset 68
-#pragma warning disable IDE0051
+#pragma warning disable CS0169, IDE0051
     private InlineArray2<float> _pad0; // at byte offset 72
-#pragma warning restore IDE0051
+#pragma warning restore CS0169,IDE0051
 }
 
 struct Index3Ushort

@@ -35,11 +35,13 @@ public sealed class Scene
 	{
 		private VertexInUniform _element0;
 
+		#pragma warning disable CS9181
 		[UnscopedRef]
 		public ref VertexInUniform this[int i]
 		{
 			get => ref this[i];
 		}
+		#pragma warning restore CS9181
 	}
 	private const int IndicesPerQuad = 6;
 	[InlineArray(IndicesPerQuad)]
@@ -47,11 +49,13 @@ public sealed class Scene
 	{
 		private ushort _element0;
 
+		#pragma warning disable CS9181
 		[UnscopedRef]
 		public ref ushort this[int i]
 		{
 			get => ref this[i];
 		}
+		#pragma warning restore CS9181
 	}
 
 
