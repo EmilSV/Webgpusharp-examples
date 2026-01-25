@@ -7,6 +7,7 @@
         "brickwall",
         "Convs",
         "Cubemap",
+        "Gltf",
         "IGPU",
         "Multisample",
         "radiosity",

@@ -31,6 +31,7 @@
         <Project Path="GraphicsTechniques/Points/Points.csproj" />
         <Project Path="GraphicsTechniques/PrimitivePicking/PrimitivePicking.csproj" />
         <Project Path="GraphicsTechniques/ShadowMapping/ShadowMapping.csproj" />
+        <Project Path="GraphicsTechniques/SkinnedMesh/SkinnedMesh.csproj" />
     </Folder>
     <Folder Name="/WebGPUFeatures/">
         <Project Path="WebGPUFeatures/RenderBundles/RenderBundles.csproj" />
