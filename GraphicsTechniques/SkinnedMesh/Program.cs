@@ -6,6 +6,7 @@ using System.Text;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
+using GPUBuffer = WebGpuSharp.Buffer;
 using static Setup.SetupWebGPU;
 
 const int WIDTH = 1280;
@@ -23,7 +24,11 @@ var gltfWGSLStr = Encoding.UTF8.GetString(gltfWGSL);
 var startTimeStamp = Stopwatch.GetTimestamp();
 var settings = new Settings();
 
-CommandBuffer DrawGui(GuiContext guiContext, Surface surface, GlbUtils.ConvertGLBResult whaleScene)
+CommandBuffer DrawGui(
+    GuiContext guiContext,
+    Queue queue,
+    GPUBuffer generalUniformsBuffer,
+    Surface surface, GlbUtils.ConvertGLBResult whaleScene)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
@@ -61,7 +66,10 @@ CommandBuffer DrawGui(GuiContext guiContext, Surface surface, GlbUtils.ConvertGL
     }
 
     // Output the mesh normals, its joints, or the weights that influence the movement of the joints
-    ImGuiUtils.EnumDropdown("Render Mode", ref settings.RenderMode);
+    if (ImGuiUtils.EnumDropdown("Render Mode", ref settings.RenderMode))
+    {
+        queue.WriteBuffer(generalUniformsBuffer, 0, (uint)settings.RenderMode);
+    }
 
     // Determine whether the mesh is static or whether skinning is activated
     if (ImGuiUtils.EnumDropdown("Skin Mode", ref settings.SkinMode))
@@ -81,6 +89,7 @@ CommandBuffer DrawGui(GuiContext guiContext, Surface surface, GlbUtils.ConvertGL
                 settings.CameraZ = -14.6f;
             }
         }
+        queue.WriteBuffer(generalUniformsBuffer, 4, (uint)settings.SkinMode);
     }
 
     ImGui.SliderFloat("Angle", ref settings.Angle, 0.05f, 0.5f);
@@ -294,13 +303,15 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
         0.1f,
         100.0f
     );
-
+    
     var orthographicProjection = Matrix4x4.CreateOrthographic(40, 20, -100, 100);
 
     Matrix4x4 GetProjectionMatrix()
     {
         if (settings.ObjectType != ObjectType.SkinnedGrid)
+        {
             return perspectiveProjection;
+        }
         return orthographicProjection;
     }
 
@@ -336,21 +347,30 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
         if (settings.ObjectType == ObjectType.Whale)
         {
             var elapsed = Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
-            modelMatrix *= Matrix4x4.CreateRotationY((float)elapsed * 0.5f);
+            modelMatrix.RotateY((float)elapsed * 0.5f);
         }
         return modelMatrix;
     }
 
     void AnimSkinnedGrid(Matrix4x4[] boneTransforms, float angle)
     {
-        var m = Matrix4x4.Identity;
-        boneTransforms[0] = Matrix4x4.CreateRotationZ(angle);
-        boneTransforms[0] *= Matrix4x4.CreateTranslation(4, 0, 0);
 
-        m = boneTransforms[0] * Matrix4x4.CreateRotationZ(angle);
-        boneTransforms[1] = m * Matrix4x4.CreateTranslation(4, 0, 0);
+        var boneTransforms0 = Matrix4x4.Identity;
 
-        boneTransforms[2] = boneTransforms[1] * Matrix4x4.CreateRotationZ(angle);
+        boneTransforms0.RotateZ(angle);
+        boneTransforms0.Translate(new(4, 0, 0));
+
+        var boneTransforms1 = Matrix4x4.Identity;
+
+        boneTransforms1.RotateZ(angle);
+        boneTransforms1.Translate(new(4, 0, 0));
+
+        var boneTransforms2 = Matrix4x4.Identity;
+        boneTransforms2.RotateZ(angle);
+
+        boneTransforms[0] = boneTransforms0;
+        boneTransforms[1] = boneTransforms1;
+        boneTransforms[2] = boneTransforms2;
     }
 
     // Create a group of bones
@@ -407,28 +427,59 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
             }
 
             var origMatrix = origMatrices[joint];
-            Matrix4x4 m;
 
             if (joint == 1 || joint == 0)
             {
-                m = origMatrix * Matrix4x4.CreateRotationY(-angle);
+                origMatrix.RotateY(-angle);
             }
             else if (joint == 3 || joint == 4)
             {
-                m = origMatrix * Matrix4x4.CreateRotationX(joint == 3 ? angle : -angle);
+                origMatrix.RotateX(joint == 3 ? angle : -angle);
             }
             else
             {
-                m = origMatrix * Matrix4x4.CreateRotationZ(angle);
+                origMatrix.RotateZ(angle);
             }
 
-            whaleScene.Nodes[joint].Source.Position = m.Translation;
-            whaleScene.Nodes[joint].Source.Scale = new Vector3(
-                MathF.Sqrt(m.M11 * m.M11 + m.M12 * m.M12 + m.M13 * m.M13),
-                MathF.Sqrt(m.M21 * m.M21 + m.M22 * m.M22 + m.M23 * m.M23),
-                MathF.Sqrt(m.M31 * m.M31 + m.M32 * m.M32 + m.M33 * m.M33)
-            );
-            whaleScene.Nodes[joint].Source.Rotation = Quaternion.CreateFromRotationMatrix(m);
+            //         function getScaling(m, dst) {
+            // const newDst = (dst ?? new Ctor(3));
+            // const xx = m[0];
+            // const xy = m[1];
+            // const xz = m[2];
+            // const yx = m[4];
+            // const yy = m[5];
+            // const yz = m[6];
+            // const zx = m[8];
+            // const zy = m[9];
+            // const zz = m[10];
+            // newDst[0] = Math.sqrt(xx * xx + xy * xy + xz * xz);
+            // newDst[1] = Math.sqrt(yx * yx + yy * yy + yz * yz);
+            // newDst[2] = Math.sqrt(zx * zx + zy * zy + zz * zz);
+            // return newDst;
+            //}
+
+            static Vector3 GetScale(in Matrix4x4 m)
+            {
+                var xx = m.M11;
+                var xy = m.M12;
+                var xz = m.M13;
+                var yx = m.M21;
+                var yy = m.M22;
+                var yz = m.M23;
+                var zx = m.M31;
+                var zy = m.M32;
+                var zz = m.M33;
+
+                return new Vector3(
+                    MathF.Sqrt(xx * xx + xy * xy + xz * xz),
+                    MathF.Sqrt(yx * yx + yy * yy + yz * yz),
+                    MathF.Sqrt(zx * zx + zy * zy + zz * zz)
+                );
+            }
+
+            whaleScene.Nodes[joint].Source.Position = origMatrix.Translation;
+            whaleScene.Nodes[joint].Source.Scale = GetScale(origMatrix);
+            whaleScene.Nodes[joint].Source.Rotation = Quaternion.CreateFromRotationMatrix(origMatrix);
         }
     }
 
@@ -439,12 +490,11 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
         var modelMatrix = GetModelMatrix();
 
         // Calculate bone transformation
-        var elapsed = Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
-        var t = elapsed / 20.0 * settings.Speed;
-        var angle = MathF.Sin((float)t) * settings.Angle;
+        var t = Stopwatch.GetElapsedTime(startTimeStamp).TotalMilliseconds / 20000.0 * settings.Speed;
+        var angle = Math.Sin(t * settings.Angle);
 
         // Compute Transforms when angle is applied
-        AnimSkinnedGrid(gridBoneCollection.Transforms, angle);
+        AnimSkinnedGrid(gridBoneCollection.Transforms, (float)angle);
 
         // Write to camera buffer
         queue.WriteBuffer(cameraBuffer, 0, projectionMatrix);
@@ -461,9 +511,7 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
             );
         }
 
-        // Write general uniforms
-        queue.WriteBuffer(generalUniformsBuffer, 0, new[] { (uint)settings.RenderMode, (uint)settings.SkinMode });
-        // Pass Descriptor for GLTFs
+       // Pass Descriptor for GLTFs
         var gltfRenderPassDescriptor = new RenderPassDescriptor
         {
             ColorAttachments =
@@ -507,7 +555,7 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
         }
 
         // Updates skins
-        AnimWhaleSkin(whaleScene.Skins[0], MathF.Sin((float)t) * settings.Angle);
+        AnimWhaleSkin(whaleScene.Skins[0], (float)(Math.Sin(t) * settings.Angle));
         whaleScene.Skins[0].Update(device, 6, whaleScene.Nodes);
 
         var commandEncoder = device.CreateCommandEncoder();
@@ -536,7 +584,7 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
             passEncoder.End();
         }
 
-        var guiCommandBuffer = DrawGui(guiContext, surface, whaleScene);
+        var guiCommandBuffer = DrawGui(guiContext, queue, generalUniformsBuffer, surface, whaleScene);
         queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
         surface.Present();
     }

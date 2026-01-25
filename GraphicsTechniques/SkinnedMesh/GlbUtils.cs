@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using Setup;
 using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 
@@ -331,13 +332,13 @@ public class BaseTransformation
         // Analagous to let transformationMatrix: mat4x4f = translation * rotation * scale;
         var dst = Matrix4x4.Identity;
         // Scale the transformation Matrix
-        dst = Matrix4x4.CreateScale(Scale);
+        dst.Scale(Scale);
         // Calculate the rotationMatrix from the quaternion
         var rotationMatrix = Matrix4x4.CreateFromQuaternion(Rotation);
         // Apply the rotation Matrix to the scaleMatrix (rotMat * scaleMat)
         dst = rotationMatrix * dst;
         // Translate the transformationMatrix
-        dst = Matrix4x4.CreateTranslation(Position) * dst;
+        dst.Translate(Position);
         return dst;
     }
 }
