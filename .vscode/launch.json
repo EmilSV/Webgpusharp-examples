@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/GraphicsTechniques/ABuffer/bin/Debug/net10.0/ABuffer.dll",
+            "program": "${workspaceFolder}/GraphicsTechniques/SkinnedMesh/bin/Debug/net10.0/SkinnedMesh.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/GraphicsTechniques/ABuffer",
+            "cwd": "${workspaceFolder}/GraphicsTechniques/SkinnedMesh",
             "console": "internalConsole",
             "stopAtEntry": false
         },

@@ -9,8 +9,8 @@ using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 using static Setup.SetupWebGPU;
 
-const int WIDTH = 1280;
-const int HEIGHT = 720;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 const int MAT4X4_BYTES = 64;
 
 var assembly = Assembly.GetExecutingAssembly();
@@ -303,8 +303,8 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
         0.1f,
         100.0f
     );
-    
-    var orthographicProjection = Matrix4x4.CreateOrthographic(40, 20, -100, 100);
+
+    var orthographicProjection = Matrix4x4.CreateOrthographicOffCenter(-20, 20, -10, 10, -100, 100);
 
     Matrix4x4 GetProjectionMatrix()
     {
@@ -354,23 +354,17 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
 
     void AnimSkinnedGrid(Matrix4x4[] boneTransforms, float angle)
     {
+        var m = Matrix4x4.Identity;
+        m.RotateZ(angle);
+        boneTransforms[0] = m;
+        
+        m.Translate(new(4, 0, 0));
+        m.RotateZ(angle);
+        boneTransforms[1] = m;
 
-        var boneTransforms0 = Matrix4x4.Identity;
-
-        boneTransforms0.RotateZ(angle);
-        boneTransforms0.Translate(new(4, 0, 0));
-
-        var boneTransforms1 = Matrix4x4.Identity;
-
-        boneTransforms1.RotateZ(angle);
-        boneTransforms1.Translate(new(4, 0, 0));
-
-        var boneTransforms2 = Matrix4x4.Identity;
-        boneTransforms2.RotateZ(angle);
-
-        boneTransforms[0] = boneTransforms0;
-        boneTransforms[1] = boneTransforms1;
-        boneTransforms[2] = boneTransforms2;
+        m.Translate(new(4, 0, 0));
+        m.RotateZ(angle);
+        boneTransforms[2] = m;
     }
 
     // Create a group of bones
@@ -441,45 +435,17 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
                 origMatrix.RotateZ(angle);
             }
 
-            //         function getScaling(m, dst) {
-            // const newDst = (dst ?? new Ctor(3));
-            // const xx = m[0];
-            // const xy = m[1];
-            // const xz = m[2];
-            // const yx = m[4];
-            // const yy = m[5];
-            // const yz = m[6];
-            // const zx = m[8];
-            // const zy = m[9];
-            // const zz = m[10];
-            // newDst[0] = Math.sqrt(xx * xx + xy * xy + xz * xz);
-            // newDst[1] = Math.sqrt(yx * yx + yy * yy + yz * yz);
-            // newDst[2] = Math.sqrt(zx * zx + zy * zy + zz * zz);
-            // return newDst;
-            //}
+            Matrix4x4.Decompose(
+                matrix: origMatrix, 
+                scale: out Vector3 scale, 
+                rotation: out Quaternion rotation,
+                translation: out Vector3 translation
+            );
 
-            static Vector3 GetScale(in Matrix4x4 m)
-            {
-                var xx = m.M11;
-                var xy = m.M12;
-                var xz = m.M13;
-                var yx = m.M21;
-                var yy = m.M22;
-                var yz = m.M23;
-                var zx = m.M31;
-                var zy = m.M32;
-                var zz = m.M33;
 
-                return new Vector3(
-                    MathF.Sqrt(xx * xx + xy * xy + xz * xz),
-                    MathF.Sqrt(yx * yx + yy * yy + yz * yz),
-                    MathF.Sqrt(zx * zx + zy * zy + zz * zz)
-                );
-            }
-
-            whaleScene.Nodes[joint].Source.Position = origMatrix.Translation;
-            whaleScene.Nodes[joint].Source.Scale = GetScale(origMatrix);
-            whaleScene.Nodes[joint].Source.Rotation = Quaternion.CreateFromRotationMatrix(origMatrix);
+            whaleScene.Nodes[joint].Source.Scale = scale;
+            whaleScene.Nodes[joint].Source.Rotation = rotation;
+            whaleScene.Nodes[joint].Source.Position = translation;
         }
     }
 
@@ -491,7 +457,7 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
 
         // Calculate bone transformation
         var t = Stopwatch.GetElapsedTime(startTimeStamp).TotalMilliseconds / 20000.0 * settings.Speed;
-        var angle = Math.Sin(t * settings.Angle);
+        var angle = Math.Sin(t) * settings.Angle;
 
         // Compute Transforms when angle is applied
         AnimSkinnedGrid(gridBoneCollection.Transforms, (float)angle);

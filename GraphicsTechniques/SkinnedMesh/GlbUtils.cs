@@ -789,7 +789,7 @@ class GLTFNode
         LocalMatrix = Source.GetMatrix();
         if (parentWorldMatrix.HasValue)
         {
-            WorldMatrix = parentWorldMatrix.Value * LocalMatrix;
+            WorldMatrix = LocalMatrix * parentWorldMatrix.Value;
         }
         else
         {
@@ -944,6 +944,8 @@ class GLTFSkin
         });
     }
 
+
+
     public void Update(Device device, int currentNodeIndex, GLTFNode[] nodes)
     {
         Matrix4x4.Invert(nodes[currentNodeIndex].WorldMatrix, out var globalWorldInverse);
@@ -951,7 +953,7 @@ class GLTFSkin
         for (int j = 0; j < Joints.Length; j++)
         {
             var joint = Joints[j];
-            var dstMatrix = globalWorldInverse * nodes[joint].WorldMatrix;
+            var dstMatrix = nodes[joint].WorldMatrix * globalWorldInverse;
             device.GetQueue().WriteBuffer(_jointMatricesUniformBuffer, (ulong)(j * 64), dstMatrix);
         }
     }
