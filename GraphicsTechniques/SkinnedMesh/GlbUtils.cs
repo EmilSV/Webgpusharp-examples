@@ -1,50 +1,11 @@
+using System.Buffers.Binary;
+using System.ComponentModel;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using Setup;
 using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
-
-// NOTE: GLTF code is not generally extensible to all gltf models
-// Modified from Will Usher code found at this link https://www.willusher.io/graphics/2023/05/16/0-to-gltf-first-mesh
-
-// Associates the mode parameter of a gltf primitive object with the primitive's intended render mode
-enum GLTFRenderMode
-{
-    Points = 0,
-    Line = 1,
-    LineLoop = 2,
-    LineStrip = 3,
-    Triangles = 4,
-    TriangleStrip = 5,
-    TriangleFan = 6,
-}
-
-// Determines how to interpret each element of the structure that is accessed from our accessor
-enum GLTFDataComponentType
-{
-    Byte = 5120,
-    UnsignedByte = 5121,
-    Short = 5122,
-    UnsignedShort = 5123,
-    Int = 5124,
-    UnsignedInt = 5125,
-    Float = 5126,
-    Double = 5130,
-}
-
-// Determines how to interpret the structure of the values accessed by an accessor
-enum GLTFDataStructureType
-{
-    Scalar = 0,
-    Vec2 = 1,
-    Vec3 = 2,
-    Vec4 = 3,
-    Mat2 = 4,
-    Mat3 = 5,
-    Mat4 = 6,
-}
 
 static class GlbUtils
 {
@@ -55,18 +16,20 @@ static class GlbUtils
 
     public static void ValidateGLBHeader(ReadOnlySpan<byte> header)
     {
-        uint magic = MemoryMarshal.Read<uint>(header);
-        uint version = MemoryMarshal.Read<uint>(header[4..]);
-
-        if (magic != 0x46546C67) // "glTF"
+        if (BinaryPrimitives.ReadInt32LittleEndian(header) != 0x46546C67)
+        {
             throw new Exception("Provided file is not a glB file");
-        if (version != 2)
+        }
+
+        if (BinaryPrimitives.ReadUInt32LittleEndian(header.Slice(4, 4)) != 2)
+        {
             throw new Exception("Provided file is not glTF 2.0 file");
+        }
     }
 
     public static void ValidateBinaryHeader(ReadOnlySpan<uint> header)
     {
-        if (header[1] != 0x004E4942) // "BIN"
+        if (header[1] != 0x004E4942)
         {
             throw new Exception("Invalid glB: The second chunk of the glB file is not a binary chunk!");
         }
@@ -88,15 +51,14 @@ static class GlbUtils
         ValidateGLBHeader(jsonHeaderSpan);
 
         // Length of the jsonChunk found at jsonHeader[12 - 15]
-        uint jsonChunkLength = MemoryMarshal.Read<uint>(buffer.AsSpan(12, 4));
+        uint jsonChunkLength = BinaryPrimitives.ReadUInt32LittleEndian(buffer.AsSpan(12, 4));
 
         // Parse the JSON chunk of the glB file to a JSON object
-        var jsonChunkBytes = buffer.AsSpan(20, (int)jsonChunkLength);
-        var jsonChunk = JsonSerializer.Deserialize(jsonChunkBytes, GltfJsonContext.Default.GlTf)
+        var jsonChunk = JsonSerializer.Deserialize(buffer.AsSpan(20, (int)jsonChunkLength), GltfJsonContext.Default.GlTf)
             ?? throw new Exception("Failed to deserialize GLTF JSON");
 
         // Binary data located after jsonChunk
-        var binaryHeaderSpan = MemoryMarshal.Cast<byte, uint>(buffer.AsSpan(20 + (int)jsonChunkLength, 8));
+        var binaryHeaderSpan = MemoryMarshal.Cast<byte, uint>(buffer.AsSpan(20 + (int)jsonChunkLength, 2 * sizeof(uint)));
         ValidateBinaryHeader(binaryHeaderSpan);
 
         var binaryChunk = new GLTFBuffer(
@@ -106,13 +68,13 @@ static class GlbUtils
         );
 
         // Populate missing properties of jsonChunk
-        foreach (var accessor in jsonChunk.Accessors)
+        foreach (var accessor in jsonChunk.Accessors!)
         {
             accessor.ByteOffset ??= 0;
             accessor.Normalized ??= false;
         }
 
-        foreach (var bufferView in jsonChunk.BufferViews)
+        foreach (var bufferView in jsonChunk.BufferViews!)
         {
             bufferView.ByteOffset ??= 0;
         }
@@ -128,7 +90,7 @@ static class GlbUtils
 
         // Mark each accessor with its intended usage within the vertexShader.
         // Often necessary due to infrequency with which the BufferView target field is populated.
-        foreach (var mesh in jsonChunk.Meshes)
+        foreach (var mesh in jsonChunk.Meshes!)
         {
             foreach (var primitive in mesh.Primitives)
             {
@@ -256,7 +218,7 @@ static class GlbUtils
             ],
         });
 
-        foreach (var currNode in jsonChunk.Nodes)
+        foreach (var currNode in jsonChunk.Nodes!)
         {
             var baseTransformation = new BaseTransformation(
                 currNode.Translation != null ? new Vector3(currNode.Translation[0], currNode.Translation[1], currNode.Translation[2]) : Vector3.Zero,
@@ -295,7 +257,7 @@ static class GlbUtils
         }
 
         var scenes = new List<GLTFScene>();
-        foreach (var jsonScene in jsonChunk.Scenes)
+        foreach (var jsonScene in jsonChunk.Scenes!)
         {
             var scene = new GLTFScene(device, nodeUniformsBindGroupLayout, jsonScene);
             var sceneChildren = scene.Nodes;
@@ -311,35 +273,6 @@ static class GlbUtils
         }
 
         return new ConvertGLBResult([.. meshes], [.. nodes], [.. scenes], [.. skins]);
-    }
-}
-
-public class BaseTransformation
-{
-    public Vector3 Position { get; set; }
-    public Quaternion Rotation { get; set; }
-    public Vector3 Scale { get; set; }
-
-    public BaseTransformation(Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null)
-    {
-        Position = position ?? Vector3.Zero;
-        Rotation = rotation ?? Quaternion.Identity;
-        Scale = scale ?? Vector3.One;
-    }
-
-    public Matrix4x4 GetMatrix()
-    {
-        // Analagous to let transformationMatrix: mat4x4f = translation * rotation * scale;
-        var dst = Matrix4x4.Identity;
-        // Scale the transformation Matrix
-        dst.Scale(Scale);
-        // Calculate the rotationMatrix from the quaternion
-        var rotationMatrix = Matrix4x4.CreateFromQuaternion(Rotation);
-        // Apply the rotation Matrix to the scaleMatrix (rotMat * scaleMat)
-        dst = rotationMatrix * dst;
-        // Translate the transformationMatrix
-        dst.Translate(Position);
-        return dst;
     }
 }
 
@@ -444,14 +377,14 @@ class GLTFAccessor
     {
         int componentSize = componentType switch
         {
-            GLTFDataComponentType.Byte => 1,
-            GLTFDataComponentType.UnsignedByte => 1,
-            GLTFDataComponentType.Short => 2,
-            GLTFDataComponentType.UnsignedShort => 2,
-            GLTFDataComponentType.Int => 4,
-            GLTFDataComponentType.UnsignedInt => 4,
-            GLTFDataComponentType.Float => 4,
-            GLTFDataComponentType.Double => 8,
+            GLTFDataComponentType.Byte => sizeof(sbyte),
+            GLTFDataComponentType.UnsignedByte => sizeof(byte),
+            GLTFDataComponentType.Short => sizeof(short),
+            GLTFDataComponentType.UnsignedShort => sizeof(ushort),
+            GLTFDataComponentType.Int => sizeof(int),
+            GLTFDataComponentType.UnsignedInt => sizeof(uint),
+            GLTFDataComponentType.Float => sizeof(float),
+            GLTFDataComponentType.Double => sizeof(double),
             _ => throw new Exception("Unrecognized GLTF Component Type?")
         };
         return GltfDataStructureTypeNumComponents(type) * componentSize;
@@ -821,16 +754,17 @@ class GLTFNode
             {
                 if (Skin != null)
                 {
-                    var allBindGroups = new List<BindGroup>(bindGroups);
-                    allBindGroups.Add(_nodeTransformBindGroup);
-                    allBindGroups.Add(Skin.SkinBindGroup);
-                    drawable.Render(passEncoder, [.. allBindGroups]);
+                    drawable.Render(passEncoder, [
+                        _nodeTransformBindGroup,
+                        Skin.SkinBindGroup
+                    ]);
                 }
                 else
                 {
-                    var allBindGroups = new List<BindGroup>(bindGroups);
-                    allBindGroups.Add(_nodeTransformBindGroup);
-                    drawable.Render(passEncoder, [.. allBindGroups]);
+                    drawable.Render(passEncoder, [
+                        ..bindGroups,
+                        _nodeTransformBindGroup
+                    ]);
                 }
             }
         }

@@ -31,10 +31,10 @@ class AccessorSparse
     public int Count { get; set; }
 
     [JsonPropertyName("indices")]
-    public AccessorSparseIndices? Indices { get; set; }
+    public required AccessorSparseIndices Indices { get; set; }
 
     [JsonPropertyName("values")]
-    public AccessorSparseValues? Values { get; set; }
+    public required AccessorSparseValues Values { get; set; }
 }
 
 class Accessor
@@ -43,7 +43,7 @@ class Accessor
     public int? BufferView { get; set; }
 
     [JsonIgnore]
-    public int BufferViewUsage { get; set; }
+    public int? BufferViewUsage { get; set; }
 
     [JsonPropertyName("byteOffset")]
     public int? ByteOffset { get; set; }
@@ -106,10 +106,10 @@ class AnimationSampler
 class Animation
 {
     [JsonPropertyName("channels")]
-    public AnimationChannel[] Channels { get; set; } = [];
+    public required AnimationChannel[] Channels { get; set; }
 
     [JsonPropertyName("samplers")]
-    public AnimationSampler[] Samplers { get; set; } = [];
+    public required AnimationSampler[] Samplers { get; set; }
 
     [JsonPropertyName("name")]
     public string? Name { get; set; }
@@ -124,7 +124,7 @@ class Asset
     public string? Generator { get; set; }
 
     [JsonPropertyName("version")]
-    public string Version { get; set; } = "";
+    public required string Version { get; set; }
 
     [JsonPropertyName("minVersion")]
     public string? MinVersion { get; set; }
@@ -163,7 +163,7 @@ class BufferView
     public string? Name { get; set; }
 
     [JsonIgnore]
-    public int Usage { get; set; }
+    public int? Usage { get; set; }
 }
 
 class CameraOrthographic
@@ -205,7 +205,7 @@ class Camera
     public CameraPerspective? Perspective { get; set; }
 
     [JsonPropertyName("type")]
-    public string Type { get; set; } = "";
+    public required string Type { get; set; }
 
     [JsonPropertyName("name")]
     public string? Name { get; set; }
@@ -328,7 +328,7 @@ class MeshPrimitive
 class Mesh
 {
     [JsonPropertyName("primitives")]
-    public MeshPrimitive[] Primitives { get; set; } = [];
+    public required MeshPrimitive[] Primitives { get; set; }
 
     [JsonPropertyName("weights")]
     public float[]? Weights { get; set; }
@@ -398,6 +398,9 @@ class Scene
 
     [JsonPropertyName("name")]
     public string? Name { get; set; }
+
+    [JsonIgnore]
+    public GLTFNode? Root { get; set; }
 }
 
 class Skin
@@ -409,7 +412,7 @@ class Skin
     public int? Skeleton { get; set; }
 
     [JsonPropertyName("joints")]
-    public int[] Joints { get; set; } = [];
+    public required int[] Joints { get; set; }
 
     [JsonPropertyName("name")]
     public string? Name { get; set; }
@@ -436,19 +439,19 @@ class GlTf
     public string[]? ExtensionsRequired { get; set; }
 
     [JsonPropertyName("accessors")]
-    public Accessor[] Accessors { get; set; } = [];
+    public Accessor[]? Accessors { get; set; }
 
     [JsonPropertyName("animations")]
     public Animation[]? Animations { get; set; }
 
     [JsonPropertyName("asset")]
-    public Asset Asset { get; set; } = new();
+    public required Asset Asset { get; set; }
 
     [JsonPropertyName("buffers")]
     public GltfBuffer[]? Buffers { get; set; }
 
     [JsonPropertyName("bufferViews")]
-    public BufferView[] BufferViews { get; set; } = [];
+    public BufferView[]? BufferViews { get; set; }
 
     [JsonPropertyName("cameras")]
     public Camera[]? Cameras { get; set; }
@@ -460,10 +463,10 @@ class GlTf
     public Material[]? Materials { get; set; }
 
     [JsonPropertyName("meshes")]
-    public Mesh[] Meshes { get; set; } = [];
+    public Mesh[]? Meshes { get; set; }
 
     [JsonPropertyName("nodes")]
-    public Node[] Nodes { get; set; } = [];
+    public Node[]? Nodes { get; set; }
 
     [JsonPropertyName("samplers")]
     public Sampler[]? Samplers { get; set; }
@@ -472,8 +475,7 @@ class GlTf
     public int? Scene { get; set; }
 
     [JsonPropertyName("scenes")]
-    public Scene[] Scenes { get; set; } = [];
-
+    public Scene[]? Scenes { get; set; }
     [JsonPropertyName("skins")]
     public Skin[]? Skins { get; set; }
 
