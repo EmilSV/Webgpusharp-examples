@@ -755,6 +755,7 @@ class GLTFNode
                 if (Skin != null)
                 {
                     drawable.Render(passEncoder, [
+                        ..bindGroups,
                         _nodeTransformBindGroup,
                         Skin.SkinBindGroup
                     ]);
