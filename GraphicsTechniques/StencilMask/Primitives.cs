@@ -5,7 +5,9 @@ namespace StencilMask;
 
 public struct Vertex
 {
-    
+    public Vector3 Position;
+    public Vector3 Normal;
+    public Vector2 Texcoord;
 }
 
 /// <summary>
@@ -13,7 +15,7 @@ public struct Vertex
 /// </summary>
 public struct VertexData
 {
-    public float[] Vertices;
+    public Vertex[] Vertices;
     public ushort[] Indices;
 }
 
@@ -23,8 +25,6 @@ public struct VertexData
 /// </summary>
 public static class Primitives
 {
-    public const int VertexSize = 8; // in float units
-
     /// <summary>
     /// Creates XZ plane vertices with position, normal, and texcoord data.
     /// </summary>
@@ -35,7 +35,7 @@ public static class Primitives
         int subdivisionsDepth = 1)
     {
         var numVertices = (subdivisionsWidth + 1) * (subdivisionsDepth + 1);
-        var vertices = new float[numVertices * VertexSize];
+        var vertices = new Vertex[numVertices];
 
         var cursor = 0;
         for (int z = 0; z <= subdivisionsDepth; z++)
@@ -45,17 +45,12 @@ public static class Primitives
                 var u = (float)x / subdivisionsWidth;
                 var v = (float)z / subdivisionsDepth;
 
-                // position
-                vertices[cursor++] = width * u - width * 0.5f;
-                vertices[cursor++] = 0;
-                vertices[cursor++] = depth * v - depth * 0.5f;
-                // normal
-                vertices[cursor++] = 0;
-                vertices[cursor++] = 1;
-                vertices[cursor++] = 0;
-                // texcoord
-                vertices[cursor++] = u;
-                vertices[cursor++] = v;
+                vertices[cursor++] = new Vertex
+                {
+                    Position = new(width * u - width * 0.5f, 0, depth * v - depth * 0.5f),
+                    Normal = new(0, 1, 0),
+                    Texcoord = new(u, v)
+                };
             }
         }
 
@@ -103,7 +98,7 @@ public static class Primitives
         var longRange = endLongitudeInRadians - startLongitudeInRadians;
 
         var numVertices = (subdivisionsAxis + 1) * (subdivisionsHeight + 1);
-        var vertices = new float[numVertices * VertexSize];
+        var vertices = new Vertex[numVertices];
 
         var cursor = 0;
         for (int y = 0; y <= subdivisionsHeight; y++)
@@ -123,16 +118,12 @@ public static class Primitives
                 var uz = sinTheta * sinPhi;
 
                 // position
-                vertices[cursor++] = radius * ux;
-                vertices[cursor++] = radius * uy;
-                vertices[cursor++] = radius * uz;
-                // normal
-                vertices[cursor++] = ux;
-                vertices[cursor++] = uy;
-                vertices[cursor++] = uz;
-                // texcoord
-                vertices[cursor++] = 1 - u;
-                vertices[cursor++] = v;
+                vertices[cursor++] = new Vertex
+                {
+                    Position = new(radius * ux, radius * uy, radius * uz),
+                    Normal = new(ux, uy, uz),
+                    Texcoord = new(1 - u, v)
+                };
             }
         }
 
@@ -209,7 +200,7 @@ public static class Primitives
         ];
 
         const int numVertices = 6 * 4;
-        var vertices = new float[numVertices * VertexSize];
+        var vertices = new Vertex[numVertices];
         var indices = new ushort[3 * 6 * 2];
 
         var vCursor = 0;
@@ -225,14 +216,12 @@ public static class Primitives
 
                 // Each face needs all four vertices because the normals and texture
                 // coordinates are not all the same.
-                vertices[vCursor++] = position[0];
-                vertices[vCursor++] = position[1];
-                vertices[vCursor++] = position[2];
-                vertices[vCursor++] = normal[0];
-                vertices[vCursor++] = normal[1];
-                vertices[vCursor++] = normal[2];
-                vertices[vCursor++] = uv[0];
-                vertices[vCursor++] = uv[1];
+                vertices[vCursor++] = new Vertex
+                {
+                    Position = new(position[0], position[1], position[2]),
+                    Normal = new(normal[0], normal[1], normal[2]),
+                    Texcoord = new(uv[0], uv[1])
+                };
             }
             // Two triangles make a square face.
             var offset = 4 * f;
@@ -272,7 +261,7 @@ public static class Primitives
         var extra = (topCap ? 2 : 0) + (bottomCap ? 2 : 0);
 
         var numVertices = (radialSubdivisions + 1) * (verticalSubdivisions + 1 + extra);
-        var vertices = new float[numVertices * VertexSize];
+        var vertices = new Vertex[numVertices];
         var indices = new ushort[3 * radialSubdivisions * (verticalSubdivisions + extra / 2) * 2];
 
         var vertsAroundEdge = radialSubdivisions + 1;
@@ -318,40 +307,33 @@ public static class Primitives
                 var sin = MathF.Sin(ii * MathF.PI * 2 / radialSubdivisions);
                 var cos = MathF.Cos(ii * MathF.PI * 2 / radialSubdivisions);
 
-                // position
-                vertices[cursor++] = sin * ringRadius;
-                vertices[cursor++] = y;
-                vertices[cursor++] = cos * ringRadius;
+                Vector3 position = new(sin * ringRadius, y, cos * ringRadius);
+                Vector3 normal;
 
                 // normal
                 if (yy < 0)
                 {
-                    vertices[cursor++] = 0;
-                    vertices[cursor++] = -1;
-                    vertices[cursor++] = 0;
+                    normal = new(0, -1, 0);
                 }
                 else if (yy > verticalSubdivisions)
                 {
-                    vertices[cursor++] = 0;
-                    vertices[cursor++] = 1;
-                    vertices[cursor++] = 0;
+                    normal = new(0, 1, 0);
                 }
                 else if (ringRadius == 0.0f)
                 {
-                    vertices[cursor++] = 0;
-                    vertices[cursor++] = 0;
-                    vertices[cursor++] = 0;
+                    normal = new(0, 0, 0);
                 }
                 else
                 {
-                    vertices[cursor++] = sin * cosSlant;
-                    vertices[cursor++] = sinSlant;
-                    vertices[cursor++] = cos * cosSlant;
+                    normal = new Vector3(sin * cosSlant, sinSlant, cos * cosSlant);
                 }
 
-                // texcoord
-                vertices[cursor++] = (float)ii / radialSubdivisions;
-                vertices[cursor++] = 1 - v;
+                vertices[cursor++] = new Vertex
+                {
+                    Position = position,
+                    Normal = normal,
+                    Texcoord = new((float)ii / radialSubdivisions, 1 - v)
+                };
             }
         }
 
@@ -424,7 +406,7 @@ public static class Primitives
         var radialParts = radialSubdivisions + 1;
         var bodyParts = bodySubdivisions + 1;
         var numVertices = radialParts * bodyParts;
-        var vertices = new float[numVertices * VertexSize];
+        var vertices = new Vertex[numVertices];
         var indices = new ushort[3 * radialSubdivisions * bodySubdivisions * 2];
 
         var cursor = 0;
@@ -447,17 +429,12 @@ public static class Primitives
                 var nx = xSin * sliceSin;
                 var nz = zCos * sliceSin;
 
-                // position
-                vertices[cursor++] = x;
-                vertices[cursor++] = y;
-                vertices[cursor++] = z;
-                // normal
-                vertices[cursor++] = nx;
-                vertices[cursor++] = ny;
-                vertices[cursor++] = nz;
-                // texcoord
-                vertices[cursor++] = u;
-                vertices[cursor++] = 1 - v;
+                vertices[cursor++] = new Vertex
+                {
+                    Position = new(x, y, z),
+                    Normal = new(nx, ny, nz),
+                    Texcoord = new(u, 1 - v)
+                };
             }
         }
 
@@ -488,13 +465,13 @@ public static class Primitives
     public static VertexData Deindex(VertexData src)
     {
         var numElements = src.Indices.Length;
-        var vertices = new float[numElements * VertexSize];
+        var vertices = new Vertex[numElements];
         var indices = new ushort[numElements];
 
         for (int i = 0; i < numElements; ++i)
         {
-            var off = src.Indices[i] * VertexSize;
-            Array.Copy(src.Vertices, off, vertices, i * VertexSize, VertexSize);
+            var off = src.Indices[i];
+            Array.Copy(src.Vertices, off, vertices, i, 1);
             indices[i] = (ushort)i;
         }
 
@@ -507,27 +484,27 @@ public static class Primitives
     /// </summary>
     public static VertexData GenerateTriangleNormalsInPlace(VertexData data)
     {
-        for (int ii = 0; ii < data.Vertices.Length; ii += 3 * VertexSize)
+        for (int ii = 0; ii < data.Vertices.Length; ii += 3)
         {
             // pull out the 3 positions for this triangle
-            var p0 = new Vector3(data.Vertices[ii + VertexSize * 0 + 0], data.Vertices[ii + VertexSize * 0 + 1], data.Vertices[ii + VertexSize * 0 + 2]);
-            var p1 = new Vector3(data.Vertices[ii + VertexSize * 1 + 0], data.Vertices[ii + VertexSize * 1 + 1], data.Vertices[ii + VertexSize * 1 + 2]);
-            var p2 = new Vector3(data.Vertices[ii + VertexSize * 2 + 0], data.Vertices[ii + VertexSize * 2 + 1], data.Vertices[ii + VertexSize * 2 + 2]);
+            ref var vertex1 = ref data.Vertices[ii + 0];
+            ref var vertex2 = ref data.Vertices[ii + 1];
+            ref var vertex3 = ref data.Vertices[ii + 2];
+
+
+            //var p0 = new Vector3(data.Vertices[ii + VertexSize * 0 + 0], data.Vertices[ii + VertexSize * 0 + 1], data.Vertices[ii + VertexSize * 0 + 2]);
+            var p0 = vertex1.Position;
+            var p1 = vertex2.Position;
+            var p2 = vertex3.Position;
 
             var n0 = Vector3.Normalize(p0 - p1);
             var n1 = Vector3.Normalize(p0 - p2);
             var n = Vector3.Cross(n0, n1);
 
             // copy them back in
-            data.Vertices[ii + VertexSize * 0 + 3] = n.X;
-            data.Vertices[ii + VertexSize * 0 + 4] = n.Y;
-            data.Vertices[ii + VertexSize * 0 + 5] = n.Z;
-            data.Vertices[ii + VertexSize * 1 + 3] = n.X;
-            data.Vertices[ii + VertexSize * 1 + 4] = n.Y;
-            data.Vertices[ii + VertexSize * 1 + 5] = n.Z;
-            data.Vertices[ii + VertexSize * 2 + 3] = n.X;
-            data.Vertices[ii + VertexSize * 2 + 4] = n.Y;
-            data.Vertices[ii + VertexSize * 2 + 5] = n.Z;
+            vertex1.Normal = n;
+            vertex2.Normal = n;
+            vertex3.Normal = n;
         }
 
         return data;
@@ -549,21 +526,16 @@ public static class Primitives
     public static VertexData ReorientInPlace(VertexData vertexData, Matrix4x4 matrix)
     {
         var vertices = vertexData.Vertices;
-        for (int i = 0; i < vertices.Length; i += VertexSize)
+        for (int i = 0; i < vertices.Length; i += 1)
         {
             // reorient position
-            var pos = new Vector3(vertices[i], vertices[i + 1], vertices[i + 2]);
+            var pos = vertices[i].Position;
             var transformedPos = Vector3.Transform(pos, matrix);
-            vertices[i] = transformedPos.X;
-            vertices[i + 1] = transformedPos.Y;
-            vertices[i + 2] = transformedPos.Z;
-
+            vertices[i].Position = transformedPos;
             // reorient normal (using the upper 3x3 part of the matrix)
-            var normal = new Vector3(vertices[i + 3], vertices[i + 4], vertices[i + 5]);
+            var normal = vertices[i].Normal;
             var transformedNormal = Vector3.TransformNormal(normal, matrix);
-            vertices[i + 3] = transformedNormal.X;
-            vertices[i + 4] = transformedNormal.Y;
-            vertices[i + 5] = transformedNormal.Z;
+            vertices[i].Normal = transformedNormal;
         }
 
         return vertexData;

@@ -17,8 +17,6 @@ const float ASPECT = (float)WIDTH / HEIGHT;
 var random = new Random();
 var mousePos = new Vector2(0, 0);
 
-Console.WriteLine(Unsafe.SizeOf<Vertex>());
-
 return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
 {
     var startTimeStamp = Stopwatch.GetTimestamp();
@@ -87,7 +85,7 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     // Creates vertex and index buffers for the given data
     Geometry CreateGeometry(VertexData vertexData)
     {
-        var vertexBuffer = CreateBufferWithData<float>(vertexData.Vertices, BufferUsage.Vertex);
+        var vertexBuffer = CreateBufferWithData<Vertex>(vertexData.Vertices, BufferUsage.Vertex);
         var indexBuffer = CreateBufferWithData<ushort>(vertexData.Indices, BufferUsage.Index);
         return new Geometry
         {
