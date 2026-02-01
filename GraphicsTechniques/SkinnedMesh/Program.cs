@@ -8,6 +8,7 @@ using Setup;
 using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 using static Setup.SetupWebGPU;
+using System.Runtime.CompilerServices;
 
 const int WIDTH = 600;
 const int HEIGHT = 600;
@@ -28,7 +29,7 @@ CommandBuffer DrawGui(
     GuiContext guiContext,
     Queue queue,
     GPUBuffer generalUniformsBuffer,
-    Surface surface, GlbUtils.ConvertGLBResult whaleScene)
+    Surface surface, GlbParser.ConvertGLBResult whaleScene)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
@@ -154,7 +155,7 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
 
     var cameraBuffer = device.CreateBuffer(new()
     {
-        Size = MAT4X4_BYTES * 3,
+        Size = (ulong)(Unsafe.SizeOf<Matrix4x4>() * 3),
         Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
     });
 
@@ -217,7 +218,7 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
     });
 
     // Fetch whale resources from the glb file
-    var whaleScene = GlbUtils.ConvertGLBToJSONAndBinary(whaleGlbData, device);
+    var whaleScene = GlbParser.ConvertGLBToJSONAndBinary(whaleGlbData, device);
 
     // Builds a render pipeline for our whale mesh
     whaleScene.Meshes[0].BuildRenderPipeline(
@@ -236,19 +237,22 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
 
     // Create skinned grid resources
     var skinnedGridVertexBuffers = GridUtils.CreateSkinnedGridBuffers(device);
+    // Buffer for our uniforms, joints, and inverse bind matrices
+    var skinnedGridUniformBufferUsage = new BufferDescriptor()
+    {
+        // 5 4x4 matrices, one for each bone
+        Size = (ulong)(Unsafe.SizeOf<Matrix4x4>() * 5),
+        Usage = BufferUsage.Storage | BufferUsage.CopyDst,
+    };
 
     // Buffer for our uniforms, joints, and inverse bind matrices
-    var skinnedGridJointUniformBuffer = device.CreateBuffer(new()
-    {
-        Size = MAT4X4_BYTES * 5, // 5 4x4 matrices, one for each bone
-        Usage = BufferUsage.Storage | BufferUsage.CopyDst,
-    });
+    var skinnedGridJointUniformBuffer = device.CreateBuffer(
+        skinnedGridUniformBufferUsage
+    );
 
-    var skinnedGridInverseBindUniformBuffer = device.CreateBuffer(new()
-    {
-        Size = MAT4X4_BYTES * 5,
-        Usage = BufferUsage.Storage | BufferUsage.CopyDst,
-    });
+    var skinnedGridInverseBindUniformBuffer = device.CreateBuffer(
+        skinnedGridUniformBufferUsage
+    );
 
     var skinnedGridBoneBGLayout = device.CreateBindGroupLayout(new()
     {
@@ -357,7 +361,7 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
         var m = Matrix4x4.Identity;
         m.RotateZ(angle);
         boneTransforms[0] = m;
-        
+
         m.Translate(new(4, 0, 0));
         m.RotateZ(angle);
         boneTransforms[1] = m;
@@ -436,8 +440,8 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
             }
 
             Matrix4x4.Decompose(
-                matrix: origMatrix, 
-                scale: out Vector3 scale, 
+                matrix: origMatrix,
+                scale: out Vector3 scale,
                 rotation: out Quaternion rotation,
                 translation: out Vector3 translation
             );
@@ -477,7 +481,7 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
             );
         }
 
-       // Pass Descriptor for GLTFs
+        // Pass Descriptor for GLTFs
         var gltfRenderPassDescriptor = new RenderPassDescriptor
         {
             ColorAttachments =

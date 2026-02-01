@@ -22,7 +22,7 @@ public class BaseTransformation
         dst.Scale(Scale);
         // Calculate the rotationMatrix from the quaternion
         var rotationMatrix = Matrix4x4.CreateFromQuaternion(Rotation);
-        // Apply the rotation Matrix to the scaleMatrix (rotMat * scaleMat)
+        // Apply the rotation Matrix to the scaleMatrix ( scaleMat * rotMat)
         dst = rotationMatrix * dst;
         // Translate the transformationMatrix
         dst.Translate(Position);

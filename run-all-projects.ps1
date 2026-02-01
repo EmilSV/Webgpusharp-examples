@@ -42,7 +42,9 @@ $graphicsTechniquesProjects = @(
     "GraphicsTechniques\Points\Points.csproj",
     "GraphicsTechniques\PrimitivePicking\PrimitivePicking.csproj",
     "GraphicsTechniques\ImageBlur\ImageBlur.csproj",
-    "GraphicsTechniques\Cornell\Cornell.csproj"
+    "GraphicsTechniques\Cornell\Cornell.csproj",
+    "GraphicsTechniques\ABuffer\ABuffer.csproj",
+    "GraphicsTechniques\SkinnedMesh\SkinnedMesh.csproj"
 )
 
 # Select projects based on category
