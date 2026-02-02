@@ -86,13 +86,13 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     Geometry CreateGeometry(VertexData vertexData)
     {
         var vertexBuffer = CreateBufferWithData<Vertex>(vertexData.Vertices, BufferUsage.Vertex);
-        var indexBuffer = CreateBufferWithData<ushort>(vertexData.Indices, BufferUsage.Index);
+        var indexBuffer = CreateBufferWithData<TriangleIndices>(vertexData.Indices, BufferUsage.Index);
         return new Geometry
         {
             VertexBuffer = vertexBuffer,
             IndexBuffer = indexBuffer,
             IndexFormat = IndexFormat.Uint16,
-            NumVertices = vertexData.Indices.Length,
+            NumVertices = vertexData.Indices.Length * 3,
         };
     }
 

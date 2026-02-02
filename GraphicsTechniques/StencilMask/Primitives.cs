@@ -10,14 +10,22 @@ public struct Vertex
     public Vector2 Texcoord;
 }
 
+public struct TriangleIndices
+{
+    public ushort A;
+    public ushort B;
+    public ushort C;
+}
+
 /// <summary>
 /// Vertex data consisting of interleaved position, normal, and texcoord.
 /// </summary>
 public struct VertexData
 {
     public Vertex[] Vertices;
-    public ushort[] Indices;
+    public TriangleIndices[] Indices;
 }
+
 
 /// <summary>
 /// Primitive geometry generation utilities adapted from webgpu-utils.
@@ -55,7 +63,7 @@ public static class Primitives
         }
 
         var numVertsAcross = subdivisionsWidth + 1;
-        var indices = new ushort[3 * subdivisionsWidth * subdivisionsDepth * 2];
+        var indices = new TriangleIndices[subdivisionsWidth * subdivisionsDepth * 2];
 
         cursor = 0;
         for (int z = 0; z < subdivisionsDepth; z++)
@@ -63,14 +71,20 @@ public static class Primitives
             for (int x = 0; x < subdivisionsWidth; x++)
             {
                 // Make triangle 1 of quad.
-                indices[cursor++] = (ushort)((z + 0) * numVertsAcross + x);
-                indices[cursor++] = (ushort)((z + 1) * numVertsAcross + x);
-                indices[cursor++] = (ushort)((z + 0) * numVertsAcross + x + 1);
+                indices[cursor++] = new TriangleIndices
+                {
+                    A = (ushort)((z + 0) * numVertsAcross + x),
+                    B = (ushort)((z + 1) * numVertsAcross + x),
+                    C = (ushort)((z + 0) * numVertsAcross + x + 1)
+                };
 
                 // Make triangle 2 of quad.
-                indices[cursor++] = (ushort)((z + 1) * numVertsAcross + x);
-                indices[cursor++] = (ushort)((z + 1) * numVertsAcross + x + 1);
-                indices[cursor++] = (ushort)((z + 0) * numVertsAcross + x + 1);
+                indices[cursor++] = new TriangleIndices
+                {
+                    A = (ushort)((z + 1) * numVertsAcross + x),
+                    B = (ushort)((z + 1) * numVertsAcross + x + 1),
+                    C = (ushort)((z + 0) * numVertsAcross + x + 1)
+                };
             }
         }
 
@@ -128,21 +142,27 @@ public static class Primitives
         }
 
         var numVertsAround = subdivisionsAxis + 1;
-        var indices = new ushort[3 * subdivisionsAxis * subdivisionsHeight * 2];
+        var indices = new TriangleIndices[subdivisionsAxis * subdivisionsHeight * 2];
         cursor = 0;
         for (int x = 0; x < subdivisionsAxis; x++)
         {
             for (int y = 0; y < subdivisionsHeight; y++)
             {
                 // Make triangle 1 of quad.
-                indices[cursor++] = (ushort)((y + 0) * numVertsAround + x);
-                indices[cursor++] = (ushort)((y + 0) * numVertsAround + x + 1);
-                indices[cursor++] = (ushort)((y + 1) * numVertsAround + x);
+                indices[cursor++] = new TriangleIndices
+                {
+                    A = (ushort)((y + 0) * numVertsAround + x),
+                    B = (ushort)((y + 0) * numVertsAround + x + 1),
+                    C = (ushort)((y + 1) * numVertsAround + x)
+                };
 
                 // Make triangle 2 of quad.
-                indices[cursor++] = (ushort)((y + 1) * numVertsAround + x);
-                indices[cursor++] = (ushort)((y + 0) * numVertsAround + x + 1);
-                indices[cursor++] = (ushort)((y + 1) * numVertsAround + x + 1);
+                indices[cursor++] = new TriangleIndices
+                {
+                    A = (ushort)((y + 1) * numVertsAround + x),
+                    B = (ushort)((y + 0) * numVertsAround + x + 1),
+                    C = (ushort)((y + 1) * numVertsAround + x + 1)
+                };
             }
         }
 
@@ -169,39 +189,39 @@ public static class Primitives
     {
         var k = size / 2f;
 
-        float[][] cornerVertices =
+        Vector3[] cornerVertices =
         [
-            [-k, -k, -k],
-            [+k, -k, -k],
-            [-k, +k, -k],
-            [+k, +k, -k],
-            [-k, -k, +k],
-            [+k, -k, +k],
-            [-k, +k, +k],
-            [+k, +k, +k],
+            new(-k, -k, -k),
+            new(+k, -k, -k),
+            new(-k, +k, -k),
+            new(+k, +k, -k),
+            new(-k, -k, +k),
+            new(+k, -k, +k),
+            new(-k, +k, +k),
+            new(+k, +k, +k),
         ];
 
-        float[][] faceNormals =
+        Vector3[] faceNormals =
         [
-            [+1, +0, +0],
-            [-1, +0, +0],
-            [+0, +1, +0],
-            [+0, -1, +0],
-            [+0, +0, +1],
-            [+0, +0, -1],
+            new(+1, +0, +0),
+            new(-1, +0, +0),
+            new(+0, +1, +0),
+            new(+0, -1, +0),
+            new(+0, +0, +1),
+            new(+0, +0, -1),
         ];
 
-        float[][] uvCoords =
+        Vector2[] uvCoords =
         [
-            [1, 0],
-            [0, 0],
-            [0, 1],
-            [1, 1],
+            new(1, 0),
+            new(0, 0),
+            new(0, 1),
+            new(1, 1),
         ];
 
         const int numVertices = 6 * 4;
         var vertices = new Vertex[numVertices];
-        var indices = new ushort[3 * 6 * 2];
+        var indices = new TriangleIndices[6 * 2];
 
         var vCursor = 0;
         var iCursor = 0;
@@ -218,19 +238,25 @@ public static class Primitives
                 // coordinates are not all the same.
                 vertices[vCursor++] = new Vertex
                 {
-                    Position = new(position[0], position[1], position[2]),
-                    Normal = new(normal[0], normal[1], normal[2]),
-                    Texcoord = new(uv[0], uv[1])
+                    Position = position,
+                    Normal = normal,
+                    Texcoord = uv
                 };
             }
             // Two triangles make a square face.
             var offset = 4 * f;
-            indices[iCursor++] = (ushort)(offset + 0);
-            indices[iCursor++] = (ushort)(offset + 1);
-            indices[iCursor++] = (ushort)(offset + 2);
-            indices[iCursor++] = (ushort)(offset + 0);
-            indices[iCursor++] = (ushort)(offset + 2);
-            indices[iCursor++] = (ushort)(offset + 3);
+            indices[iCursor++] = new TriangleIndices
+            {
+                A = (ushort)(offset + 0),
+                B = (ushort)(offset + 1),
+                C = (ushort)(offset + 2)
+            };
+            indices[iCursor++] = new TriangleIndices
+            {
+                A = (ushort)(offset + 0),
+                B = (ushort)(offset + 2),
+                C = (ushort)(offset + 3)
+            };
         }
 
         return new VertexData { Vertices = vertices, Indices = indices };
@@ -262,7 +288,7 @@ public static class Primitives
 
         var numVertices = (radialSubdivisions + 1) * (verticalSubdivisions + 1 + extra);
         var vertices = new Vertex[numVertices];
-        var indices = new ushort[3 * radialSubdivisions * (verticalSubdivisions + extra / 2) * 2];
+        var indices = new TriangleIndices[radialSubdivisions * (verticalSubdivisions + extra / 2) * 2];
 
         var vertsAroundEdge = radialSubdivisions + 1;
 
@@ -346,13 +372,19 @@ public static class Primitives
             }
             for (int ii = 0; ii < radialSubdivisions; ++ii)
             {
-                indices[cursor++] = (ushort)(vertsAroundEdge * (yy + 0) + 0 + ii);
-                indices[cursor++] = (ushort)(vertsAroundEdge * (yy + 0) + 1 + ii);
-                indices[cursor++] = (ushort)(vertsAroundEdge * (yy + 1) + 1 + ii);
+                indices[cursor++] = new TriangleIndices
+                {
+                    A = (ushort)(vertsAroundEdge * (yy + 0) + 0 + ii),
+                    B = (ushort)(vertsAroundEdge * (yy + 0) + 1 + ii),
+                    C = (ushort)(vertsAroundEdge * (yy + 1) + 1 + ii)
+                };
 
-                indices[cursor++] = (ushort)(vertsAroundEdge * (yy + 0) + 0 + ii);
-                indices[cursor++] = (ushort)(vertsAroundEdge * (yy + 1) + 1 + ii);
-                indices[cursor++] = (ushort)(vertsAroundEdge * (yy + 1) + 0 + ii);
+                indices[cursor++] = new TriangleIndices
+                {
+                    A = (ushort)(vertsAroundEdge * (yy + 0) + 0 + ii),
+                    B = (ushort)(vertsAroundEdge * (yy + 1) + 1 + ii),
+                    C = (ushort)(vertsAroundEdge * (yy + 1) + 0 + ii)
+                };
             }
         }
 
@@ -407,7 +439,7 @@ public static class Primitives
         var bodyParts = bodySubdivisions + 1;
         var numVertices = radialParts * bodyParts;
         var vertices = new Vertex[numVertices];
-        var indices = new ushort[3 * radialSubdivisions * bodySubdivisions * 2];
+        var indices = new TriangleIndices[radialSubdivisions * bodySubdivisions * 2];
 
         var cursor = 0;
         for (int slice = 0; slice < bodyParts; ++slice)
@@ -446,13 +478,19 @@ public static class Primitives
                 var nextRingIndex = 1 + ring;
                 var nextSliceIndex = 1 + slice;
 
-                indices[cursor++] = (ushort)(radialParts * slice + ring);
-                indices[cursor++] = (ushort)(radialParts * nextSliceIndex + ring);
-                indices[cursor++] = (ushort)(radialParts * slice + nextRingIndex);
+                indices[cursor++] = new TriangleIndices
+                {
+                    A = (ushort)(radialParts * slice + ring),
+                    B = (ushort)(radialParts * nextSliceIndex + ring),
+                    C = (ushort)(radialParts * slice + nextRingIndex)
+                };
 
-                indices[cursor++] = (ushort)(radialParts * nextSliceIndex + ring);
-                indices[cursor++] = (ushort)(radialParts * nextSliceIndex + nextRingIndex);
-                indices[cursor++] = (ushort)(radialParts * slice + nextRingIndex);
+                indices[cursor++] = new TriangleIndices
+                {
+                    A = (ushort)(radialParts * nextSliceIndex + ring),
+                    B = (ushort)(radialParts * nextSliceIndex + nextRingIndex),
+                    C = (ushort)(radialParts * slice + nextRingIndex)
+                };
             }
         }
 
@@ -464,15 +502,24 @@ public static class Primitives
     /// </summary>
     public static VertexData Deindex(VertexData src)
     {
-        var numElements = src.Indices.Length;
-        var vertices = new Vertex[numElements];
-        var indices = new ushort[numElements];
+        var numTriangles = src.Indices.Length;
+        var numVertices = numTriangles * 3;
+        var vertices = new Vertex[numVertices];
+        var indices = new TriangleIndices[numTriangles];
 
-        for (int i = 0; i < numElements; ++i)
+        for (int i = 0; i < numTriangles; ++i)
         {
-            var off = src.Indices[i];
-            Array.Copy(src.Vertices, off, vertices, i, 1);
-            indices[i] = (ushort)i;
+            var tri = src.Indices[i];
+            var baseIdx = i * 3;
+            vertices[baseIdx + 0] = src.Vertices[tri.A];
+            vertices[baseIdx + 1] = src.Vertices[tri.B];
+            vertices[baseIdx + 2] = src.Vertices[tri.C];
+            indices[i] = new TriangleIndices
+            {
+                A = (ushort)(baseIdx + 0),
+                B = (ushort)(baseIdx + 1),
+                C = (ushort)(baseIdx + 2)
+            };
         }
 
         return new VertexData { Vertices = vertices, Indices = indices };
@@ -492,7 +539,6 @@ public static class Primitives
             ref var vertex3 = ref data.Vertices[ii + 2];
 
 
-            //var p0 = new Vector3(data.Vertices[ii + VertexSize * 0 + 0], data.Vertices[ii + VertexSize * 0 + 1], data.Vertices[ii + VertexSize * 0 + 2]);
             var p0 = vertex1.Position;
             var p1 = vertex2.Position;
             var p2 = vertex3.Position;
