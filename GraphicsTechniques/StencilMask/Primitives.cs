@@ -1,37 +1,10 @@
 using System.Numerics;
 
-namespace StencilMask;
-
-
-public struct Vertex
-{
-    public Vector3 Position;
-    public Vector3 Normal;
-    public Vector2 Texcoord;
-}
-
-public struct TriangleIndices
-{
-    public ushort A;
-    public ushort B;
-    public ushort C;
-}
-
-/// <summary>
-/// Vertex data consisting of interleaved position, normal, and texcoord.
-/// </summary>
-public struct VertexData
-{
-    public Vertex[] Vertices;
-    public TriangleIndices[] Indices;
-}
-
-
 /// <summary>
 /// Primitive geometry generation utilities adapted from webgpu-utils.
 /// Each vertex consists of 8 floats: position (3), normal (3), texcoord (2).
 /// </summary>
-public static class Primitives
+static class Primitives
 {
     /// <summary>
     /// Creates XZ plane vertices with position, normal, and texcoord data.
@@ -176,8 +149,8 @@ public static class Primitives
     [
         [3, 7, 5, 1], // right
         [6, 2, 0, 4], // left
-        [6, 7, 3, 2], // top
-        [0, 1, 5, 4], // bottom
+        [6, 7, 3, 2], // ??
+        [0, 1, 5, 4], // ??
         [7, 6, 4, 5], // front
         [2, 3, 1, 0], // back
     ];
@@ -575,13 +548,9 @@ public static class Primitives
         for (int i = 0; i < vertices.Length; i += 1)
         {
             // reorient position
-            var pos = vertices[i].Position;
-            var transformedPos = Vector3.Transform(pos, matrix);
-            vertices[i].Position = transformedPos;
-            // reorient normal (using the upper 3x3 part of the matrix)
-            var normal = vertices[i].Normal;
-            var transformedNormal = Vector3.TransformNormal(normal, matrix);
-            vertices[i].Normal = transformedNormal;
+            vertices[i].Position = Vector3.Transform(vertices[i].Position, matrix);
+            // reorient normal
+            vertices[i].Normal = Vector3.TransformNormal(vertices[i].Normal, matrix);
         }
 
         return vertexData;

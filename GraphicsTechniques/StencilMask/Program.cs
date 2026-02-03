@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Setup;
-using StencilMask;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 using GPUBuffer = WebGpuSharp.Buffer;
@@ -13,6 +12,9 @@ using GPUBuffer = WebGpuSharp.Buffer;
 const int WIDTH = 640;
 const int HEIGHT = 480;
 const float ASPECT = (float)WIDTH / HEIGHT;
+
+var assembly = Assembly.GetExecutingAssembly();
+var simpleLightingWGSL = ResourceUtils.GetEmbeddedResource("StencilMask.shaders.simple-lighting.wgsl", assembly);
 
 var random = new Random();
 var mousePos = new Vector2(0, 0);
@@ -28,8 +30,8 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     runContext.Input.OnMouseMotion += (e) =>
     {
         // Convert to normalized coordinates (-1 to 1)
-        mousePos.X = (e.x / (float)WIDTH) * 2 - 1;
-        mousePos.Y = -((e.y / (float)HEIGHT) * 2 - 1);
+        mousePos.X = e.x / (float)WIDTH * 2 - 1;
+        mousePos.Y = -(e.y / (float)HEIGHT * 2 - 1);
     };
 
     var adapter = await instance.RequestAdapterAsync(new()
@@ -67,9 +69,6 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
         AlphaMode = CompositeAlphaMode.Auto,
     });
 
-    var assembly = Assembly.GetExecutingAssembly();
-    var simpleLightingWGSL = ResourceUtils.GetEmbeddedResource("StencilMask.shaders.simple-lighting.wgsl", assembly);
-
     // Creates a buffer and puts data in it
     GPUBuffer CreateBufferWithData<T>(ReadOnlySpan<T> data, BufferUsage usage) where T : unmanaged
     {
@@ -85,8 +84,8 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     // Creates vertex and index buffers for the given data
     Geometry CreateGeometry(VertexData vertexData)
     {
-        var vertexBuffer = CreateBufferWithData<Vertex>(vertexData.Vertices, BufferUsage.Vertex);
-        var indexBuffer = CreateBufferWithData<TriangleIndices>(vertexData.Indices, BufferUsage.Index);
+        var vertexBuffer = CreateBufferWithData(vertexData.Vertices, BufferUsage.Vertex);
+        var indexBuffer = CreateBufferWithData(vertexData.Indices, BufferUsage.Index);
         return new Geometry
         {
             VertexBuffer = vertexBuffer,
@@ -128,13 +127,13 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
             {
                 Binding = 0,
                 Visibility = ShaderStage.Vertex | ShaderStage.Fragment,
-                Buffer = new() { Type = BufferBindingType.Uniform },
+                Buffer = new(),
             },
             new()
             {
                 Binding = 1,
                 Visibility = ShaderStage.Vertex | ShaderStage.Fragment,
-                Buffer = new() { Type = BufferBindingType.Uniform },
+                Buffer = new(),
             },
         ],
     });
@@ -145,6 +144,15 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     });
 
     var module = device.CreateShaderModuleWGSL(new() { Code = simpleLightingWGSL });
+    module.GetCompilationInfoSync((status, info) =>
+    {
+        Console.WriteLine($"Shader compilation status: {Enum.GetName(status)}");
+        foreach (var message in info)
+        {
+            string str = Encoding.UTF8.GetString(message.Message);
+            Console.WriteLine($"{Enum.GetName(message.Type)}: {str} (line {message.LineNum}, col {message.LinePos})");
+        }
+    });
 
     // Make two render pipelines. One to set the stencil and one to draw
     // only where the stencil equals the stencil reference value.
@@ -158,12 +166,26 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
             [
                 new()
                 {
-                    ArrayStride = 32, // 8 floats * 4 bytes
+                    ArrayStride = (ulong)Unsafe.SizeOf<Vertex>(),
                     Attributes =
                     [
-                        new() { ShaderLocation = 0, Offset = 0, Format = VertexFormat.Float32x3 },  // position
-                        new() { ShaderLocation = 1, Offset = 12, Format = VertexFormat.Float32x3 }, // normal
-                        new() { ShaderLocation = 2, Offset = 24, Format = VertexFormat.Float32x2 }, // texcoord
+                        new()
+                        {
+                            ShaderLocation = 0,
+                            Offset = (ulong)Marshal.OffsetOf<Vertex>(nameof(Vertex.Position)),
+                            Format = VertexFormat.Float32x3 },
+                        new()
+                        {
+                            ShaderLocation = 1,
+                            Offset = (ulong)Marshal.OffsetOf<Vertex>(nameof(Vertex.Normal)),
+                            Format = VertexFormat.Float32x3
+                        },
+                        new()
+                        {
+                            ShaderLocation = 2,
+                            Offset = (ulong)Marshal.OffsetOf<Vertex>(nameof(Vertex.Texcoord)),
+                            Format = VertexFormat.Float32x2
+                        },
                     ],
                 },
             ],
@@ -192,17 +214,7 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
             // with the reference value anywhere we draw the planes of the cube.
             StencilFront = new()
             {
-                Compare = CompareFunction.Always,
-                FailOp = StencilOperation.Keep,
-                DepthFailOp = StencilOperation.Keep,
                 PassOp = StencilOperation.Replace,
-            },
-            StencilBack = new()
-            {
-                Compare = CompareFunction.Always,
-                FailOp = StencilOperation.Keep,
-                DepthFailOp = StencilOperation.Keep,
-                PassOp = StencilOperation.Keep,
             },
             Format = TextureFormat.Depth24PlusStencil8,
         },
@@ -223,12 +235,26 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
             [
                 new()
                 {
-                    ArrayStride = 32,
+                    ArrayStride = (ulong)Unsafe.SizeOf<Vertex>(),
                     Attributes =
                     [
-                        new() { ShaderLocation = 0, Offset = 0, Format = VertexFormat.Float32x3 },
-                        new() { ShaderLocation = 1, Offset = 12, Format = VertexFormat.Float32x3 },
-                        new() { ShaderLocation = 2, Offset = 24, Format = VertexFormat.Float32x2 },
+                        new()
+                        {
+                            ShaderLocation = 0,
+                            Offset = (ulong)Marshal.OffsetOf<Vertex>(nameof(Vertex.Position)),
+                            Format = VertexFormat.Float32x3 },
+                        new()
+                        {
+                            ShaderLocation = 1,
+                            Offset = (ulong)Marshal.OffsetOf<Vertex>(nameof(Vertex.Normal)),
+                            Format = VertexFormat.Float32x3
+                        },
+                        new()
+                        {
+                            ShaderLocation = 2,
+                            Offset = (ulong)Marshal.OffsetOf<Vertex>(nameof(Vertex.Texcoord)),
+                            Format = VertexFormat.Float32x2
+                        },
                     ],
                 },
             ],
@@ -296,10 +322,10 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     /// </summary>
     Scene MakeScene(int numInstances, float hue, Geometry[] geometries)
     {
-        var sharedUniformValues = new float[16 + 4]; // mat4x4f, vec3f + padding
+        var sharedUniformValues = new SharedUniforms();
         var sharedUniformBuffer = device.CreateBuffer(new()
         {
-            Size = (ulong)(sharedUniformValues.Length * sizeof(float)),
+            Size = (ulong)Unsafe.SizeOf<SharedUniforms>(),
             Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
         });
 
@@ -393,12 +419,9 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
         var lightDirection = Vector3.Normalize(new Vector3(1, 8, 10));
 
         // Copy viewProjection matrix to shared uniform values
-        CopyMatrixToArray(viewProjection, scene.SharedUniformValues, 0);
-        scene.SharedUniformValues[16] = lightDirection.X;
-        scene.SharedUniformValues[17] = lightDirection.Y;
-        scene.SharedUniformValues[18] = lightDirection.Z;
-
-        queue.WriteBuffer(scene.SharedUniformBuffer, 0, scene.SharedUniformValues.AsSpan());
+        scene.SharedUniformValues.ViewProjection = viewProjection;
+        scene.SharedUniformValues.LightDirection = lightDirection;
+        queue.WriteBuffer(scene.SharedUniformBuffer, scene.SharedUniformValues);
 
         foreach (var info in scene.ObjectInfos)
         {
@@ -441,12 +464,9 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
 
         var lightDirection = Vector3.Normalize(new Vector3(1, 8, 10));
 
-        CopyMatrixToArray(viewProjection, scene.SharedUniformValues, 0);
-        scene.SharedUniformValues[16] = lightDirection.X;
-        scene.SharedUniformValues[17] = lightDirection.Y;
-        scene.SharedUniformValues[18] = lightDirection.Z;
-
-        queue.WriteBuffer(scene.SharedUniformBuffer, 0, scene.SharedUniformValues.AsSpan());
+        scene.SharedUniformValues.ViewProjection = viewProjection;
+        scene.SharedUniformValues.LightDirection = lightDirection;
+        queue.WriteBuffer(scene.SharedUniformBuffer, scene.SharedUniformValues);
 
         for (int i = 0; i < scene.ObjectInfos.Count; i++)
         {
@@ -489,12 +509,10 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
 
         var lightDirection = Vector3.Normalize(new Vector3(1, 8, 10));
 
-        CopyMatrixToArray(viewProjection, scene.SharedUniformValues, 0);
-        scene.SharedUniformValues[16] = lightDirection.X;
-        scene.SharedUniformValues[17] = lightDirection.Y;
-        scene.SharedUniformValues[18] = lightDirection.Z;
+        scene.SharedUniformValues.ViewProjection = viewProjection;
+        scene.SharedUniformValues.LightDirection = lightDirection;
 
-        queue.WriteBuffer(scene.SharedUniformBuffer, 0, scene.SharedUniformValues.AsSpan());
+        queue.WriteBuffer(scene.SharedUniformBuffer, scene.SharedUniformValues);
 
         for (int i = 0; i < scene.ObjectInfos.Count; i++)
         {
@@ -657,6 +675,16 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     };
 });
 
+struct SharedUniforms
+{
+    public Matrix4x4 ViewProjection;
+    public Vector3 LightDirection;
+
+#pragma warning disable IDE0051
+    private readonly float _pad0;
+#pragma warning restore IDE0051
+};
+
 /// <summary>
 /// Represents Geometry like a cube, a sphere, a torus
 /// </summary>
@@ -686,5 +714,5 @@ class Scene
 {
     public required List<ObjectInfo> ObjectInfos { get; init; }
     public required GPUBuffer SharedUniformBuffer { get; init; }
-    public required float[] SharedUniformValues { get; init; }
+    public SharedUniforms SharedUniformValues;
 }
