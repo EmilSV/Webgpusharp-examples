@@ -15,8 +15,6 @@ const float ASPECT = (float)WIDTH / HEIGHT;
 
 var assembly = Assembly.GetExecutingAssembly();
 var simpleLightingWGSL = ResourceUtils.GetEmbeddedResource("StencilMask.shaders.simple-lighting.wgsl", assembly);
-
-var random = new Random();
 var mousePos = new Vector2(0, 0);
 
 return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
@@ -144,15 +142,6 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     });
 
     var module = device.CreateShaderModuleWGSL(new() { Code = simpleLightingWGSL });
-    module.GetCompilationInfoSync((status, info) =>
-    {
-        Console.WriteLine($"Shader compilation status: {Enum.GetName(status)}");
-        foreach (var message in info)
-        {
-            string str = Encoding.UTF8.GetString(message.Message);
-            Console.WriteLine($"{Enum.GetName(message.Type)}: {str} (line {message.LineNum}, col {message.LinePos})");
-        }
-    });
 
     // Make two render pipelines. One to set the stencil and one to draw
     // only where the stencil equals the stencil reference value.
@@ -292,25 +281,41 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     });
 
     // Helper functions for random and color
-    float Rand(float min, float max) => random.NextSingle() * (max - min) + min;
-    float RandMax(float max) => Rand(0, max);
+    static float Rand(float min, float max) => Random.Shared.NextSingle() * (max - min) + min;
+    static float RandMax(float max) => Rand(0, max);
 
     Vector4 HslToRgba(float h, float s, float l)
     {
-        // Convert HSL to RGB
-        float c = (1 - MathF.Abs(2 * l - 1)) * s;
-        float x = c * (1 - MathF.Abs((h * 6) % 2 - 1));
-        float m = l - c / 2;
+        static float hueToRgb(float p, float q, float t)
+        {
+            if (t < 0f)
+                t += 1f;
+            if (t > 1f)
+                t -= 1f;
+            if (t < 1f / 6f)
+                return p + (q - p) * 6f * t;
+            if (t < 1f / 2f)
+                return q;
+            if (t < 2f / 3f)
+                return p + (q - p) * (2f / 3f - t) * 6f;
+            return p;
+        }
 
         float r, g, b;
-        if (h < 1f / 6f) { r = c; g = x; b = 0; }
-        else if (h < 2f / 6f) { r = x; g = c; b = 0; }
-        else if (h < 3f / 6f) { r = 0; g = c; b = x; }
-        else if (h < 4f / 6f) { r = 0; g = x; b = c; }
-        else if (h < 5f / 6f) { r = x; g = 0; b = c; }
-        else { r = c; g = 0; b = x; }
 
-        return new Vector4(r + m, g + m, b + m, 1.0f);
+        if (s == 0f)
+        {
+            r = g = b = l; // achromatic
+        }
+        else
+        {
+            float q = l < 0.5f ? l * (1 + s) : l + s - l * s;
+            float p = 2 * l - q;
+            r = hueToRgb(p, q, h + 1f / 3f);
+            g = hueToRgb(p, q, h);
+            b = hueToRgb(p, q, h - 1f / 3f);
+        }
+        return new Vector4(r, g, b, 1f);
     }
 
     T RandElem<T>(T[] arr) => arr[(int)RandMax(arr.Length)];
@@ -332,20 +337,16 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
         var objectInfos = new List<ObjectInfo>();
         for (int i = 0; i < numInstances; ++i)
         {
-            var uniformValues = new float[16 + 4]; // mat4x4f, vec4f
+            var uniformValues = new Uniform();
             var uniformBuffer = device.CreateBuffer(new()
             {
-                Size = (ulong)(uniformValues.Length * sizeof(float)),
+                Size = (ulong)Unsafe.SizeOf<Uniform>(),
                 Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
             });
 
             // Set color
             var color = HslToRgba((hue + RandMax(0.2f)) % 1.0f, Rand(0.7f, 1f), Rand(0.5f, 0.8f));
-            uniformValues[16] = color.X;
-            uniformValues[17] = color.Y;
-            uniformValues[18] = color.Z;
-            uniformValues[19] = color.W;
-            queue.WriteBuffer(uniformBuffer, 0, uniformValues.AsSpan());
+            uniformValues.Color = color;
 
             var bindGroup = device.CreateBindGroup(new()
             {
@@ -435,8 +436,8 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
             worldMatrix.RotateZ(rotation.Z * MathF.PI);
             worldMatrix.Scale(new Vector3(10, 10, 10));
 
-            CopyMatrixToArray(worldMatrix, info.UniformValues, 0);
-            queue.WriteBuffer(info.UniformBuffer, 0, info.UniformValues.AsSpan());
+            info.UniformValues.world = worldMatrix;
+            queue.WriteBuffer(info.UniformBuffer, info.UniformValues);
         }
     }
 
@@ -478,8 +479,8 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
             worldMatrix.Translate(new Vector3(0, 0, MathF.Sin(i * 9.721f + time * 0.1f) * 10));
             worldMatrix.RotateX(time * 0.53f + i);
 
-            CopyMatrixToArray(worldMatrix, info.UniformValues, 0);
-            queue.WriteBuffer(info.UniformBuffer, 0, info.UniformValues.AsSpan());
+            info.UniformValues.world = worldMatrix;
+            queue.WriteBuffer(info.UniformBuffer, info.UniformValues);
         }
     }
 
@@ -524,8 +525,8 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
             worldMatrix.Translate(new Vector3(0, 0, MathF.Sin(i * 9.721f + time * 0.1f) * 10));
             worldMatrix.RotateX(time * 1.53f + i);
 
-            CopyMatrixToArray(worldMatrix, info.UniformValues, 0);
-            queue.WriteBuffer(info.UniformBuffer, 0, info.UniformValues.AsSpan());
+            info.UniformValues.world = worldMatrix;
+            queue.WriteBuffer(info.UniformBuffer, info.UniformValues);
         }
     }
 
@@ -578,26 +579,6 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
         }
 
         pass.End();
-    }
-
-    static void CopyMatrixToArray(Matrix4x4 matrix, float[] array, int offset)
-    {
-        array[offset + 0] = matrix.M11;
-        array[offset + 1] = matrix.M12;
-        array[offset + 2] = matrix.M13;
-        array[offset + 3] = matrix.M14;
-        array[offset + 4] = matrix.M21;
-        array[offset + 5] = matrix.M22;
-        array[offset + 6] = matrix.M23;
-        array[offset + 7] = matrix.M24;
-        array[offset + 8] = matrix.M31;
-        array[offset + 9] = matrix.M32;
-        array[offset + 10] = matrix.M33;
-        array[offset + 11] = matrix.M34;
-        array[offset + 12] = matrix.M41;
-        array[offset + 13] = matrix.M42;
-        array[offset + 14] = matrix.M43;
-        array[offset + 15] = matrix.M44;
     }
 
     runContext.OnFrame += () =>
@@ -680,10 +661,17 @@ struct SharedUniforms
     public Matrix4x4 ViewProjection;
     public Vector3 LightDirection;
 
-#pragma warning disable IDE0051
+#pragma warning disable CS0169, IDE0051
     private readonly float _pad0;
-#pragma warning restore IDE0051
-};
+#pragma warning restore CS0169, IDE0051
+}
+
+
+struct Uniform
+{
+    public Matrix4x4 world;
+    public Vector4 Color;
+}
 
 /// <summary>
 /// Represents Geometry like a cube, a sphere, a torus
@@ -701,7 +689,7 @@ class Geometry
 /// </summary>
 class ObjectInfo
 {
-    public required float[] UniformValues { get; init; }
+    public Uniform UniformValues;
     public required GPUBuffer UniformBuffer { get; init; }
     public required BindGroup BindGroup { get; init; }
     public required Geometry Geometry { get; init; }
