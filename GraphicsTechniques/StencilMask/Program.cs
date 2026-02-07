@@ -481,38 +481,13 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     /// </summary>
     void DrawScene(
         CommandEncoder encoder,
-        RenderPassColorAttachment colorAttachment,
-        RenderPassDepthStencilAttachment depthStencilAttachment,
-        LoadOp colorLoadOp,
-        LoadOp depthLoadOp,
-        LoadOp stencilLoadOp,
+        in RenderPassDescriptor renderPassDescriptor,
         RenderPipeline pipeline,
         Scene scene,
         uint stencilRef)
     {
-        var pass = encoder.BeginRenderPass(new()
-        {
-            ColorAttachments =
-            [
-                new()
-                {
-                    View = colorAttachment.View,
-                    ClearValue = colorAttachment.ClearValue,
-                    LoadOp = colorLoadOp,
-                    StoreOp = StoreOp.Store,
-                }
-            ],
-            DepthStencilAttachment = new()
-            {
-                View = depthStencilAttachment.View,
-                DepthClearValue = 1.0f,
-                DepthLoadOp = depthLoadOp,
-                DepthStoreOp = StoreOp.Store,
-                StencilLoadOp = stencilLoadOp,
-                StencilStoreOp = StoreOp.Store,
-            },
-        });
 
+        var pass = encoder.BeginRenderPass(renderPassDescriptor);
         pass.SetPipeline(pipeline);
         pass.SetStencilReference(stencilRef);
 
@@ -563,91 +538,73 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
         UpdateScene1(now, scene5);
         UpdateScene0(now, scene6);
 
+        RenderPassDescriptor clearPassDesc = new()
+        {
+            ColorAttachments =
+            [
+                new()
+                {
+                    View = surfaceTexture.CreateView(),
+                    ClearValue = new(0.2, 0.2, 0.2, 1.0),
+                    LoadOp = LoadOp.Clear,
+                    StoreOp = StoreOp.Store,
+                }
+            ],
+            DepthStencilAttachment = new()
+            {
+                View = depthTexture.CreateView(),
+                DepthClearValue = 1.0f,
+                DepthLoadOp = LoadOp.Clear,
+                DepthStoreOp = StoreOp.Store,
+                StencilLoadOp = LoadOp.Clear,
+                StencilStoreOp = StoreOp.Store,
+            },
+        };
+
+        RenderPassDescriptor loadPassDesc = new()
+        {
+            ColorAttachments =
+            [
+                new()
+                {
+                    View = surfaceTexture.CreateView(),
+                    LoadOp = LoadOp.Load,
+                    StoreOp = StoreOp.Store,
+                }
+            ],
+            DepthStencilAttachment = new()
+            {
+                View = depthTexture.CreateView(),
+                DepthClearValue = 1.0f,
+                DepthLoadOp = LoadOp.Load,
+                DepthStoreOp = StoreOp.Store,
+                StencilLoadOp = LoadOp.Load,
+                StencilStoreOp = StoreOp.Store,
+            },
+        };
 
         var encoder = device.CreateCommandEncoder();
 
-        var colorAttachment = new RenderPassColorAttachment
-        {
-            View = surfaceTexture.CreateView(),
-            ClearValue = new(0.2, 0.2, 0.2, 1.0),
-            LoadOp = LoadOp.Clear,
-            StoreOp = StoreOp.Store,
-        };
-
-        var depthStencilAttachment = new RenderPassDepthStencilAttachment
-        {
-            View = depthTexture.CreateView(),
-        };
-
         // Draw the 6 faces of a cube into the stencil buffer
         // each with a different stencil value.
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Clear, LoadOp.Clear, LoadOp.Clear, stencilSetPipeline, maskScenes[0], 1);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilSetPipeline, maskScenes[1], 2);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilSetPipeline, maskScenes[2], 3);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilSetPipeline, maskScenes[3], 4);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilSetPipeline, maskScenes[4], 5);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilSetPipeline, maskScenes[5], 6);
+        DrawScene(encoder, clearPassDesc, stencilSetPipeline, maskScenes[0], 1);
+        DrawScene(encoder, loadPassDesc, stencilSetPipeline, maskScenes[1], 2);
+        DrawScene(encoder, loadPassDesc, stencilSetPipeline, maskScenes[2], 3);
+        DrawScene(encoder, loadPassDesc, stencilSetPipeline, maskScenes[3], 4);
+        DrawScene(encoder, loadPassDesc, stencilSetPipeline, maskScenes[4], 5);
+        DrawScene(encoder, loadPassDesc, stencilSetPipeline, maskScenes[5], 6);
 
         // Draw each scene of moving objects but only where the stencil value
         // matches the stencil reference.
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilMaskPipeline, scene0, 0);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilMaskPipeline, scene1, 1);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilMaskPipeline, scene2, 2);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilMaskPipeline, scene3, 3);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilMaskPipeline, scene4, 4);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilMaskPipeline, scene5, 5);
-        DrawScene(encoder, colorAttachment, depthStencilAttachment, LoadOp.Load, LoadOp.Clear, LoadOp.Load, stencilMaskPipeline, scene6, 6);
+        DrawScene(encoder, loadPassDesc, stencilMaskPipeline, scene0, 0);
+        DrawScene(encoder, loadPassDesc, stencilMaskPipeline, scene1, 1);
+        DrawScene(encoder, loadPassDesc, stencilMaskPipeline, scene2, 2);
+        DrawScene(encoder, loadPassDesc, stencilMaskPipeline, scene3, 3);
+        DrawScene(encoder, loadPassDesc, stencilMaskPipeline, scene4, 4);
+        DrawScene(encoder, loadPassDesc, stencilMaskPipeline, scene5, 5);
+        DrawScene(encoder, loadPassDesc, stencilMaskPipeline, scene6, 6);
 
         queue.Submit([encoder.Finish()]);
         surface.Present();
     };
 });
-
-struct SharedUniforms
-{
-    public Matrix4x4 ViewProjection;
-    public Vector3 LightDirection;
-
-#pragma warning disable CS0169, IDE0051
-    private readonly float _pad0;
-#pragma warning restore CS0169, IDE0051
-}
-
-
-struct Uniform
-{
-    public Matrix4x4 world;
-    public Vector4 Color;
-}
-
-/// <summary>
-/// Represents Geometry like a cube, a sphere, a torus
-/// </summary>
-class Geometry
-{
-    public required GPUBuffer VertexBuffer { get; init; }
-    public required GPUBuffer IndexBuffer { get; init; }
-    public required IndexFormat IndexFormat { get; init; }
-    public required int NumVertices { get; init; }
-}
-
-/// <summary>
-/// Per object data.
-/// </summary>
-class ObjectInfo
-{
-    public Uniform UniformValues;
-    public required GPUBuffer UniformBuffer { get; init; }
-    public required BindGroup BindGroup { get; init; }
-    public required Geometry Geometry { get; init; }
-}
-
-/// <summary>
-/// Per scene data.
-/// </summary>
-class Scene
-{
-    public required List<ObjectInfo> ObjectInfos { get; init; }
-    public required GPUBuffer SharedUniformBuffer { get; init; }
-    public SharedUniforms SharedUniformValues;
-}
