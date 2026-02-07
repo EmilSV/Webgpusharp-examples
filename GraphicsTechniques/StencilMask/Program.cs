@@ -143,9 +143,7 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
 
     var module = device.CreateShaderModuleWGSL(new() { Code = simpleLightingWGSL });
 
-    // Make two render pipelines. One to set the stencil and one to draw
-    // only where the stencil equals the stencil reference value.
-    var stencilSetPipeline = device.CreateRenderPipelineSync(new()
+    RenderPipelineDescriptor pipelineDesc = new()
     {
         Layout = layout,
         Vertex = new()
@@ -207,78 +205,26 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
             },
             Format = TextureFormat.Depth24PlusStencil8,
         },
-    });
+    };
+
+    // Make two render pipelines. One to set the stencil and one to draw
+    // only where the stencil equals the stencil reference value.
+    var stencilSetPipeline = device.CreateRenderPipelineSync(pipelineDesc);
 
     // passOp: 'keep' means, when the texel "pass"es the depth and stencil tests,
     // keep the value in the stencil texture as is. We set the stencil
     // test to 'equal' so the texel will only pass the stencil test when
     // the reference value, set in the command buffer with setStencilReference,
     // matches what's already in the stencil texture.
-    var stencilMaskPipeline = device.CreateRenderPipelineSync(new()
+    pipelineDesc.DepthStencil = pipelineDesc.DepthStencil.Value with
     {
-        Layout = layout,
-        Vertex = new()
+        StencilFront = pipelineDesc.DepthStencil!.Value.StencilFront with
         {
-            Module = module,
-            Buffers =
-            [
-                new()
-                {
-                    ArrayStride = (ulong)Unsafe.SizeOf<Vertex>(),
-                    Attributes =
-                    [
-                        new()
-                        {
-                            ShaderLocation = 0,
-                            Offset = (ulong)Marshal.OffsetOf<Vertex>(nameof(Vertex.Position)),
-                            Format = VertexFormat.Float32x3 },
-                        new()
-                        {
-                            ShaderLocation = 1,
-                            Offset = (ulong)Marshal.OffsetOf<Vertex>(nameof(Vertex.Normal)),
-                            Format = VertexFormat.Float32x3
-                        },
-                        new()
-                        {
-                            ShaderLocation = 2,
-                            Offset = (ulong)Marshal.OffsetOf<Vertex>(nameof(Vertex.Texcoord)),
-                            Format = VertexFormat.Float32x2
-                        },
-                    ],
-                },
-            ],
+            PassOp = StencilOperation.Keep,
+            Compare = CompareFunction.Equal,
         },
-        Fragment = new()
-        {
-            Module = module,
-            Targets = [new() { Format = surfaceFormat }],
-        },
-        Primitive = new()
-        {
-            Topology = PrimitiveTopology.TriangleList,
-            CullMode = CullMode.Back,
-        },
-        DepthStencil = new()
-        {
-            DepthWriteEnabled = OptionalBool.True,
-            DepthCompare = CompareFunction.Less,
-            StencilFront = new()
-            {
-                Compare = CompareFunction.Equal,
-                FailOp = StencilOperation.Keep,
-                DepthFailOp = StencilOperation.Keep,
-                PassOp = StencilOperation.Keep,
-            },
-            StencilBack = new()
-            {
-                Compare = CompareFunction.Equal,
-                FailOp = StencilOperation.Keep,
-                DepthFailOp = StencilOperation.Keep,
-                PassOp = StencilOperation.Keep,
-            },
-            Format = TextureFormat.Depth24PlusStencil8,
-        },
-    });
+    };
+    var stencilMaskPipeline = device.CreateRenderPipelineSync(pipelineDesc);
 
     // Helper functions for random and color
     static float Rand(float min, float max) => Random.Shared.NextSingle() * (max - min) + min;
@@ -318,7 +264,7 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
         return new Vector4(r, g, b, 1f);
     }
 
-    T RandElem<T>(T[] arr) => arr[(int)RandMax(arr.Length)];
+    static T RandElem<T>(T[] arr) => arr[(int)RandMax(arr.Length)];
 
     /// <summary>
     /// Make a scene with a bunch of semi-randomly colored objects.
@@ -499,7 +445,7 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
             100f
         );
 
-        float radius = 35f;
+        const float radius = 35f;
         float t = time * 0.1f;
         var eye = new Vector3(MathF.Cos(t) * radius, 4, MathF.Sin(t) * radius);
         var target = new Vector3(0, 0, 0);
@@ -585,29 +531,29 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
     {
         var now = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
 
-        var canvasTexture = surface.GetCurrentTexture().Texture!;
+        var surfaceTexture = surface.GetCurrentTexture().Texture!;
 
         // If we don't have a depth texture OR if its size is different
-        // from the canvasTexture when make a new depth texture
+        // from the surfaceTexture when make a new depth texture
         if (depthTexture == null ||
-            depthTexture.GetWidth() != canvasTexture.GetWidth() ||
-            depthTexture.GetHeight() != canvasTexture.GetHeight())
+            depthTexture.GetWidth() != surfaceTexture.GetWidth() ||
+            depthTexture.GetHeight() != surfaceTexture.GetHeight())
         {
             depthTexture?.Destroy();
             depthTexture = device.CreateTexture(new()
             {
-                Size = new(canvasTexture.GetWidth(), canvasTexture.GetHeight()),
+                Size = new(surfaceTexture.GetWidth(), surfaceTexture.GetHeight()),
                 Format = TextureFormat.Depth24PlusStencil8,
                 Usage = TextureUsage.RenderAttachment,
             });
         }
 
-        UpdateMask(now, maskScenes[0], new Vector3(0, 0, 0));
-        UpdateMask(now, maskScenes[1], new Vector3(1, 0, 0));
-        UpdateMask(now, maskScenes[2], new Vector3(0, 0, 0.5f));
-        UpdateMask(now, maskScenes[3], new Vector3(0, 0, -0.5f));
-        UpdateMask(now, maskScenes[4], new Vector3(-0.5f, 0, 0));
-        UpdateMask(now, maskScenes[5], new Vector3(0.5f, 0, 0));
+        UpdateMask(now, maskScenes[0], new(0, 0, 0));
+        UpdateMask(now, maskScenes[1], new(1, 0, 0));
+        UpdateMask(now, maskScenes[2], new(0, 0, 0.5f));
+        UpdateMask(now, maskScenes[3], new(0, 0, -0.5f));
+        UpdateMask(now, maskScenes[4], new(-0.5f, 0, 0));
+        UpdateMask(now, maskScenes[5], new(0.5f, 0, 0));
 
         UpdateScene0(now, scene0);
         UpdateScene1(now, scene1);
@@ -617,11 +563,12 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
         UpdateScene1(now, scene5);
         UpdateScene0(now, scene6);
 
+
         var encoder = device.CreateCommandEncoder();
 
         var colorAttachment = new RenderPassColorAttachment
         {
-            View = canvasTexture.CreateView(),
+            View = surfaceTexture.CreateView(),
             ClearValue = new(0.2, 0.2, 0.2, 1.0),
             LoadOp = LoadOp.Clear,
             StoreOp = StoreOp.Store,
