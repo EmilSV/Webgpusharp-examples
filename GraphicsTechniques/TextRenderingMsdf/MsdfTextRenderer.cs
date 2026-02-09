@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Setup;
@@ -8,12 +9,27 @@ using GPUBuffer = WebGpuSharp.Buffer;
 
 sealed class MsdfTextRenderer
 {
+    private static readonly Lazy<byte[]> _shaderCode = new(() => ResourceUtils.GetEmbeddedResource(
+        resourceName: "GraphicsTechniques.TextRenderingMsdf.msdfText.wgsl",
+        assembly: typeof(MsdfTextRenderer).Assembly
+    ));
+
     private readonly TextureFormat _colorFormat;
     private readonly TextureFormat _depthFormat;
-    private readonly float[] _cameraArray = new float[32];
+    private CameraUniform _cameraData = new();
     private readonly Queue _queue;
 
-    public MsdfTextRenderer(Device device, TextureFormat colorFormat, TextureFormat depthFormat, byte[] shaderCode)
+    public Device Device { get; }
+    public BindGroupLayout FontBindGroupLayout { get; }
+    public BindGroupLayout TextBindGroupLayout { get; }
+    public RenderPipeline Pipeline { get; }
+    public Sampler Sampler { get; }
+    public GPUBuffer CameraUniformBuffer { get; }
+
+    public MsdfTextRenderer(
+        Device device,
+        TextureFormat colorFormat,
+        TextureFormat depthFormat)
     {
         Device = device;
         _queue = device.GetQueue();
@@ -33,7 +49,7 @@ sealed class MsdfTextRenderer
         CameraUniformBuffer = device.CreateBuffer(new()
         {
             Label = "MSDF camera uniform buffer",
-            Size = (ulong)(_cameraArray.Length * sizeof(float)),
+            Size = (ulong)Unsafe.SizeOf<CameraUniform>(),
             Usage = BufferUsage.CopyDst | BufferUsage.Uniform,
         });
 
@@ -74,9 +90,6 @@ sealed class MsdfTextRenderer
                     Binding = 0,
                     Visibility = ShaderStage.Vertex,
                     Buffer = new()
-                    {
-                        Type = BufferBindingType.Uniform,
-                    },
                 },
                 new()
                 {
@@ -90,7 +103,10 @@ sealed class MsdfTextRenderer
             ],
         });
 
-        var shaderModule = device.CreateShaderModuleWGSL(new() { Code = shaderCode });
+        var shaderModule = device.CreateShaderModuleWGSL(
+            label: "MSDF text shader",
+            descriptor: new() { Code = _shaderCode.Value }
+        );
 
         Pipeline = device.CreateRenderPipelineSync(new()
         {
@@ -141,13 +157,6 @@ sealed class MsdfTextRenderer
             },
         });
     }
-
-    public Device Device { get; }
-    public BindGroupLayout FontBindGroupLayout { get; }
-    public BindGroupLayout TextBindGroupLayout { get; }
-    public RenderPipeline Pipeline { get; }
-    public Sampler Sampler { get; }
-    public GPUBuffer CameraUniformBuffer { get; }
 
     public MsdfFont CreateFontFromResources(Assembly assembly, string fontJsonResourceName, string pageResourcePrefix)
     {
@@ -389,9 +398,9 @@ sealed class MsdfTextRenderer
 
     public void UpdateCamera(Matrix4x4 projection, Matrix4x4 view)
     {
-        CopyMatrixToSpan(projection, _cameraArray.AsSpan(0, 16));
-        CopyMatrixToSpan(view, _cameraArray.AsSpan(16, 16));
-        _queue.WriteBuffer(CameraUniformBuffer, 0, _cameraArray);
+        _cameraData.Projection = projection;
+        _cameraData.View = view;
+        _queue.WriteBuffer(CameraUniformBuffer, 0, _cameraData);
     }
 
     public void Render(RenderPassEncoder renderPass, params MsdfText[] text)

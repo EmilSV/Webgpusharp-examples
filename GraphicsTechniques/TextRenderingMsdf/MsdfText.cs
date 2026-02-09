@@ -6,10 +6,10 @@ using GPUBuffer = WebGpuSharp.Buffer;
 sealed class MsdfText
 {
     private readonly Queue _queue;
-    private readonly float[] _bufferArray = new float[24];
-    private bool _bufferArrayDirty = true;
+    private FormattedTextStorage _bufferData;
+    private bool _bufferDataDirty = true;
+    private RenderBundle _renderBundle;
 
-    public RenderBundle RenderBundle { get; }
     public MsdfTextMeasurements Measurements { get; }
     public MsdfFont Font { get; }
     public GPUBuffer TextBuffer { get; }
@@ -22,7 +22,7 @@ sealed class MsdfText
         GPUBuffer textBuffer)
     {
         _queue = queue;
-        RenderBundle = renderBundle;
+        _renderBundle = renderBundle;
         Measurements = measurements;
         Font = font;
         TextBuffer = textBuffer;
@@ -30,45 +30,34 @@ sealed class MsdfText
         SetTransform(Matrix4x4.Identity);
         SetColor(1, 1, 1, 1);
         SetPixelScale(1f / 512f);
-        _bufferArrayDirty = true;
+        _bufferDataDirty = true;
     }
-
-
 
     public RenderBundle GetRenderBundle()
     {
-        if (_bufferArrayDirty)
+        if (_bufferDataDirty)
         {
-            _bufferArrayDirty = false;
-            _queue.WriteBuffer(TextBuffer, 0, _bufferArray);
+            _bufferDataDirty = false;
+            _queue.WriteBuffer(TextBuffer, 0, _bufferData);
         }
-        return RenderBundle;
+        return _renderBundle;
     }
 
-    public void SetTransform(Matrix4x4 matrix)
+    public void SetTransform(in Matrix4x4 matrix)
     {
-        CopyMatrixToSpan(matrix, _bufferArray.AsSpan(0, 16));
-        _bufferArrayDirty = true;
+        _bufferData.Transform = matrix;
+        _bufferDataDirty = true;
     }
 
     public void SetColor(float r, float g, float b, float a = 1.0f)
     {
-        _bufferArray[16] = r;
-        _bufferArray[17] = g;
-        _bufferArray[18] = b;
-        _bufferArray[19] = a;
-        _bufferArrayDirty = true;
+        _bufferData.Color = new Vector4(r, g, b, a);
+        _bufferDataDirty = true;
     }
 
     public void SetPixelScale(float pixelScale)
     {
-        _bufferArray[20] = pixelScale;
-        _bufferArrayDirty = true;
-    }
-
-    private static void CopyMatrixToSpan(Matrix4x4 matrix, Span<float> destination)
-    {
-        var matrixSpan = MemoryMarshal.Cast<Matrix4x4, float>(MemoryMarshal.CreateSpan(ref matrix, 1));
-        matrixSpan.CopyTo(destination);
+        _bufferData.Scale = pixelScale;
+        _bufferDataDirty = true;
     }
 }

@@ -7,7 +7,7 @@ import {
   cubePositionOffset,
   cubeVertexCount,
 } from '../../meshes/cube';
-import { MsdfTextRenderer } from './msdfText';
+import { MsdfTextRenderer } from './MsdfTextRenderer';
 
 import basicVertWGSL from '../../shaders/basic.vert.wgsl';
 import vertexPositionColorWGSL from '../../shaders/vertexPositionColor.frag.wgsl';

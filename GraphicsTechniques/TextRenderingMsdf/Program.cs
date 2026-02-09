@@ -13,8 +13,6 @@ const int HEIGHT = 480;
 var asm = Assembly.GetExecutingAssembly();
 var basicVertWGSL = ResourceUtils.GetEmbeddedResource("TextRenderingMsdf.shaders.basic.vert.wgsl", asm);
 var vertexPositionColorWGSL = ResourceUtils.GetEmbeddedResource("TextRenderingMsdf.shaders.vertexPositionColor.frag.wgsl", asm);
-var msdfTextWGSL = ResourceUtils.GetEmbeddedResource("TextRenderingMsdf.shaders.msdfText.wgsl", asm);
-
 
 return Run("Text Rendering (MSDF)", WIDTH, HEIGHT, async runContext =>
 {
@@ -72,7 +70,7 @@ return Run("Text Rendering (MSDF)", WIDTH, HEIGHT, async runContext =>
 		AlphaMode = CompositeAlphaMode.Auto,
 	});
 
-	var textRenderer = new MsdfTextRenderer(device, surfaceFormat, DEPTH_FORMAT, msdfTextWGSL);
+	var textRenderer = new MsdfTextRenderer(device, surfaceFormat, DEPTH_FORMAT);
 	var font = textRenderer.CreateFontFromResources(
 		asm,
 		"TextRenderingMsdf.assets.ya-hei-ascii-msdf.json",
