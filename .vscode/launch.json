@@ -10,9 +10,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/GraphicsTechniques/SkinnedMesh/bin/Debug/net10.0/SkinnedMesh.dll",
+            "program": "${workspaceFolder}/GraphicsTechniques/TextRenderingMsdf/bin/Debug/net10.0/TextRenderingMsdf.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/GraphicsTechniques/SkinnedMesh",
+            "cwd": "${workspaceFolder}/GraphicsTechniques/TextRenderingMsdf",
             "console": "internalConsole",
             "stopAtEntry": false
         },

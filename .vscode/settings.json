@@ -9,6 +9,7 @@
         "Cubemap",
         "Gltf",
         "IGPU",
+        "Msdf",
         "Multisample",
         "radiosity",
         "raytracer",

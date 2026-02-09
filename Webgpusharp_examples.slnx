@@ -33,6 +33,7 @@
         <Project Path="GraphicsTechniques/ShadowMapping/ShadowMapping.csproj" />
         <Project Path="GraphicsTechniques/SkinnedMesh/SkinnedMesh.csproj" />
         <Project Path="GraphicsTechniques/StencilMask/StencilMask.csproj" />
+        <Project Path="GraphicsTechniques/TextRenderingMsdf/TextRenderingMsdf.csproj" />
     </Folder>
     <Folder Name="/WebGPUFeatures/">
         <Project Path="WebGPUFeatures/RenderBundles/RenderBundles.csproj" />
