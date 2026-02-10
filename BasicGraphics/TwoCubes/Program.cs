@@ -13,7 +13,7 @@ const int HEIGHT = 480;
 var executingAssembly = Assembly.GetExecutingAssembly();
 var basicVertWgsl = ResourceUtils.GetEmbeddedResource("TwoCubes.shaders.basic.vert.wgsl", executingAssembly);
 var vertexPositionColorWgsl = ResourceUtils.GetEmbeddedResource("TwoCubes.shaders.vertexPositionColor.frag.wgsl", executingAssembly);
-
+var startTimeStamp = Stopwatch.GetTimestamp();
 
 return Run("Two Cubes", WIDTH, HEIGHT, async runContext =>
 {
@@ -182,7 +182,7 @@ return Run("Two Cubes", WIDTH, HEIGHT, async runContext =>
 
     (Matrix4x4, Matrix4x4) getModelMatrixes()
     {
-        float now = (float)TimeSpan.FromMilliseconds(Environment.TickCount64).TotalSeconds;
+        float now = (float)Stopwatch.GetElapsedTime(startTimeStamp).TotalSeconds;
 
         var modelMatrix1 = Matrix4x4.CreateFromAxisAngle(new(MathF.Sin(now), MathF.Cos(now), 0), 1) with
         {
