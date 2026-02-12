@@ -81,7 +81,7 @@ return Run("Text Rendering (MSDF)", WIDTH, HEIGHT, async runContext =>
 	{
 		var textTransform = Matrix4x4.Identity;
 		textTransform.Translate(position);
-		if (rotation is { } rot)
+		if (rotation is Vector3 rot)
 		{
 			if (rot.X != 0)
 			{
@@ -295,7 +295,7 @@ return Run("Text Rendering (MSDF)", WIDTH, HEIGHT, async runContext =>
 		modelMatrix.Translate(new Vector3(0, 2, -3));
 		modelMatrix.Rotate(new Vector3(MathF.Sin(now), MathF.Cos(now), 0), 1f);
 
-		modelViewProjectionMatrix = viewMatrix * projectionMatrix;
+		modelViewProjectionMatrix = projectionMatrix * viewMatrix;
 		modelViewProjectionMatrix = modelMatrix * modelViewProjectionMatrix;
 
 		textRenderer.UpdateCamera(projectionMatrix, viewMatrix);
@@ -303,7 +303,7 @@ return Run("Text Rendering (MSDF)", WIDTH, HEIGHT, async runContext =>
 		Matrix4x4 textMatrix = Matrix4x4.Identity;
 		for (int i = 0; i < textTransforms.Length; ++i)
 		{
-			textMatrix = textTransforms[i] * modelMatrix;
+			textMatrix = modelMatrix * textTransforms[i];
 			text[i].SetTransform(textMatrix);
 		}
 

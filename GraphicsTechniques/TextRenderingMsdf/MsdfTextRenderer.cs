@@ -10,7 +10,7 @@ using GPUBuffer = WebGpuSharp.Buffer;
 sealed class MsdfTextRenderer
 {
     private static readonly Lazy<byte[]> _shaderCode = new(() => ResourceUtils.GetEmbeddedResource(
-        resourceName: "GraphicsTechniques.TextRenderingMsdf.msdfText.wgsl",
+        resourceName: "TextRenderingMsdf.shaders.msdfText.wgsl",
         assembly: typeof(MsdfTextRenderer).Assembly
     ));
 
@@ -158,6 +158,20 @@ sealed class MsdfTextRenderer
         });
     }
 
+    private Texture LoadTexture(Stream stream, string label)
+    {
+        var imageData = ResourceUtils.LoadImage(stream);
+        var texture = Device.CreateTexture(new()
+        {
+            Label = label,
+            Size = new(imageData.Width, imageData.Height, 1),
+            Format = TextureFormat.RGBA8Unorm,
+            Usage = TextureUsage.TextureBinding | TextureUsage.CopyDst | TextureUsage.RenderAttachment,
+        });
+        ResourceUtils.CopyExternalImageToTexture(_queue, imageData, texture);
+        return texture;
+    }
+
     public MsdfFont CreateFontFromResources(Assembly assembly, string fontJsonResourceName, string pageResourcePrefix)
     {
         using var jsonStream = ResourceUtils.GetEmbeddedResourceStream(fontJsonResourceName, assembly);
@@ -259,11 +273,7 @@ sealed class MsdfTextRenderer
             MappedAtCreation = true,
         });
 
-        var glyphs = new List<MsdfGlyphLayout>();
-        var measurements = MeasureText(font, text, (textX, textY, line, ch) =>
-        {
-            glyphs.Add(new MsdfGlyphLayout(textX, textY, line, ch.CharIndex));
-        });
+        var measurements = MeasureText(font, text);
 
         textBuffer.GetMappedRange<float>(data =>
         {
@@ -271,27 +281,27 @@ sealed class MsdfTextRenderer
 
             if (options.Centered)
             {
-                foreach (var glyph in glyphs)
+                MeasureText(font, text, (textX, textY, line, ch, data) =>
                 {
-                    var lineOffset =
-                        measurements.Width * -0.5f -
-                        (measurements.Width - measurements.LineWidths[glyph.Line]) * -0.5f;
+                    var lineOffset = measurements.Width * -0.5f -
+                        (measurements.Width - measurements.LineWidths[line]) * -0.5f;
 
-                    data[offset] = glyph.X + lineOffset;
-                    data[offset + 1] = glyph.Y + measurements.Height * 0.5f;
-                    data[offset + 2] = glyph.CharIndex;
+                    data[offset] = textX + lineOffset;
+                    data[offset + 1] = textY + measurements.Height * 0.5f;
+                    data[offset + 2] = ch.CharIndex;
                     offset += 4;
-                }
+                }, data);
             }
             else
             {
-                foreach (var glyph in glyphs)
+
+                MeasureText(font, text, (textX, textY, line, ch, data) =>
                 {
-                    data[offset] = glyph.X;
-                    data[offset + 1] = glyph.Y;
-                    data[offset + 2] = glyph.CharIndex;
+                    data[offset] = textX;
+                    data[offset + 1] = textY;
+                    data[offset + 2] = ch.CharIndex;
                     offset += 4;
-                }
+                }, data);
             }
         });
         textBuffer.Unmap();
@@ -327,7 +337,14 @@ sealed class MsdfTextRenderer
         encoder.Draw(4, (uint)measurements.PrintedCharCount);
         var renderBundle = encoder.Finish();
 
-        var msdfText = new MsdfText(_queue, renderBundle, measurements, font, textBuffer);
+        var msdfText = new MsdfText(
+            _queue,
+            renderBundle,
+            measurements,
+            font,
+            textBuffer
+        );
+
         if (options.PixelScale.HasValue)
         {
             msdfText.SetPixelScale(options.PixelScale.Value);
@@ -342,10 +359,16 @@ sealed class MsdfTextRenderer
         return msdfText;
     }
 
-    public MsdfTextMeasurements MeasureText(
+    public MsdfTextMeasurements MeasureText(MsdfFont font, string text)
+    {
+        return MeasureText(font, text, charCallback: null, context: 0);
+    }
+
+    public MsdfTextMeasurements MeasureText<T>(
         MsdfFont font,
         string text,
-        Action<float, float, int, MsdfChar>? charCallback = null)
+        Action<float, float, int, MsdfChar, T>? charCallback, T context)
+        where T : allows ref struct
     {
         var maxWidth = 0f;
         var lineWidths = new List<float>();
@@ -376,10 +399,7 @@ sealed class MsdfTextRenderer
                     textOffsetX += font.GetXAdvance(charCode);
                     break;
                 default:
-                    if (charCallback != null)
-                    {
-                        charCallback(textOffsetX, textOffsetY, line, font.GetChar(charCode));
-                    }
+                    charCallback?.Invoke(textOffsetX, textOffsetY, line, font.GetChar(charCode), context);
                     textOffsetX += font.GetXAdvance(charCode, nextCharCode);
                     printedCharCount++;
                     break;
@@ -393,7 +413,8 @@ sealed class MsdfTextRenderer
             maxWidth,
             lineWidths.Count * font.LineHeight,
             lineWidths.ToArray(),
-            printedCharCount);
+            printedCharCount
+        );
     }
 
     public void UpdateCamera(Matrix4x4 projection, Matrix4x4 view)
@@ -418,25 +439,5 @@ sealed class MsdfTextRenderer
         renderPass.ExecuteBundles(bundles);
     }
 
-    private static void CopyMatrixToSpan(Matrix4x4 matrix, Span<float> destination)
-    {
-        var matrixSpan = MemoryMarshal.Cast<Matrix4x4, float>(MemoryMarshal.CreateSpan(ref matrix, 1));
-        matrixSpan.CopyTo(destination);
-    }
 
-    private Texture LoadTexture(Stream stream, string label)
-    {
-        var imageData = ResourceUtils.LoadImage(stream);
-        var texture = Device.CreateTexture(new()
-        {
-            Label = label,
-            Size = new(imageData.Width, imageData.Height, 1),
-            Format = TextureFormat.RGBA8Unorm,
-            Usage = TextureUsage.TextureBinding | TextureUsage.CopyDst | TextureUsage.RenderAttachment,
-        });
-        ResourceUtils.CopyExternalImageToTexture(_queue, imageData, texture);
-        return texture;
-    }
-
-    private readonly record struct MsdfGlyphLayout(float X, float Y, int Line, int CharIndex);
 }
