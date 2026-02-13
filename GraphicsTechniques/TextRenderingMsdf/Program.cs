@@ -22,7 +22,7 @@ return Run("Text Rendering (MSDF)", WIDTH, HEIGHT, async runContext =>
 	var adapter = await instance.RequestAdapterAsync(new()
 	{
 		CompatibleSurface = surface,
-		FeatureLevel = FeatureLevel.Compatibility
+		FeatureLevel = FeatureLevel.Core
 	});
 
 	if (adapter?.GetLimits() is not { MaxStorageBuffersPerShaderStage: >= 2 })
@@ -283,19 +283,18 @@ return Run("Text Rendering (MSDF)", WIDTH, HEIGHT, async runContext =>
 	);
 	var modelViewProjectionMatrix = Matrix4x4.Identity;
 	var start = Stopwatch.GetTimestamp();
-
 	Matrix4x4 GetTransformationMatrix()
 	{
 		var now = (float)(Stopwatch.GetElapsedTime(start).TotalMilliseconds / 5000.0);
-
+		
 		var viewMatrix = Matrix4x4.Identity;
 		viewMatrix.Translate(new Vector3(0, 0, -5));
 
 		var modelMatrix = Matrix4x4.Identity;
 		modelMatrix.Translate(new Vector3(0, 2, -3));
-		modelMatrix.Rotate(new Vector3(MathF.Sin(now), MathF.Cos(now), 0), 1f);
+		modelMatrix.Rotate(new Vector3((float)Math.Sin(now), (float)Math.Cos(now), 0), 1f);
 
-		modelViewProjectionMatrix = projectionMatrix * viewMatrix;
+		modelViewProjectionMatrix = viewMatrix * projectionMatrix;
 		modelViewProjectionMatrix = modelMatrix * modelViewProjectionMatrix;
 
 		textRenderer.UpdateCamera(projectionMatrix, viewMatrix);
@@ -303,7 +302,8 @@ return Run("Text Rendering (MSDF)", WIDTH, HEIGHT, async runContext =>
 		Matrix4x4 textMatrix = Matrix4x4.Identity;
 		for (int i = 0; i < textTransforms.Length; ++i)
 		{
-			textMatrix = modelMatrix * textTransforms[i];
+			var transform = textTransforms[i];
+			textMatrix = transform * modelMatrix;
 			text[i].SetTransform(textMatrix);
 		}
 
