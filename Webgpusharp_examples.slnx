@@ -34,6 +34,7 @@
         <Project Path="GraphicsTechniques/SkinnedMesh/SkinnedMesh.csproj" />
         <Project Path="GraphicsTechniques/StencilMask/StencilMask.csproj" />
         <Project Path="GraphicsTechniques/TextRenderingMsdf/TextRenderingMsdf.csproj" />
+        <Project Path="GraphicsTechniques/VolumeRenderingTexture3D/VolumeRenderingTexture3D.csproj" />
     </Folder>
     <Folder Name="/WebGPUFeatures/">
         <Project Path="WebGPUFeatures/RenderBundles/RenderBundles.csproj" />
