@@ -45,7 +45,9 @@ $graphicsTechniquesProjects = @(
     "GraphicsTechniques\Cornell\Cornell.csproj",
     "GraphicsTechniques\ABuffer\ABuffer.csproj",
     "GraphicsTechniques\SkinnedMesh\SkinnedMesh.csproj",
-    "GraphicsTechniques\StencilMask\StencilMask.csproj"
+    "GraphicsTechniques\StencilMask\StencilMask.csproj",
+    "GraphicsTechniques\TextRenderingMsdf\TextRenderingMsdf.csproj"
+
 )
 
 # Select projects based on category
