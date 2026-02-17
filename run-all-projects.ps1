@@ -46,8 +46,8 @@ $graphicsTechniquesProjects = @(
     "GraphicsTechniques\ABuffer\ABuffer.csproj",
     "GraphicsTechniques\SkinnedMesh\SkinnedMesh.csproj",
     "GraphicsTechniques\StencilMask\StencilMask.csproj",
-    "GraphicsTechniques\TextRenderingMsdf\TextRenderingMsdf.csproj"
-
+    "GraphicsTechniques\TextRenderingMsdf\TextRenderingMsdf.csproj",
+    "GraphicsTechniques\VolumeRenderingTexture3D\VolumeRenderingTexture3D.csproj"
 )
 
 # Select projects based on category

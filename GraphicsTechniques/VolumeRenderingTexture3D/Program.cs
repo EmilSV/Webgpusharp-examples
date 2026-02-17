@@ -22,6 +22,7 @@ var near = 4.3f;
 var far = 4.4f;
 var textureFormat = TextureFormat.R8Unorm;
 var statusText = string.Empty;
+float rotation = 0f;
 
 
 var formatOptions = new[]
@@ -176,16 +177,14 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
     var shaderModule = device.CreateShaderModuleWGSL(new() { Code = volumeWGSL });
     var pipeline = device.CreateRenderPipelineSync(new()
     {
-        Layout = null,
+        Layout = null, // auto
         Vertex = new()
         {
-            Module = shaderModule,
-            EntryPoint = "vertex_main",
+            Module = shaderModule
         },
         Fragment = new()
         {
             Module = shaderModule,
-            EntryPoint = "fragment_main",
             Targets = [new() { Format = surfaceFormat }],
         },
         Primitive = new()
@@ -199,14 +198,14 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
         },
     });
 
-    var msaaTexture = device.CreateTexture(new()
+    var texture = device.CreateTexture(new()
     {
         Size = new(renderWidth, renderHeight),
         SampleCount = SAMPLE_COUNT,
         Format = surfaceFormat,
         Usage = TextureUsage.RenderAttachment,
     });
-    var msaaView = msaaTexture.CreateView();
+    var view = texture.CreateView();
 
     var uniformBuffer = device.CreateBuffer(new()
     {
@@ -222,12 +221,9 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
         MaxAnisotropy = 16,
     });
 
-
-
-
     Texture? volumeTexture = null;
 
-    bool CreateVolumeTexture(TextureFormat format)
+    bool CreateVolumeTexture(TextureFormat format, out string statusText)
     {
         volumeTexture = null;
 
@@ -250,9 +246,9 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
         gzipStream.CopyTo(output);
         var decompressedData = output.ToArray();
 
-        var blocksWide = (VOLUME_WIDTH + imageInfo.BlockLength - 1) / imageInfo.BlockLength;
-        var blocksHigh = (VOLUME_HEIGHT + imageInfo.BlockLength - 1) / imageInfo.BlockLength;
-        var bytesPerRow = blocksWide * imageInfo.BytesPerBlock;
+        var blocksWide = (uint)Math.Ceiling(VOLUME_WIDTH / (double)imageInfo.BlockLength);
+        var blocksHigh = (uint)Math.Ceiling(VOLUME_HEIGHT / (double)imageInfo.BlockLength);
+        var bytesPerRow = (uint)blocksWide * imageInfo.BytesPerBlock;
 
         volumeTexture = device.CreateTexture(new()
         {
@@ -277,9 +273,8 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
         return true;
     }
 
-    CreateVolumeTexture(textureFormat);
+    CreateVolumeTexture(textureFormat, out var statusText);
 
-    float rotation = 0f;
     Matrix4x4 GetInverseModelViewProjectionMatrix(float deltaTime)
     {
         var viewMatrix = Matrix4x4.Identity;
@@ -298,12 +293,10 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
             farPlaneDistance: far
         );
 
-        var modelViewProjectionMatrix = Matrix4x4.Multiply(viewMatrix, projectionMatrix);
+        var modelViewProjectionMatrix = viewMatrix * projectionMatrix;
         Matrix4x4.Invert(modelViewProjectionMatrix, out var inverseModelViewProjectionMatrix);
         return inverseModelViewProjectionMatrix;
     }
-
-
 
     var lastFrameTimestamp = Stopwatch.GetTimestamp();
     runContext.OnFrame += () =>
@@ -316,15 +309,15 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
         queue.WriteBuffer(uniformBuffer, 0, inverseModelViewProjectionMatrix);
 
         var commandEncoder = device.CreateCommandEncoder();
-        var surfaceTexture = surface.GetCurrentTexture().Texture!;
+        var surfaceTextureView = surface.GetCurrentTexture().Texture!.CreateView();
         var passEncoder = commandEncoder.BeginRenderPass(new()
         {
             ColorAttachments =
             [
                 new()
                 {
-                    View = msaaView,
-                    ResolveTarget = surfaceTexture.CreateView(),
+                    View = view,
+                    ResolveTarget = surfaceTextureView,
                     ClearValue = new(0f, 0f, 0f, 1f),
                     LoadOp = LoadOp.Clear,
                     StoreOp = StoreOp.Discard,
@@ -366,13 +359,13 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
         var guiCommands = DrawGUI(guiContext, surface, out var createNewVolumeTexture);
         if (createNewVolumeTexture)
         {
-            CreateVolumeTexture(textureFormat);
+            CreateVolumeTexture(textureFormat, out statusText);
         }
 
         var drawCommands = commandEncoder.Finish();
-        if (guiCommands is { } guiCommandBuffer)
+        if (guiCommands is { } guiCommandNotNull)
         {
-            queue.Submit([drawCommands, guiCommandBuffer]);
+            queue.Submit([drawCommands, guiCommandNotNull]);
         }
         else
         {
