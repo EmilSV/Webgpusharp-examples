@@ -6,9 +6,9 @@ using System.Text;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
-using GPUBuffer = WebGpuSharp.Buffer;
 using static Setup.SetupWebGPU;
 using System.Runtime.CompilerServices;
+using System.Text.Unicode;
 
 const int WIDTH = 600;
 const int HEIGHT = 600;
@@ -370,12 +370,11 @@ return Run("Wireframe", WIDTH, HEIGHT, async runContext =>
 
 		var objectInfo = new ObjectInfo
 		{
-			Model = model,
 			UniformBuffer = uniformBuffer,
 			LineUniformBuffer = lineUniformBuffer,
 			Uniforms = new Uniforms
 			{
-				Color = RandColor(),
+				Color = new(Random.Shared.NextSingle(), Random.Shared.NextSingle(), Random.Shared.NextSingle(), 1f),
 			},
 			LineUniforms = new LineUniforms
 			{
@@ -384,8 +383,11 @@ return Run("Wireframe", WIDTH, HEIGHT, async runContext =>
 				AlphaThreshold = settings.AlphaThreshold,
 			},
 			LitBindGroup = litBindGroup,
-			WireframeBindGroup = wireframeBindGroup,
-			BarycentricWireframeBindGroup = barycentricCoordinatesBasedWireframeBindGroup,
+			WireframeBindGroups = [
+				wireframeBindGroup,
+				barycentricCoordinatesBasedWireframeBindGroup,
+			],
+			Model = model,
 		};
 
 		objectInfos.Add(objectInfo);
@@ -518,14 +520,16 @@ return Run("Wireframe", WIDTH, HEIGHT, async runContext =>
 				? barycentricWireframePipeline
 				: wireframePipeline;
 			var lineCountMultiplier = settings.BarycentricCoordinatesBased ? 1u : 2u;
+
+			var (bindGroupNdx, countMult, pipeline) = settings.BarycentricCoordinatesBased
+				? (1, 1u, barycentricWireframePipeline)
+				: (0, 2u, wireframePipeline);
+
 			pass.SetPipeline(linePipeline);
 
 			foreach (var info in objectInfos)
 			{
-				pass.SetBindGroup(0, settings.BarycentricCoordinatesBased
-					? info.BarycentricWireframeBindGroup
-					: info.WireframeBindGroup
-				);
+				pass.SetBindGroup(0, info.WireframeBindGroups[bindGroupNdx]);
 				pass.Draw(info.Model.VertexCount * lineCountMultiplier);
 			}
 		}
@@ -536,64 +540,3 @@ return Run("Wireframe", WIDTH, HEIGHT, async runContext =>
 		surface.Present();
 	};
 });
-
-
-static Vector4 RandColor()
-{
-	return new Vector4(Random.Shared.NextSingle(), Random.Shared.NextSingle(), Random.Shared.NextSingle(), 1f);
-}
-
-class Settings
-{
-	public bool BarycentricCoordinatesBased = false;
-	public float Thickness = 2f;
-	public float AlphaThreshold = 0.5f;
-	public bool Animate = true;
-	public bool Lines = true;
-	public int DepthBias = 1;
-	public float DepthBiasSlopeScale = 0.5f;
-	public bool Models = true;
-}
-
-class Model
-{
-	public required GPUBuffer VertexBuffer;
-	public required GPUBuffer IndexBuffer;
-	public required IndexFormat IndexFormat;
-	public required uint VertexCount;
-}
-
-class ObjectInfo
-{
-	public required Uniforms Uniforms;
-	public required GPUBuffer UniformBuffer;
-	public required LineUniforms LineUniforms;
-	public required GPUBuffer LineUniformBuffer;
-	public required BindGroup LitBindGroup;
-	public required BindGroup WireframeBindGroup;
-	public required BindGroup BarycentricWireframeBindGroup;
-	public required Model Model;
-}
-
-struct ModelGeometry
-{
-	public required Vertex[] Vertices;
-	public required uint[] Indices;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-struct Uniforms
-{
-	public Matrix4x4 WorldViewProjectionMatrix;
-	public Matrix4x4 WorldMatrix;
-	public Vector4 Color;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-struct LineUniforms
-{
-	public uint Stride;
-	public float Thickness;
-	public float AlphaThreshold;
-	private readonly float _pad0;
-}
