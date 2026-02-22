@@ -10,8 +10,8 @@ using GPUBuffer = WebGpuSharp.Buffer;
 using static Setup.SetupWebGPU;
 using System.Runtime.CompilerServices;
 
-const int WIDTH = 640;
-const int HEIGHT = 480;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 const TextureFormat depthFormat = TextureFormat.Depth24Plus;
 
 var settings = new Settings();
@@ -400,6 +400,8 @@ return Run("Wireframe", WIDTH, HEIGHT, async runContext =>
 			queue.WriteBuffer(info.LineUniformBuffer, info.LineUniforms);
 		}
 	}
+
+	UpdateThickness();
 
 	Texture? depthTexture = null;
 	TextureView? depthView = null;
