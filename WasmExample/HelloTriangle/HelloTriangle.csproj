@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>WasmHelloTriangle</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishTrimmed>true</PublishTrimmed>
+    <SelfContained>true</SelfContained>
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
+    <WasmBuildNative>true</WasmBuildNative>
+    <WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler.LLVM" Version="10.0.0-*" />
+    <PackageReference Include="runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.DotNet.ILCompiler.LLVM" Version="10.0.0-*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <DirectPInvoke Include="webgpu_dawn"/>
+    <DirectPInvoke Include="emscripten"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- WebGpuSharp provides the C# WebGPU API (WebGPU_FFI, handles, structs, enums). -->
+    <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj" />
+  </ItemGroup>
+
+	<PropertyGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
+		<EmccFlags>--use-port=emdawnwebgpu -sASYNCIFY=1 $(ExtraEmccFlags)</EmccFlags>
+	</PropertyGroup>
+
+  <PropertyGroup>
+
+    
+  </PropertyGroup>
+</Project>
