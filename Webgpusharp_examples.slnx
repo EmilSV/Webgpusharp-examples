@@ -37,6 +37,9 @@
         <Project Path="WebGPUFeatures/TimestampQuery/TimestampQuery.csproj" />
         <Project Path="WebGPUFeatures/OcclusionQuery/OcclusionQuery.csproj" />
         <Project Path="WebGPUFeatures/SamplerParameters/SamplerParameters.csproj" />
+
+    <Folder Name ="WasmExamples/">
+        <Project Path="WasmExample/HelloTriangle/HelloTriangle.csproj" />
     </Folder>
     <Project Path="Setup/Setup.csproj" />
     <Project Path="WebGPUSharp/WebGpuSharp.csproj" />
