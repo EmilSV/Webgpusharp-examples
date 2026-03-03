@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RootNamespace>WasmHelloTriangle</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -27,6 +26,9 @@
   <ItemGroup>
     <!-- WebGpuSharp provides the C# WebGPU API (WebGPU_FFI, handles, structs, enums). -->
     <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj" />
+    <EmbeddedResource Include="shaders\**\*.wgsl"/>
+    <EmbeddedResource Include="assets\**\*.png"/>
+    <EmbeddedResource Include="assets\**\*.jpg"/>
   </ItemGroup>
 
 	<PropertyGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">

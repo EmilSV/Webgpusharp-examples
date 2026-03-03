@@ -39,7 +39,8 @@
         <Project Path="WebGPUFeatures/SamplerParameters/SamplerParameters.csproj" />
 
     <Folder Name ="WasmExamples/">
-        <Project Path="WasmExample/HelloTriangle/HelloTriangle.csproj" />
+        <Project Path="WasmExamples/HelloTriangle/HelloTriangle.csproj" />
+        <Project Path="WasmExamples/FractalCube/FractalCube.csproj" />
     </Folder>
     <Project Path="Setup/Setup.csproj" />
     <Project Path="WebGPUSharp/WebGpuSharp.csproj" />
