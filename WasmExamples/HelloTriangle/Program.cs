@@ -1,123 +1,133 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using WebGpuSharp;
 using WebGpuSharp.FFI;
 using WebGpuSharp.Marshalling;
 
-const string TriangleVertShaderSource =
-"""
-    @vertex
-    fn main(
-    @builtin(vertex_index) VertexIndex : u32
-    ) -> @builtin(position) vec4f {
-    var pos = array<vec2f, 3>(
-        vec2(0.0, 0.5),
-        vec2(-0.5, -0.5),
-        vec2(0.5, -0.5)
-    );
-
-    return vec4f(pos[VertexIndex], 0.0, 1.0);
-    }
-""";
-
-const string RedFragShaderSource =
-"""
-    @fragment
-    fn main() -> @location(0) vec4f {
-    return vec4(1.0, 0.0, 0.0, 1.0);
-    }
-""";
-
-const int WIDTH = 512;
-const int HEIGHT = 512;
-
-var instance = WebGPU.CreateInstance()!;
-var surface = CreateSurface(instance)!;
-
-var adapter = instance.RequestAdapterSync(new()
+internal class Program
 {
-    CompatibleSurface = surface
-});
-
-var device = adapter.RequestDeviceSync();
-var queue = device.GetQueue()!;
-var surfaceFormat = surface.GetCapabilities(adapter)!.Formats[0];
-
-surface.Configure(new()
-{
-    Width = WIDTH,
-    Height = HEIGHT,
-    Usage = TextureUsage.RenderAttachment,
-    Format = surfaceFormat,
-    Device = device
-});
-
-
-var pipeline = device.CreateRenderPipelineSync(new()
-{
-    Layout = null, // Auto-layout
-    Vertex = new()
+    private static void Main(string[] args)
     {
-        Module = device.CreateShaderModuleWGSL(new()
-        {
-            Code = TriangleVertShaderSource
-        }),
-    },
-    Fragment = new()
+        AsyncMain();
+    }
+
+    private static async void AsyncMain()
     {
-        Module = device.CreateShaderModuleWGSL(new()
+        const int WIDTH = 512;
+        const int HEIGHT = 512;
+
+        var instance = WebGPU.CreateInstance()!;
+        var surface = CreateSurface(instance)!;
+
+        var adapter = await instance.RequestAdapterAsync(new()
         {
-            Code = RedFragShaderSource
-        }),
-        Targets = [
-            new()
+            CompatibleSurface = surface
+        });
+
+        var device = await adapter.RequestDeviceAsync();
+        var queue = device.GetQueue()!;
+        var surfaceFormat = surface.GetCapabilities(adapter)!.Formats[0];
+
+        surface.Configure(new()
+        {
+            Width = WIDTH,
+            Height = HEIGHT,
+            Usage = TextureUsage.RenderAttachment,
+            Format = surfaceFormat,
+            Device = device
+        });
+
+
+        var triangleVertShaderSource =
+        """
+            @vertex
+            fn main(
+            @builtin(vertex_index) VertexIndex : u32
+            ) -> @builtin(position) vec4f {
+            var pos = array<vec2f, 3>(
+                vec2(0.0, 0.5),
+                vec2(-0.5, -0.5),
+                vec2(0.5, -0.5)
+            );
+
+            return vec4f(pos[VertexIndex], 0.0, 1.0);
+            }
+        """u8;
+
+        var redFragShaderSource =
+        """
+            @fragment
+            fn main() -> @location(0) vec4f {
+            return vec4(1.0, 0.0, 0.0, 1.0);
+            }
+        """u8;
+
+        var pipeline = device.CreateRenderPipelineSync(new()
+        {
+            Layout = null, // Auto-layout
+            Vertex = new()
+            {
+                Module = device.CreateShaderModuleWGSL(new()
+                {
+                    Code = triangleVertShaderSource
+                }),
+            },
+            Fragment = new()
+            {
+                Module = device.CreateShaderModuleWGSL(new()
+                {
+                    Code = redFragShaderSource
+                }),
+                Targets = [
+                    new()
             {
                 Format = surfaceFormat
             }
-      ]
-    },
-    Primitive = new()
-    {
-        Topology = PrimitiveTopology.TriangleList,
-    },
-})!;
-
-WebgpuHandles.Surface = surface;
-WebgpuHandles.Device = device;
-WebgpuHandles.Queue = queue;
-WebgpuHandles.Pipeline = pipeline;
-
-unsafe
-{
-    EmscriptenInterop.emscripten_set_main_loop_arg(&WasmCallbacks.RenderLoop, nint.Zero, 0, 1);
-}
-
-unsafe static Surface CreateSurface(Instance instance)
-{
-    var selectorU8 = "canvas"u8;
-    var instanceHanlde = WebGPUMarshal.GetHandle(instance);
-
-    fixed (byte* ptr = selectorU8)
-    {
-        var desc = new EmscriptenSurfaceSourceCanvasHTMLSelectorFFI()
-        {
-            Chain = new ChainedStruct()
-            {
-                SType = SType.EmscriptenSurfaceSourceCanvasHTMLSelector
+              ]
             },
-            Selector = new StringViewFFI()
+            Primitive = new()
             {
-                Data = ptr,
-                Length = (nuint)selectorU8.Length
-            }
-        };
-        var surfaceDescriptor = new SurfaceDescriptorFFI()
-        {
-            NextInChain = (ChainedStruct*)&desc
-        };
+                Topology = PrimitiveTopology.TriangleList,
+            },
+        })!;
 
-        return instanceHanlde.CreateSurface(&surfaceDescriptor).ToSafeHandle()!;
+        WebgpuHandles.Surface = surface;
+        WebgpuHandles.Device = device;
+        WebgpuHandles.Queue = queue;
+        WebgpuHandles.Pipeline = pipeline;
+
+        unsafe
+        {
+            EmscriptenInterop.emscripten_set_main_loop_arg(&WasmCallbacks.RenderLoop, nint.Zero, 0, 1);
+        }
+
+        unsafe static Surface CreateSurface(Instance instance)
+        {
+            var selectorU8 = "canvas"u8;
+            var instanceHanlde = WebGPUMarshal.GetHandle(instance);
+
+            fixed (byte* ptr = selectorU8)
+            {
+                var desc = new EmscriptenSurfaceSourceCanvasHTMLSelectorFFI()
+                {
+                    Chain = new ChainedStruct()
+                    {
+                        SType = SType.EmscriptenSurfaceSourceCanvasHTMLSelector
+                    },
+                    Selector = new StringViewFFI()
+                    {
+                        Data = ptr,
+                        Length = (nuint)selectorU8.Length
+                    }
+                };
+                var surfaceDescriptor = new SurfaceDescriptorFFI()
+                {
+                    NextInChain = (ChainedStruct*)&desc
+                };
+
+                return instanceHanlde.CreateSurface(&surfaceDescriptor).ToSafeHandle()!;
+            }
+        }
     }
 }
 

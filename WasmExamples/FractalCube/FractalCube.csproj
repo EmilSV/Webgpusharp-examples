@@ -32,7 +32,7 @@
   </ItemGroup>
 
 	<PropertyGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
-		<EmccFlags>--use-port=emdawnwebgpu -sASYNCIFY=1 -sEXPORTED_RUNTIME_METHODS=HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64 $(ExtraEmccFlags)</EmccFlags>
+		<EmccFlags>--use-port=emdawnwebgpu -sEXPORTED_RUNTIME_METHODS=HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64 $(ExtraEmccFlags)</EmccFlags>
 	</PropertyGroup>
 
   <PropertyGroup>
