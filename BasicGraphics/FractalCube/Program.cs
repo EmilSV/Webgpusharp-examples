@@ -14,8 +14,10 @@ return Run(
     name: "Fractal Cube",
     width: WIDTH,
     height: HEIGHT,
-    callback: async (instance, surface, onFrame) =>
+    callback: async runContext =>
     {
+        var instance = runContext.GetInstance();
+        var surface = runContext.GetSurface();
         var startTimeStamp = Stopwatch.GetTimestamp();
         var executingAssembly = Assembly.GetExecutingAssembly();
         var basicVertWgsl = ResourceUtils.GetEmbeddedResource("FractalCube.shaders.basic.vert.wgsl", executingAssembly);
@@ -191,7 +193,7 @@ return Run(
             return viewMatrix * projectionMatrix;
         }
 
-        onFrame(() =>
+        runContext.OnFrame += () =>
         {
             var transformationMatrix = getTransformationMatrix();
             queue.WriteBuffer(uniformBuffer, 0, transformationMatrix);
@@ -237,6 +239,6 @@ return Run(
             queue.Submit(commandEncoder.Finish());
 
             surface.Present();
-        });
+        };
     }
 );

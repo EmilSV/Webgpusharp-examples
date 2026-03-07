@@ -179,8 +179,12 @@ var asm = Assembly.GetExecutingAssembly();
 var showTextureWGSL = ToBytes(asm.GetManifestResourceStream("SamplerParameters.shaders.showTexture.wgsl")!);
 var texturedSquareWGSL = ToBytes(asm.GetManifestResourceStream("SamplerParameters.shaders.texturedSquare.wgsl")!);
 
-return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, surface, guiContext, onFrame) =>
+return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async runContext =>
 {
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
+    var guiContext = runContext.GetGuiContext();
+
     var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
     var device = await adapter.RequestDeviceAsync(new()
     {
@@ -451,7 +455,7 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
     });
     bufMatrices.Unmap();
 
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         UpdateConfigBuffer();
 
@@ -566,7 +570,7 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async (instance, s
         // Submit
         queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
         surface.Present();
-    });
+    };
 });
 
 

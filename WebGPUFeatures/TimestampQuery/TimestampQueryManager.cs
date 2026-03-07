@@ -62,7 +62,7 @@ public class TimestampQueryManager
     }
 
     // Add both a start and end timestamp.
-    public RenderPassDescriptor addTimestampWrite(ref RenderPassDescriptor passDescriptor)
+    public RenderPassDescriptor AddTimestampWrite(ref RenderPassDescriptor passDescriptor)
     {
         if (TimestampSupported)
         {

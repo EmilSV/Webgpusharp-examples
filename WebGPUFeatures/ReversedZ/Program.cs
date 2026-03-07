@@ -60,19 +60,24 @@ var depthClearValues = FrozenDictionary.ToFrozenDictionary<DepthBufferMode, floa
     new (DepthBufferMode.Reversed, 0.0f)
 ]);
 
+var startTimeStamp = Stopwatch.GetTimestamp();
+var vertexWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertex.wgsl");
+var fragmentWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragment.wgsl");
+var vertexDepthPrePassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexDepthPrePass.wgsl");
+var vertexTextureQuadWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexTextureQuad.wgsl");
+var fragmentTextureQuadWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragmentTextureQuad.wgsl");
+var vertexPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexPrecisionErrorPass.wgsl");
+var fragmentPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragmentPrecisionErrorPass.wgsl");
+
+
 const int WIDTH = 600;
 const int HEIGHT = 600;
 
-return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
+return Run("Reversed Z", WIDTH, HEIGHT, async runContext =>
 {
-    var startTimeStamp = Stopwatch.GetTimestamp();
-    var vertexWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertex.wgsl");
-    var fragmentWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragment.wgsl");
-    var vertexDepthPrePassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexDepthPrePass.wgsl");
-    var vertexTextureQuadWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexTextureQuad.wgsl");
-    var fragmentTextureQuadWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragmentTextureQuad.wgsl");
-    var vertexPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexPrecisionErrorPass.wgsl");
-    var fragmentPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragmentPrecisionErrorPass.wgsl");
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
+    var guiContext = runContext.GetGuiContext();
 
     var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
 
@@ -710,7 +715,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
         Mode = Settings.ModeType.Color
     };
 
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         UpdateCameraMatrix();
         Span<Matrix4x4> matrixOutput = stackalloc Matrix4x4[numInstances];
@@ -827,7 +832,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async (instance, surface, guiContext, on
 
         queue.Submit([commandEncoder.Finish(), guiBuffer]);
         surface.Present();
-    });
+    };
 });
 
 enum DepthBufferMode

@@ -21,6 +21,7 @@
         <Project Path="GPGPUDemos/ConwaysGameOfLife/ConwaysGameOfLife.csproj" />
     </Folder>
     <Folder Name="/GraphicsTechniques/">
+        <Project Path="GraphicsTechniques/ABuffer/ABuffer.csproj" />
         <Project Path="GraphicsTechniques/Cameras/Cameras.csproj" />
         <Project Path="GraphicsTechniques/Cornell/Cornell.csproj" />
         <Project Path="GraphicsTechniques/DeferredRendering/DeferredRendering.csproj" />
@@ -30,6 +31,11 @@
         <Project Path="GraphicsTechniques/Points/Points.csproj" />
         <Project Path="GraphicsTechniques/PrimitivePicking/PrimitivePicking.csproj" />
         <Project Path="GraphicsTechniques/ShadowMapping/ShadowMapping.csproj" />
+        <Project Path="GraphicsTechniques/SkinnedMesh/SkinnedMesh.csproj" />
+        <Project Path="GraphicsTechniques/StencilMask/StencilMask.csproj" />
+        <Project Path="GraphicsTechniques/TextRenderingMsdf/TextRenderingMsdf.csproj" />
+        <Project Path="GraphicsTechniques/VolumeRenderingTexture3D/VolumeRenderingTexture3D.csproj" />
+        <Project Path="GraphicsTechniques/Wireframe/Wireframe.csproj" />
     </Folder>
     <Folder Name="/WebGPUFeatures/">
         <Project Path="WebGPUFeatures/RenderBundles/RenderBundles.csproj" />

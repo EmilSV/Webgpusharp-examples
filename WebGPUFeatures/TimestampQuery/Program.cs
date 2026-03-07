@@ -53,8 +53,12 @@ CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
     return guiContext.Render(surface)!.Value!;
 }
 
-return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
+return Run("Timestamp Query", WIDTH, HEIGHT, async runContext =>
 {
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
+    var guiContext = runContext.GetGuiContext();
+
     var adapter = await instance.RequestAdapterAsync(new()
     {
         FeatureLevel = FeatureLevel.Compatibility,
@@ -223,7 +227,7 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, guiContex
         return modelViewProjectionMatrix;
     }
 
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         var transformationMatrix = GetTransformationMatrix();
         queue.WriteBuffer(uniformBuffer, 0, transformationMatrix);
@@ -246,7 +250,7 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, guiContex
                 DepthStoreOp = StoreOp.Store,
             }
         };
-        timestampQueryManager.addTimestampWrite(ref renderPassDescriptor);
+        timestampQueryManager.AddTimestampWrite(ref renderPassDescriptor);
 
         var commandEncoder = device.CreateCommandEncoder();
         var passEncoder = commandEncoder.BeginRenderPass(renderPassDescriptor);
@@ -268,5 +272,5 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async (instance, surface, guiContex
         timestampQueryManager.TryInitiateTimestampDownload();
 
         surface.Present();
-    });
+    };
 });

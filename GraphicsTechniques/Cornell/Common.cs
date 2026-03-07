@@ -20,7 +20,9 @@ public sealed class Common
 		// Random seed for the workgroup
 		public Vector3 Seed;
 
+#pragma warning disable CS0169
 		private readonly float _pad0;
+#pragma warning restore CS0169
 	}
 
 	/// <summary>The WGSL of the common shader.</summary>

@@ -47,8 +47,12 @@ CommandBuffer DrawGui(GuiContext guiContext, Surface surface, ref SimParams simP
     return guiContext.Render(surface)!.Value!;
 }
 
-return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext, onFrame) =>
+return Run("Compute Boids", WIDTH, HEIGHT, async runContext =>
 {
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
+    var guiContext = runContext.GetGuiContext();
+
     var adapter = await instance.RequestAdapterAsync(new()
     {
         CompatibleSurface = surface,
@@ -285,7 +289,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
     float computePassDurationSum = 0;
     float renderPassDurationSum = 0;
     ulong timerSamples = 0;
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         var renderPassDescriptor = new RenderPassDescriptor()
         {
@@ -405,7 +409,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async (instance, surface, guiContext,
             });
         }
         ++t;
-    });
+    };
 });
 
 

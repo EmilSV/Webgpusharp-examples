@@ -32,6 +32,8 @@ var vertexWGSL = ToBytes(asm.GetManifestResourceStream("ShadowMapping.shaders.ve
 var vertexShadowWGSL = ToBytes(asm.GetManifestResourceStream("ShadowMapping.shaders.vertexShadow.wgsl")!);
 var mesh = await StanfordDragon.LoadMeshAsync();
 
+
+
 return Run("Shadow Mapping", WIDTH, HEIGHT, async runContext =>
 {
     var startTimeStamp = Stopwatch.GetTimestamp();

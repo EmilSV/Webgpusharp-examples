@@ -9,8 +9,11 @@ using static Setup.SetupWebGPU;
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
+return Run("TexturedCube", WIDTH, HEIGHT, async runContext =>
 {
+    var instance = runContext.GetInstance();
+    var surface = runContext.GetSurface();
+
     var startTimeStamp = Stopwatch.GetTimestamp();
     var executingAssembly = Assembly.GetExecutingAssembly();
     var basicVertWgsl = ResourceUtils.GetEmbeddedResource("TexturedCube.shaders.basic.vert.wgsl", executingAssembly);
@@ -213,7 +216,7 @@ return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         return viewMatrix * projectionMatrix;
     }
 
-    onFrame(() =>
+    runContext.OnFrame += () =>
     {
         var transformationMatrix = getTransformationMatrix();
         queue.WriteBuffer(uniformBuffer!, 0, transformationMatrix);
@@ -249,5 +252,5 @@ return Run("TexturedCube", WIDTH, HEIGHT, async (instance, surface, onFrame) =>
         queue.Submit([commandEncoder.Finish()]);
 
         surface.Present();
-    });
+    };
 });
