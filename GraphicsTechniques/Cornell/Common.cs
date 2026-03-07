@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Setup;
 using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
@@ -11,6 +12,7 @@ namespace Cornell;
 /// </summary>
 public sealed class Common
 {
+	[StructLayout(LayoutKind.Sequential)]
 	private struct CommonUniforms
 	{
 		// Model View Projection matrix
@@ -20,9 +22,7 @@ public sealed class Common
 		// Random seed for the workgroup
 		public Vector3 Seed;
 
-#pragma warning disable CS0169
 		private readonly float _pad0;
-#pragma warning restore CS0169
 	}
 
 	/// <summary>The WGSL of the common shader.</summary>

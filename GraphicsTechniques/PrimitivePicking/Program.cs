@@ -620,15 +620,12 @@ struct UniformFrameData
     public Vector2 PickCoord;
 }
 
+[StructLayout(LayoutKind.Sequential)]
 struct FullFrame
 {
-#pragma warning disable CS0649
     public Matrix4x4 ViewProjectionMatrix;
     public Matrix4x4 InvViewProjectionMatrix;
     public Vector2 PickCoord;
     public uint PickedPrimitive;
-#pragma warning disable CS0169
     private readonly float _padding; // Padding to make the size a multiple of 16 bytes
-#pragma warning restore CS0169
-#pragma warning restore CS0649
 }
