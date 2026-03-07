@@ -62,7 +62,7 @@ internal class Program
             }
         """u8;
 
-        var pipeline = device.CreateRenderPipelineSync(new()
+        var pipeline = await device.CreateRenderPipelineAsync(new()
         {
             Layout = null, // Auto-layout
             Vertex = new()
