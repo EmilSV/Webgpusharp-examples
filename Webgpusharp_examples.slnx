@@ -43,8 +43,8 @@
         <Project Path="WebGPUFeatures/TimestampQuery/TimestampQuery.csproj" />
         <Project Path="WebGPUFeatures/OcclusionQuery/OcclusionQuery.csproj" />
         <Project Path="WebGPUFeatures/SamplerParameters/SamplerParameters.csproj" />
-
-    <Folder Name ="WasmExamples/">
+    </Folder>
+    <Folder Name ="/WasmExamples/">
         <Project Path="WasmExamples/HelloTriangle/HelloTriangle.csproj" />
         <Project Path="WasmExamples/FractalCube/FractalCube.csproj" />
     </Folder>
