@@ -3,9 +3,10 @@
     <ItemGroup>
         <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj"/>
         <ProjectReference Include="..\..\Setup\Setup.csproj"/>
-                <EmbeddedResource Include="shaders\**\*.wgsl"/>
+        <EmbeddedResource Include="shaders\**\*.wgsl"/>
         <EmbeddedResource Include="assets\**\*.png"/>
         <EmbeddedResource Include="assets\**\*.jpg"/>
+        <EmbeddedResource Include="assets\**\*.bin"/>
     </ItemGroup>
     <PropertyGroup>
         <OutputType>Exe</OutputType>

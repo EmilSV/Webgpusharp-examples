@@ -1,11 +1,11 @@
-namespace Setup;
+using Setup;
 
-public static class Teapot
+static class Teapot
 {
     public static async Task<SimpleMeshBinReader.Mesh> LoadMeshAsync()
     {
         var assembly = typeof(Teapot).Assembly;
-        using var stream = assembly.GetManifestResourceStream("Setup.assets.teapotData.bin")!;
+        using var stream = assembly.GetManifestResourceStream("ABuffer.assets.teapotData.bin")!;
         return await SimpleMeshBinReader.LoadData(stream);
     }
 }

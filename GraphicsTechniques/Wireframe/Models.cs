@@ -109,7 +109,7 @@ class Models
 
     public static Lazy<Task<Models>> ModelData = new(async () =>
     {
-        var teapotMesh = await Setup.Teapot.LoadMeshAsync();
+        var teapotMesh = await global::Teapot.LoadMeshAsync();
         return new Models
         {
             Teapot = ConvertMeshToTypedArrays(teapotMesh, 1.5f),

@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using ImGuiNET;
 using Setup;
@@ -12,15 +11,12 @@ using System.Runtime.CompilerServices;
 
 const int WIDTH = 600;
 const int HEIGHT = 600;
-const int MAT4X4_BYTES = 64;
 
 var assembly = Assembly.GetExecutingAssembly();
 var gltfWGSL = ResourceUtils.GetEmbeddedResource("SkinnedMesh.shaders.gltf.wgsl", assembly);
 var gridWGSL = ResourceUtils.GetEmbeddedResource("SkinnedMesh.shaders.grid.wgsl", assembly);
 var whaleGlbData = ResourceUtils.GetEmbeddedResource("SkinnedMesh.assets.gltf.whale.glb", assembly);
 var gltfWGSLStr = Encoding.UTF8.GetString(gltfWGSL);
-
-
 
 var startTimeStamp = Stopwatch.GetTimestamp();
 var settings = new Settings();
