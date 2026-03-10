@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -28,7 +29,7 @@ var fragWGSL = ToBytes(asm.GetManifestResourceStream("ConwaysGameOfLife.shaders.
 var vertWGSL = ToBytes(asm.GetManifestResourceStream("ConwaysGameOfLife.shaders.vert.wgsl")!);
 
 
-CommandBuffer DrawGui(GuiContext guiContext, Surface surface, out bool resetGameState)
+CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface, out bool resetGameState)
 {
     resetGameState = false;
 
@@ -82,7 +83,7 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new()
     {

@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -23,7 +24,7 @@ return Run("A-Buffer", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
 
     var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
@@ -751,7 +752,7 @@ class Settings
 {
     public MemoryStrategy MemoryStrategy = MemoryStrategy.MultiPass;
 
-    public CommandBuffer Draw(GuiContext guiContext, Surface surface, out bool settingsChanged)
+    public CommandBuffer Draw(DearImGuiContext guiContext, Surface surface, out bool settingsChanged)
     {
         guiContext.NewFrame();
         settingsChanged = false;

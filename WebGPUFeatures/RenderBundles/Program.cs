@@ -8,6 +8,7 @@ using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 using static Setup.SetupWebGPU;
 using System.Runtime.InteropServices;
+using GuiSetup;
 
 const int WIDTH = 1280;
 const int HEIGHT = 720;
@@ -28,7 +29,7 @@ FrameTimeStats frameTimeStats = new()
     MinMeasurementTimeMilliseconds = 0f,
 };
 
-CommandBuffer DrawGUI(GuiContext guiContext, Surface surface, out bool asteroidCountChanged)
+CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool asteroidCountChanged)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.3f);
@@ -58,7 +59,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var startTimeStamp = Stopwatch.GetTimestamp();
 

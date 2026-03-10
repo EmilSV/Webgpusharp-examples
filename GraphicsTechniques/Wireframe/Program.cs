@@ -9,6 +9,7 @@ using WebGpuSharp;
 using static Setup.SetupWebGPU;
 using System.Runtime.CompilerServices;
 using System.Text.Unicode;
+using GuiSetup;
 
 const int WIDTH = 600;
 const int HEIGHT = 600;
@@ -21,7 +22,7 @@ var wireframeWGSL = ResourceUtils.GetEmbeddedResource("Wireframe.shaders.wirefra
 var teapotMesh = await Teapot.LoadMeshAsync();
 
 CommandBuffer DrawGUI(
-	GuiContext guiContext,
+	DearImGuiContext guiContext,
 	Surface surface,
 	out bool rebuildLitPipeline,
 	out bool updateThickness)
@@ -90,7 +91,7 @@ return Run("Wireframe", WIDTH, HEIGHT, async runContext =>
 {
 	var instance = runContext.GetInstance();
 	var surface = runContext.GetSurface();
-	var guiContext = runContext.GetGuiContext();
+	var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 	var startTimestamp = Stopwatch.GetTimestamp();
 
 	var adapter = await instance.RequestAdapterAsync(new()

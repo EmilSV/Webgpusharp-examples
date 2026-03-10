@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using Cornell;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -14,7 +15,7 @@ const int HEIGHT = 720;
 var parameters = new Parameters();
 
 
-CommandBuffer DrawGUI(GuiContext guiContext, Surface surface)
+CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface)
 {
 	guiContext.NewFrame();
 	ImGui.SetNextWindowBgAlpha(0.75f);
@@ -39,7 +40,7 @@ return Run("Cornell", WIDTH, HEIGHT, async runContext =>
 
 	var instance = runContext.GetInstance();
 	var surface = runContext.GetSurface();
-	var guiContext = runContext.GetGuiContext();
+	var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
 	var adapter = await instance.RequestAdapterAsync(new()
 	{

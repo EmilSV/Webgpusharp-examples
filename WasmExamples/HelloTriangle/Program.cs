@@ -104,7 +104,7 @@ internal class Program
         unsafe static Surface CreateSurface(Instance instance)
         {
             var selectorU8 = "canvas"u8;
-            var instanceHanlde = WebGPUMarshal.GetHandle(instance);
+            var instanceHandle = WebGPUMarshal.GetHandle(instance);
 
             fixed (byte* ptr = selectorU8)
             {
@@ -125,7 +125,7 @@ internal class Program
                     NextInChain = (ChainedStruct*)&desc
                 };
 
-                return instanceHanlde.CreateSurface(&surfaceDescriptor).ToSafeHandle()!;
+                return instanceHandle.CreateSurface(&surfaceDescriptor).ToSafeHandle()!;
             }
         }
     }

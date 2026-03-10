@@ -1,11 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using ImGuiNET;
 using BitonicSort;
@@ -13,37 +9,13 @@ using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 using Buffer = WebGpuSharp.Buffer;
-using WebGpuSharp.Marshalling;
+using GuiSetup;
 
 const int WindowWidth = 1200;
 const int WindowHeight = 900;
 
-NativeLibrary.Load("C:\\Users\\emils\\git_repos\\webgpu-dawn-build\\dawn\\dawn_build_x64\\Debug\\webgpu_dawn.dll");
-Environment.SetEnvironmentVariable("DAWN_DEBUG_BREAK_ON_ERROR", "1");
-//intercept whenever WebGpuSharp request webgpu_dawn.dll
-NativeLibrary.SetDllImportResolver(
-    assembly: typeof(WebGpuSharp.WebGPU).Assembly,
-    resolver: (libraryName, assembly, searchPath) =>
-    {
-        if (libraryName == "webgpu_dawn")
-        {
-            return NativeLibrary.Load("C:\\Users\\emils\\git_repos\\webgpu-dawn-build\\dawn\\dawn_build_x64\\Debug\\webgpu_dawn.dll");
-        }
-        return IntPtr.Zero;
-    }
-);
-
-
 var assembly = Assembly.GetExecutingAssembly();
 var atomicToZeroWGSL = ResourceUtils.GetEmbeddedResource("BitonicSort.shaders.atomicToZero.wgsl", assembly);
-
-var _instance = WebGPU.CreateInstance(new()
-{
-    RequiredFeatures =
-    [
-        InstanceFeatureName.TimedWaitAny
-    ]
-});
 
 static uint GetNumSteps(uint elements)
 {
@@ -51,12 +23,12 @@ static uint GetNumSteps(uint elements)
     return (uint)(n * (n + 1) / 2);
 }
 
-return Run(_instance!, "Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
+return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 {
 
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new()
     {

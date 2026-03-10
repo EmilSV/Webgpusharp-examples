@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -17,7 +18,7 @@ var asm = Assembly.GetExecutingAssembly();
 var cubeWGSL = ResourceUtils.GetEmbeddedResource("Cameras.shaders.cube.wgsl", asm)!;
 var currentCameraType = CameraType.WASD;
 
-CommandBuffer DrawGUI(GuiContext guiContext, Surface surface, out bool changeCameraType)
+CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool changeCameraType)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
@@ -42,7 +43,7 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
 
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
     var inputEvents = runContext.Input;
     var inputHandler = new InputHandler(inputEvents);
 

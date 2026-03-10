@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -35,7 +36,7 @@ var vertexTextureQuadWGSL = ToBytes(asm.GetManifestResourceStream("DeferredRende
 var vertexWriteGBuffersWGSL = ToBytes(asm.GetManifestResourceStream("DeferredRendering.shaders.vertexWriteGBuffers.wgsl")!);
 var mesh = await StanfordDragon.LoadMeshAsync();
 
-CommandBuffer DrawGUI(GuiContext guiContext, Surface surface, out bool numLightsChanged)
+CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool numLightsChanged)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
@@ -61,7 +62,7 @@ return Run("Deferred Rendering", WIDTH, HEIGHT, async runContext =>
 
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new RequestAdapterOptions
     {

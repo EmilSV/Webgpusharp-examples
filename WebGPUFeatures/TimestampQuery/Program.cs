@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -26,7 +27,7 @@ var asm = Assembly.GetExecutingAssembly();
 var basicVertWGSL = ToBytes(asm.GetManifestResourceStream("TimestampQuery.shaders.basic.vert.wgsl")!);
 var blackFragWGSL = ToBytes(asm.GetManifestResourceStream("TimestampQuery.shaders.black.frag.wgsl")!);
 
-CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
+CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
 
@@ -57,7 +58,7 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new()
     {

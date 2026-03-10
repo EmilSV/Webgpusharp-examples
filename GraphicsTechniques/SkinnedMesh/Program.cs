@@ -8,6 +8,7 @@ using WebGpuSharp;
 using GPUBuffer = WebGpuSharp.Buffer;
 using static Setup.SetupWebGPU;
 using System.Runtime.CompilerServices;
+using GuiSetup;
 
 const int WIDTH = 600;
 const int HEIGHT = 600;
@@ -22,7 +23,7 @@ var startTimeStamp = Stopwatch.GetTimestamp();
 var settings = new Settings();
 
 CommandBuffer DrawGui(
-    GuiContext guiContext,
+    DearImGuiContext guiContext,
     Queue queue,
     GPUBuffer generalUniformsBuffer,
     Surface surface, GlbParser.ConvertGLBResult whaleScene)
@@ -102,7 +103,7 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new()
     {

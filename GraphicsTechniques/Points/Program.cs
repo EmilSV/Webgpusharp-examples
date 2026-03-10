@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -57,7 +58,7 @@ static float[] CreateFibonacciSphereVertices(int numSamples, float radius)
 }
 
 
-CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
+CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
@@ -84,7 +85,7 @@ return Run("Points", WIDTH, HEIGHT, async runContext =>
 
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     Adapter adapter = await instance.RequestAdapterAsync(new()
     {

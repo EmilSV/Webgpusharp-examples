@@ -12,6 +12,7 @@
         <NoWarn>1073;RCS1021;RCS1123,RCS1242</NoWarn>
     </PropertyGroup>
     <ItemGroup>
+        <ProjectReference Include="..\..\GuiSetup\GuiSetup.csproj" />
         <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj"/>
         <ProjectReference Include="..\..\Setup\Setup.csproj"/>
         <EmbeddedResource Include="shaders\*.wgsl"/>

@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -20,7 +21,7 @@ var windowWidth = (int)sourceImageData.Width;
 var windowHeight = (int)sourceImageData.Height;
 var settings = new BlurSettings();
 
-CommandBuffer DrawGui(GuiContext guiContext, Surface surface, out bool filterSizeChanged)
+CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface, out bool filterSizeChanged)
 {
 	filterSizeChanged = false;
 
@@ -44,7 +45,7 @@ return Run("Image Blur", windowWidth, windowHeight, async runContext =>
 {
 	var instance = runContext.GetInstance();
 	var surface = runContext.GetSurface();
-	var guiContext = runContext.GetGuiContext();
+	var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
 	var adapter = await instance.RequestAdapterAsync(new()
 	{

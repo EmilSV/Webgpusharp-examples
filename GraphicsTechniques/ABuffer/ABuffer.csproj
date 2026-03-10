@@ -1,5 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
+        <ProjectReference Include="..\..\GuiSetup\GuiSetup.csproj" />
         <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj"/>
         <ProjectReference Include="..\..\Setup\Setup.csproj"/>
         <EmbeddedResource Include="shaders\**\*.wgsl"/>

@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -27,7 +28,7 @@ static uint ToUniformBufferSize(uint originalSize)
     return originalSize + (originalSize % 16);
 }
 
-CommandBuffer DrawGUI(GuiContext guiContext, Surface surface, out bool textureChanged)
+CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool textureChanged)
 {
     static void ClampInput(string label, ref float value, float min, float max, float? step)
     {
@@ -105,7 +106,7 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
 
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new()
     {

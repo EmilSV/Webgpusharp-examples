@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -102,7 +103,7 @@ static Vector3 LerpV(Vector3 a, Vector3 b, float t) => new(
 );
 static float PingPongSine(float t) => (MathF.Sin(t * MathF.PI * 2) + 1) / 2;
 
-CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
+CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowPos(new(0, 0));
@@ -137,7 +138,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
     var device = await adapter.RequestDeviceAsync(new()

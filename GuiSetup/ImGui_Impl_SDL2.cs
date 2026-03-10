@@ -17,7 +17,7 @@ using static SDL2.SDL;
 // From https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_sdl2.cpp
 
 
-public class ImGui_Impl_SDL2
+internal class ImGui_Impl_SDL2
 {
     public enum GamepadMode { AutoFirst, AutoAll, Manual };
 

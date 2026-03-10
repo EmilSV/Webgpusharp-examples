@@ -11,13 +11,13 @@ using ImDrawIdx = ushort;
 using WebGpuSharp.Marshalling; // figure out what size index buffer imgui uses
 
 
-delegate void UserCallbackDelegate(ImDrawListPtr parent_list, ImDrawCmdPtr cmd);
+internal delegate void UserCallbackDelegate(ImDrawListPtr parent_list, ImDrawCmdPtr cmd);
 
 /// <summary>
 ///  https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_wgpu.cpp
 /// A translation of the webgpu backend for imgui
 /// </summary>
-public static class ImGui_Impl_WebGPUSharp 
+internal static class ImGui_Impl_WebGPUSharp
 {
     #region Structures
 
@@ -193,7 +193,7 @@ public static class ImGui_Impl_WebGPUSharp
 
     #endregion
 
-    private static ImGui_ImplWGPU_Data data; 
+    private static ImGui_ImplWGPU_Data data;
 
 
     /// <summary>
@@ -290,8 +290,8 @@ public static class ImGui_Impl_WebGPUSharp
                                 {
                                     Binding = 0,
                                     Visibility = ShaderStage.Fragment,
-                                    Texture = new TextureBindingLayout(){ 
-                                        SampleType = TextureSampleType.Float, 
+                                    Texture = new TextureBindingLayout(){
+                                        SampleType = TextureSampleType.Float,
                                         ViewDimension = TextureViewDimension.D2
                                     }
                                 },
@@ -362,7 +362,7 @@ public static class ImGui_Impl_WebGPUSharp
                             Blend = new BlendState()
                             {
                                 Alpha = new(){
-                                    Operation = BlendOperation.Add, 
+                                    Operation = BlendOperation.Add,
                                     SrcFactor = BlendFactor.One,
                                     DstFactor = BlendFactor.OneMinusSrcAlpha
                                 },
@@ -635,7 +635,7 @@ public static class ImGui_Impl_WebGPUSharp
                     break;
             }
 
-            bd.defaultQueue.WriteBuffer(bd.renderResources.Uniforms, 0, new Uniforms() { MVP = mvp, Gamma = gamma});
+            bd.defaultQueue.WriteBuffer(bd.renderResources.Uniforms, 0, new Uniforms() { MVP = mvp, Gamma = gamma });
         }
 
         // Setup viewport

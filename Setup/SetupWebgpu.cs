@@ -10,15 +10,69 @@ public class SetupWebGPU
     public static int Run(string name, int width, int height, Func<RunContext, Task> callback) =>
         Run(WebGPU.CreateInstance()!, name, width, height, callback);
 
-    public static int Run(Instance instance, string name, int width, int height, Func<RunContext, Task> callback) =>
-    //To allow async event though SDL2 by only using the same thread as the call 
-    AsyncContext.Run(async () =>
+    public static int Run(Instance instance, string name, int width, int height, Func<RunContext, Task> callback)
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            RunBrowser(instance, name, width, height, callback);
+            return 1;
+        }
+        else
+        {
+            return RunNative(instance, name, width, height, callback);
+        }
+    }
+
+    private static int RunNative(Instance instance, string name, int width, int height, Func<RunContext, Task> callback) =>
+        //To allow async event though SDL2 by only using the same thread as the call 
+        AsyncContext.Run(async () =>
+        {
+            SDL_SetMainReady();
+            if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+            {
+                Console.Error.WriteLine($"Could not initialize SDL! Error: {SDL_GetError()}");
+                return 1;
+            }
+
+            SDL_WindowFlags windowFlags = SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
+            var window = SDL_CreateWindow(name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, windowFlags);
+
+            var surface = SDLWebgpu.SDL_GetWGPUSurface(instance, window)!;
+
+            var runContext = new RunContext(instance, surface, window);
+
+            await callback(runContext);
+            bool shouldClose = false;
+            while (!shouldClose)
+            {
+                while (SDL_PollEvent(out var @event) != 0)
+                {
+                    bool handled = runContext.ProcessGuiEvents(@event);
+                    switch (@event.type)
+                    {
+                        case SDL_EventType.SDL_QUIT:
+                            shouldClose = true;
+                            break;
+
+                        default:
+                            runContext.Input.HandleEvent(@event);
+                            break;
+                    }
+                }
+                runContext.InvokeOnFrame();
+            }
+            SDL_DestroyWindow(window);
+            SDL_Quit();
+
+            return 0;
+        });
+
+    private static async void RunBrowser(Instance instance, string name, int width, int height, Func<RunContext, Task> callback)
     {
         SDL_SetMainReady();
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
         {
             Console.Error.WriteLine($"Could not initialize SDL! Error: {SDL_GetError()}");
-            return 1;
         }
 
         SDL_WindowFlags windowFlags = SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
@@ -29,12 +83,12 @@ public class SetupWebGPU
         var runContext = new RunContext(instance, surface, window);
 
         await callback(runContext);
-        bool shouldClose = false;
-        while (!shouldClose)
+        EmscriptenInterop.emscriptenSetMainLoop(() =>
         {
+            bool shouldClose = false;
             while (SDL_PollEvent(out var @event) != 0)
             {
-                bool handled = runContext.ProcessEventIMGUi(@event);
+                bool handled = runContext.ProcessGuiEvents(@event);
                 switch (@event.type)
                 {
                     case SDL_EventType.SDL_QUIT:
@@ -46,11 +100,15 @@ public class SetupWebGPU
                         break;
                 }
             }
-            runContext.InvokeOnFrame();
-        }
-        SDL_DestroyWindow(window);
-        SDL_Quit();
+            if (shouldClose)
+            {
+                EmscriptenInterop.emscripten_cancel_main_loop();
+                SDL_DestroyWindow(window);
+                SDL_Quit();
+                return;
+            }
 
-        return 0;
-    });
+            runContext.InvokeOnFrame();
+        }, 0, 1);
+    }
 }

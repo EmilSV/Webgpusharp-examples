@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -31,7 +32,7 @@ var startTimeStamp = Stopwatch.GetTimestamp();
 var settings = new Settings();
 
 
-CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
+CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
@@ -55,7 +56,7 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
     var input = runContext.Input;
 
     var adapter = await instance.RequestAdapterAsync(new()

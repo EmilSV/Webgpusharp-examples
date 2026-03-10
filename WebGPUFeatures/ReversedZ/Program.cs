@@ -8,6 +8,7 @@ using Setup;
 using ImGuiNET;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
+using GuiSetup;
 
 const int geometryVertexSize = 4 * 8; // Byte size of one geometry vertex.
 const int geometryPositionOffset = 0;
@@ -77,7 +78,7 @@ return Run("Reversed Z", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new() { CompatibleSurface = surface });
 
@@ -852,7 +853,7 @@ sealed class Settings
 
     public ModeType Mode = ModeType.Color;
 
-    public CommandBuffer DrawGUI(GuiContext guiContext, Surface surface)
+    public CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface)
     {
         guiContext.NewFrame();
         ImGui.SetNextWindowPos(new(400, 500));

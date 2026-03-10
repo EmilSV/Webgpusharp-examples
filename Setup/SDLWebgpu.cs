@@ -1,5 +1,7 @@
 using Setup.Macos;
 using WebGpuSharp;
+using WebGpuSharp.FFI;
+using WebGpuSharp.Marshalling;
 using static SDL2.SDL;
 
 namespace Setup
@@ -8,9 +10,33 @@ namespace Setup
     {
         internal static unsafe Surface? SDL_GetWGPUSurface(Instance instance, nint window)
         {
+            if (OperatingSystem.IsBrowser())
+            {
+                var selectorU8 = "#canvas"u8;
+                fixed (byte* selectorPtr = selectorU8)
+                {
+                    var instanceHandle = WebGPUMarshal.GetHandle(instance);
+                    var webDescriptor = new EmscriptenSurfaceSourceCanvasHTMLSelectorFFI
+                    {
+                        Chain = new ChainedStruct
+                        {
+                            Next = null,
+                            SType = SType.EmscriptenSurfaceSourceCanvasHTMLSelector
+                        },
+                        Selector = StringViewFFI.CreateExplicitlySized(selectorPtr, (nuint)selectorU8.Length)
+                    };
+                    var surfaceDescriptor = new SurfaceDescriptorFFI()
+                    {
+                        NextInChain = (ChainedStruct*)&webDescriptor
+                    };
+                    return instanceHandle.CreateSurface(&surfaceDescriptor).ToSafeHandle();
+                }
+            }
+
             SDL_SysWMinfo windowWMInfo = new();
             SDL_VERSION(out windowWMInfo.version);
             SDL_GetWindowWMInfo(window, ref windowWMInfo);
+
 
             if (windowWMInfo.subsystem == SDL_SYSWM_TYPE.SDL_SYSWM_WINDOWS)
             {

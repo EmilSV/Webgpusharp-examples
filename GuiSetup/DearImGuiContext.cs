@@ -1,19 +1,32 @@
 using ImGuiNET;
+using SDL2;
+using Setup;
 using WebGpuSharp;
 
-public class GuiContext
-{
-    private IntPtr window;
-    private Device? device;
+namespace GuiSetup;
 
-    internal GuiContext(IntPtr window)
+public class DearImGuiContext : IGuiContext<DearImGuiContext>
+{
+    private IntPtr? _window;
+    private Device? _device;
+
+    private DearImGuiContext()
     {
-        this.window = window;
+    }
+
+    public static DearImGuiContext Create(nint window)
+    {
+        var context = new DearImGuiContext();
+        context._window = window;
+        return context;
     }
 
     public void SetupIMGUI(Device device, TextureFormat ttFormat)
     {
-        this.device = device;
+        if (_window is null)
+            throw new InvalidOperationException("Window must be set before setting up ImGui");
+
+        _device = device;
 
         IntPtr context = ImGui.CreateContext();
         ImGui.SetCurrentContext(context);
@@ -24,7 +37,7 @@ public class GuiContext
         {
             io.NativePtr->IniFilename = null;
         }
-        
+
         var initInfo = new ImGui_Impl_WebGPUSharp.ImGui_ImplWGPU_InitInfo()
         {
             device = device,
@@ -34,7 +47,7 @@ public class GuiContext
         };
 
         ImGui_Impl_WebGPUSharp.Init(initInfo);
-        ImGui_Impl_SDL2.Init(window);
+        ImGui_Impl_SDL2.Init(_window.Value);
 
         io.Fonts.AddFontDefault();
         io.Fonts.Build();
@@ -73,7 +86,7 @@ public class GuiContext
         TextureView textureView = surfaceTexture.Texture.CreateView(viewdescriptor) ?? throw new Exception("Failed to create texture view");
 
         // Command Encoder
-        var commandEncoder = device!.CreateCommandEncoder(new() { Label = "Main Command Encoder" });
+        var commandEncoder = _device!.CreateCommandEncoder(new() { Label = "Main Command Encoder" });
 
         Span<RenderPassColorAttachment> colorAttachments = [
             new(){
@@ -103,5 +116,10 @@ public class GuiContext
 
         // Finish Rendering
         return commandEncoder.Finish(new() { });
+    }
+
+    bool IGuiContext.ProcessEvent(in SDL.SDL_Event @event)
+    {
+        return ImGui_Impl_SDL2.ProcessEvent(@event);
     }
 }

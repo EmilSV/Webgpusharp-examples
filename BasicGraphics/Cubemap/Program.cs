@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Reflection;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -14,7 +15,7 @@ return Run("Cubemap", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
     var startTimeStamp = Stopwatch.GetTimestamp();
 
     var executingAssembly = Assembly.GetExecutingAssembly();

@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Resources;
 using System.Runtime.InteropServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -19,7 +20,7 @@ var asm = Assembly.GetExecutingAssembly();
 var spriteWGSL = ResourceUtils.GetEmbeddedResource("ComputeBoids.shaders.sprite.wgsl")!;
 var updateSpritesWGSL = ResourceUtils.GetEmbeddedResource("ComputeBoids.shaders.updateSprites.wgsl")!;
 
-CommandBuffer DrawGui(GuiContext guiContext, Surface surface, ref SimParams simParams, out bool simParamsChanged)
+CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface, ref SimParams simParams, out bool simParamsChanged)
 {
     simParamsChanged = false;
 
@@ -51,7 +52,7 @@ return Run("Compute Boids", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new()
     {

@@ -44,10 +44,12 @@
         <Project Path="WebGPUFeatures/OcclusionQuery/OcclusionQuery.csproj" />
         <Project Path="WebGPUFeatures/SamplerParameters/SamplerParameters.csproj" />
     </Folder>
-    <Folder Name ="/WasmExamples/">
+    <Folder Name="/WasmExamples/">
         <Project Path="WasmExamples/HelloTriangle/HelloTriangle.csproj" />
         <Project Path="WasmExamples/FractalCube/FractalCube.csproj" />
     </Folder>
+    <Folder Name="/WebGPUSharp/" />
+    <Project Path="GuiSetup/GuiSetup.csproj" />
     <Project Path="Setup/Setup.csproj" />
     <Project Path="WebGPUSharp/WebGpuSharp.csproj" />
 </Solution>

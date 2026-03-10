@@ -12,7 +12,7 @@ public class RunContext(
     private readonly Instance _instance = instance;
     private readonly Surface _surface = surface;
     private readonly nint _window = window;
-    private GuiContext? _guiContext;
+    private IGuiContext? _guiContext;
     private Action? _onFrame;
 
     public readonly InputEvents Input = new();
@@ -24,10 +24,11 @@ public class RunContext(
 
     public Instance GetInstance() => _instance;
     public Surface GetSurface() => _surface;
-    public GuiContext GetGuiContext()
+    public T CreateGuiContext<T>() where T : class, IGuiContext<T>
     {
-        _guiContext ??= new GuiContext(_window);
-        return _guiContext;
+        var context = T.Create(_window);
+        _guiContext = context;
+        return context;
     }
 
     /// <summary>
@@ -41,14 +42,14 @@ public class RunContext(
         return windowWidth > 0 ? drawableWidth / (float)windowWidth : 1.0f;
     }
 
-    internal bool ProcessEventIMGUi(in SDL2.SDL.SDL_Event @event)
+    internal bool ProcessGuiEvents(in SDL2.SDL.SDL_Event @event)
     {
         if (_guiContext == null)
         {
             return false;
         }
 
-        return ImGui_Impl_SDL2.ProcessEvent(@event);
+        return _guiContext.ProcessEvent(@event);
     }
 
     internal void InvokeOnFrame()

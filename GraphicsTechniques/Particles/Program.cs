@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -37,7 +38,7 @@ var probabilityMapWGSL = ToBytes(asm.GetManifestResourceStream("Particles.shader
 var random = new Random();
 
 
-CommandBuffer DrawGui(GuiContext guiContext, Surface surface)
+CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
@@ -63,7 +64,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
 
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     Adapter adapter = await instance.RequestAdapterAsync(new()
     {

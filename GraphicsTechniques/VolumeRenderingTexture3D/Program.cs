@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using GuiSetup;
 using ImGuiNET;
 using Setup;
 using WebGpuSharp;
@@ -66,7 +67,7 @@ var brainImages = new Dictionary<TextureFormat, BrainImageInfo>
 var asm = Assembly.GetExecutingAssembly();
 var volumeWGSL = ResourceUtils.GetEmbeddedResource("VolumeRenderingTexture3D.shaders.volume.wgsl", asm);
 
-CommandBuffer? DrawGUI(GuiContext guiContext, Surface surface, out bool createNewVolumeTexture)
+CommandBuffer? DrawGUI(DearImGuiContext guiContext, Surface surface, out bool createNewVolumeTexture)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
@@ -116,7 +117,7 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
 {
     var instance = runContext.GetInstance();
     var surface = runContext.GetSurface();
-    var guiContext = runContext.GetGuiContext();
+    var guiContext = runContext.CreateGuiContext<DearImGuiContext>();
 
     var adapter = await instance.RequestAdapterAsync(new()
     {

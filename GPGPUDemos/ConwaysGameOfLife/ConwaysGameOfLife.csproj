@@ -1,11 +1,12 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
-        <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj"/>
-        <ProjectReference Include="..\..\Setup\Setup.csproj"/>
-        <EmbeddedResource Include="shaders\**\*.wgsl"/>
-        <EmbeddedResource Include="assets\**\*.png"/>
-        <EmbeddedResource Include="assets\**\*.jpg"/>
+        <ProjectReference Include="..\..\GuiSetup\GuiSetup.csproj" />
+        <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj" />
+        <ProjectReference Include="..\..\Setup\Setup.csproj" />
+        <EmbeddedResource Include="shaders\**\*.wgsl" />
+        <EmbeddedResource Include="assets\**\*.png" />
+        <EmbeddedResource Include="assets\**\*.jpg" />
     </ItemGroup>
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -16,7 +17,7 @@
         <PublishAot>true</PublishAot>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2"/>
-        <PackageReference Include="ppy.SDL2-CS" Version="1.0.82"/>
+        <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2" />
+        <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
     </ItemGroup>
 </Project>
