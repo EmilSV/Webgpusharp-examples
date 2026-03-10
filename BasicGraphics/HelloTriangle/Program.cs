@@ -70,7 +70,7 @@ return Run("Hello Triangle", WIDTH, HEIGHT, async runContext =>
     });
 
 
-    var pipeline = device.CreateRenderPipelineSync(new()
+    var pipeline = await device.CreateRenderPipelineAsync(new()
     {
         Layout = null, // Auto-layout
         Vertex = new VertexState()
