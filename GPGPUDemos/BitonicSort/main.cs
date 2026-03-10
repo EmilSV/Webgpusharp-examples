@@ -18,22 +18,6 @@ using WebGpuSharp.Marshalling;
 const int WindowWidth = 1200;
 const int WindowHeight = 900;
 
-NativeLibrary.Load("C:\\Users\\emils\\git_repos\\webgpu-dawn-build\\dawn\\dawn_build_x64\\Debug\\webgpu_dawn.dll");
-Environment.SetEnvironmentVariable("DAWN_DEBUG_BREAK_ON_ERROR", "1");
-//intercept whenever WebGpuSharp request webgpu_dawn.dll
-NativeLibrary.SetDllImportResolver(
-    assembly: typeof(WebGpuSharp.WebGPU).Assembly,
-    resolver: (libraryName, assembly, searchPath) =>
-    {
-        if (libraryName == "webgpu_dawn")
-        {
-            return NativeLibrary.Load("C:\\Users\\emils\\git_repos\\webgpu-dawn-build\\dawn\\dawn_build_x64\\Debug\\webgpu_dawn.dll");
-        }
-        return IntPtr.Zero;
-    }
-);
-
-
 var assembly = Assembly.GetExecutingAssembly();
 var atomicToZeroWGSL = ResourceUtils.GetEmbeddedResource("BitonicSort.shaders.atomicToZero.wgsl", assembly);
 
