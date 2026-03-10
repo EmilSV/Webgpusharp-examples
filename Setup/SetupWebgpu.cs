@@ -7,6 +7,8 @@ namespace Setup;
 
 public class SetupWebGPU
 {
+    private const uint INITI_ARGS = SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER;
+
     public static int Run(string name, int width, int height, Func<RunContext, Task> callback) =>
         Run(WebGPU.CreateInstance()!, name, width, height, callback);
 
@@ -14,7 +16,7 @@ public class SetupWebGPU
     {
         if (OperatingSystem.IsBrowser())
         {
-            RunBrowser(instance, name, width, height, callback);
+            _ = RunBrowser(instance, name, width, height, callback);
             return 1;
         }
         else
@@ -28,7 +30,7 @@ public class SetupWebGPU
         AsyncContext.Run(async () =>
         {
             SDL_SetMainReady();
-            if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+            if (SDL_Init(INITI_ARGS) < 0)
             {
                 Console.Error.WriteLine($"Could not initialize SDL! Error: {SDL_GetError()}");
                 return 1;
@@ -67,10 +69,10 @@ public class SetupWebGPU
             return 0;
         });
 
-    private static async void RunBrowser(Instance instance, string name, int width, int height, Func<RunContext, Task> callback)
+    private static async Task RunBrowser(Instance instance, string name, int width, int height, Func<RunContext, Task> callback)
     {
         SDL_SetMainReady();
-        if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+        if (SDL_Init(INITI_ARGS) < 0)
         {
             Console.Error.WriteLine($"Could not initialize SDL! Error: {SDL_GetError()}");
         }
