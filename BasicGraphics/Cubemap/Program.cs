@@ -77,7 +77,7 @@ return Run("Cubemap", WIDTH, HEIGHT, async runContext =>
     });
     verticesBuffer.Unmap();
 
-    var pipeline = device.CreateRenderPipelineSync(
+    var pipeline = await device.CreateRenderPipelineAsync(
         new()
         {
             Layout = null, // Auto-layout
@@ -290,7 +290,10 @@ return Run("Cubemap", WIDTH, HEIGHT, async runContext =>
         passEncoder.End();
         queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
 
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });
 

@@ -71,46 +71,53 @@ public class SetupWebGPU
 
     private static async Task RunBrowser(Instance instance, string name, int width, int height, Func<RunContext, Task> callback)
     {
-        SDL_SetMainReady();
-        if (SDL_Init(INITI_ARGS) < 0)
+        try
         {
-            Console.Error.WriteLine($"Could not initialize SDL! Error: {SDL_GetError()}");
-        }
-
-        SDL_WindowFlags windowFlags = SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
-        var window = SDL_CreateWindow(name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, windowFlags);
-
-        var surface = SDLWebgpu.SDL_GetWGPUSurface(instance, window)!;
-
-        var runContext = new RunContext(instance, surface, window);
-
-        await callback(runContext);
-        EmscriptenInterop.emscriptenSetMainLoop(() =>
-        {
-            bool shouldClose = false;
-            while (SDL_PollEvent(out var @event) != 0)
+            SDL_SetMainReady();
+            if (SDL_Init(INITI_ARGS) < 0)
             {
-                bool handled = runContext.ProcessGuiEvents(@event);
-                switch (@event.type)
+                Console.Error.WriteLine($"Could not initialize SDL! Error: {SDL_GetError()}");
+            }
+
+            SDL_WindowFlags windowFlags = SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
+            var window = SDL_CreateWindow(name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, windowFlags);
+
+            var surface = SDLWebgpu.SDL_GetWGPUSurface(instance, window)!;
+
+            var runContext = new RunContext(instance, surface, window);
+
+            await callback(runContext);
+            EmscriptenInterop.emscriptenSetMainLoop(() =>
+            {
+                bool shouldClose = false;
+                while (SDL_PollEvent(out var @event) != 0)
                 {
-                    case SDL_EventType.SDL_QUIT:
-                        shouldClose = true;
-                        break;
+                    bool handled = runContext.ProcessGuiEvents(@event);
+                    switch (@event.type)
+                    {
+                        case SDL_EventType.SDL_QUIT:
+                            shouldClose = true;
+                            break;
 
-                    default:
-                        runContext.Input.HandleEvent(@event);
-                        break;
+                        default:
+                            runContext.Input.HandleEvent(@event);
+                            break;
+                    }
                 }
-            }
-            if (shouldClose)
-            {
-                EmscriptenInterop.emscripten_cancel_main_loop();
-                SDL_DestroyWindow(window);
-                SDL_Quit();
-                return;
-            }
+                if (shouldClose)
+                {
+                    EmscriptenInterop.emscripten_cancel_main_loop();
+                    SDL_DestroyWindow(window);
+                    SDL_Quit();
+                    return;
+                }
 
-            runContext.InvokeOnFrame();
-        }, 0, 1);
+                runContext.InvokeOnFrame();
+            }, 0, 1);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"An error occurred: {ex}");
+        }
     }
 }
