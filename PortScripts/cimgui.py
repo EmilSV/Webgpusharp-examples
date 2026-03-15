@@ -2,8 +2,8 @@ import os
 
 TAG = '1.91.6.1'
 
-URL_SOURCE = 'https://github.com/EmilSV/imgui_net_port_source/releases/download/main-cac3a3a/cimgui-source-package.zip'
-HASH = '5EE0C7F32323D68FD69D244BD3C00A5EA9854EEB54C4572FE876C914A625DCAA9BB1209A48E916032A73FA46B74A5BB27CEF300CBA35B97F9360E8C692BA9510'
+URL_SOURCE = 'https://github.com/EmilSV/imgui_net_port_source/releases/download/main-2c6ed35/cimgui-source-package.zip'
+HASH = '76225136132becb011a64a10b6cb3e075ed5a994202c13d69527ba8c7d7e037dc02420621676a95c97842ba1c2e29141a3b60c02a873e20b14f3b6f0c13c770f'
 
 # contrib port information (required)
 URL = 'https://github.com/cimgui/cimgui/'
