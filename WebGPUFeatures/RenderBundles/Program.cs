@@ -193,8 +193,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async runContext =>
 
     Texture planetTexture;
     {
-        var imageStream = ResourceUtils.GetEmbeddedResourceStream("RenderBundles.assets.img.saturn.jpg", executingAssembly);
-        var imageData = ResourceUtils.LoadImage(imageStream!);
+        var imageData = ResourceUtils.LoadImageJpegFromManifestResource(executingAssembly, "RenderBundles.assets.img.saturn.jpg");
 
         planetTexture = device.CreateTexture(new()
         {
@@ -217,8 +216,7 @@ return Run("Render Bundles", WIDTH, HEIGHT, async runContext =>
 
     Texture moonTexture;
     {
-        var imageStream = ResourceUtils.GetEmbeddedResourceStream("RenderBundles.assets.img.moon.jpg", executingAssembly);
-        var imageData = ResourceUtils.LoadImage(imageStream!);
+        var imageData = ResourceUtils.LoadImageJpegFromManifestResource(executingAssembly, "RenderBundles.assets.img.moon.jpg");
 
         moonTexture = device.CreateTexture(new()
         {

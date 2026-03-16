@@ -147,8 +147,8 @@ return Run("TexturedCube", WIDTH, HEIGHT, async runContext =>
 
     Texture cubeTexture;
     {
-        var (data, width, height) = ResourceUtils.LoadImage(
-            executingAssembly.GetManifestResourceStream("TexturedCube.assets.Di-3d.png")!
+        var (data, width, height) = ResourceUtils.LoadImagePngFromManifestResource(
+            executingAssembly, "TexturedCube.assets.Di-3d.png"
         );
         var textureSize = new Extent3D((uint)width, (uint)height);
         cubeTexture = device.CreateTexture(new()

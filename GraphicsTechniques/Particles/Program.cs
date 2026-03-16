@@ -244,8 +244,7 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
 
     // Texture
     bool IsPowerOf2(long v) => (Math.Log2(v) % 1) == 0;
-    var imageStream = ResourceUtils.GetEmbeddedResourceStream("Particles.assets.img.webgpu.png", asm);
-    var imageData = ResourceUtils.LoadImage(imageStream!);
+    var imageData = ResourceUtils.LoadImagePngFromManifestResource(asm, "Particles.assets.img.webgpu.png");
     Debug.Assert(imageData.Width == imageData.Height, "image must be square");
     Debug.Assert(IsPowerOf2(imageData.Width), "image must be a power of 2");
 

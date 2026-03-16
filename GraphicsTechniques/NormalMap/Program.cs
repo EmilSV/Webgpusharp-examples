@@ -82,8 +82,7 @@ CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool tex
 
 Texture LoadAndCreateTexture(Device device, string path)
 {
-    var stream = asm.GetManifestResourceStream(path);
-    var imageData = ResourceUtils.LoadImage(stream!);
+    var imageData = ResourceUtils.LoadImagePngFromManifestResource(asm, path);
     var texture = device.CreateTexture(new()
     {
         Size = new(imageData.Width, imageData.Height, 1),

@@ -165,9 +165,7 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
 
     // Fetch the image and upload it into a GPUTexture.
     Texture cubeTexture;
-
-    using var imageStream = ResourceUtils.GetEmbeddedResourceStream("Cameras.assets.Di-3d.png", asm);
-    var imageBitmap = ResourceUtils.LoadImage(imageStream!);
+    var imageBitmap = ResourceUtils.LoadImagePngFromManifestResource(asm, "Cameras.assets.Di-3d.png");
 
     cubeTexture = device.CreateTexture(new()
     {

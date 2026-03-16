@@ -14,9 +14,7 @@ const uint BatchSize = 4;
 var assembly = Assembly.GetExecutingAssembly();
 var blurWGSL = ResourceUtils.GetEmbeddedResource("ImageBlur.shaders.blur.wgsl", assembly);
 var fullscreenTexturedQuadWGSL = ResourceUtils.GetEmbeddedResource("ImageBlur.shaders.fullscreenTexturedQuad.wgsl", assembly);
-using var imageStream = assembly.GetManifestResourceStream("ImageBlur.assets.Di-3d.png")
-	?? throw new InvalidOperationException("Image asset 'Di-3d.png' not found.");
-var sourceImageData = ResourceUtils.LoadImage(imageStream);
+var sourceImageData = ResourceUtils.LoadImagePngFromManifestResource(assembly, "ImageBlur.assets.Di-3d.png");
 var windowWidth = (int)sourceImageData.Width;
 var windowHeight = (int)sourceImageData.Height;
 var settings = new BlurSettings();

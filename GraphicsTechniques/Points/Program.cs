@@ -28,7 +28,7 @@ var fixedSizePointsVertWGSL = ToBytes(asm.GetManifestResourceStream("Points.shad
 var orangeFragWGSL = ToBytes(asm.GetManifestResourceStream("Points.shaders.orange.frag.wgsl")!);
 var texturedFragWGSL = ToBytes(asm.GetManifestResourceStream("Points.shaders.textured.frag.wgsl")!);
 
-var butterflyImage = ResourceUtils.LoadImage(asm.GetManifestResourceStream("Points.assets.img.Butterfly.png")!);
+var butterflyImage = ResourceUtils.LoadImagePngFromManifestResource(asm, "Points.assets.img.Butterfly.png");
 
 var settings = new Settings()
 {

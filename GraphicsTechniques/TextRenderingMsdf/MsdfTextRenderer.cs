@@ -160,7 +160,7 @@ sealed class MsdfTextRenderer
 
     private Texture LoadTexture(Stream stream, string label)
     {
-        var imageData = ResourceUtils.LoadImage(stream);
+        var imageData = ResourceUtils.LoadImagePng(stream);
         var texture = Device.CreateTexture(new()
         {
             Label = label,

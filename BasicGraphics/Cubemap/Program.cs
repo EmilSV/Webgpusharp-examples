@@ -155,8 +155,7 @@ return Run("Cubemap", WIDTH, HEIGHT, async runContext =>
         var imgTasks = imgSrcs
             .Select(imagePath =>
             {
-                var stream = executingAssembly.GetManifestResourceStream(imagePath)!;
-                var data = ResourceUtils.LoadImage(stream);
+                var data = ResourceUtils.LoadImageJpegFromManifestResource(executingAssembly, imagePath);
                 return (width: data.Width, height: data.Height, bytes: data.Data);
             })
             .ToArray();
