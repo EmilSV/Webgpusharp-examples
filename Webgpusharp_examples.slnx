@@ -52,4 +52,5 @@
     <Project Path="GuiSetup/GuiSetup.csproj" />
     <Project Path="Setup/Setup.csproj" />
     <Project Path="WebGPUSharp/WebGpuSharp.csproj" />
+    <Project Path="ImGui_net\src\ImGui.NET\ImGui.NET.csproj" />
 </Solution>

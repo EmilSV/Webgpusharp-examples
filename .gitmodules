@@ -1,3 +1,6 @@
 [submodule "WebGPUSharp"]
 	path = WebGPUSharp
 	url = https://github.com/EmilSV/WebGPUSharp.git
+[submodule "ImGui_net"]
+	path = ImGui_net
+	url = https://github.com/EmilSV/ImGui.NET.git

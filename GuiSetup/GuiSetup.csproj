@@ -8,21 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
     <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ImGui_net\src\ImGui.NET\ImGui.NET.csproj" />
     <ProjectReference Include="..\Setup\Setup.csproj" />
     <ProjectReference Include="..\WebGPUSharp\WebGpuSharp.csproj" />
   </ItemGroup>
   
-  <ItemGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
-    <NativeFileReference Include="imgui_sources\imgui.cpp" />
-    <NativeFileReference Include="imgui_sources\imgui_draw.cpp"/>
-    <NativeFileReference Include="imgui_sources\imgui_tables.cpp" />
-    <NativeFileReference Include="imgui_sources\imgui_widgets.cpp" />
-    <NativeFileReference Include="imgui_sources\cimgui.cpp" />
-  </ItemGroup>
-
 </Project>
