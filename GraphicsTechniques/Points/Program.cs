@@ -398,7 +398,10 @@ return Run("Points", WIDTH, HEIGHT, async runContext =>
 
         query.Submit([commandBuffer, guiCommandBuffer]);
 
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
 
     };
 

@@ -251,6 +251,9 @@ return Run("TexturedCube", WIDTH, HEIGHT, async runContext =>
         passEncoder.End();
         queue.Submit([commandEncoder.Finish()]);
 
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });

@@ -373,7 +373,10 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
             queue.Submit(drawCommands);
         }
 
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });
 

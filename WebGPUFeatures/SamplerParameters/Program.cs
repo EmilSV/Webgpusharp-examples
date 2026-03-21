@@ -570,7 +570,10 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async runContext =
 
         // Submit
         queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });
 

@@ -435,7 +435,10 @@ return Run("Conway's Game of Life", WIDTH, HEIGHT, async runContext =>
             var guiCommandBuffer = DrawGui(guiContext, surface, out var newResetGameState);
             shouldResetGameState |= newResetGameState;
             query.Submit([commandEncoder.Finish(), guiCommandBuffer]);
-            surface.Present();
+            if (!OperatingSystem.IsBrowser())
+            {
+                surface.Present();
+            }
         };
     }
 

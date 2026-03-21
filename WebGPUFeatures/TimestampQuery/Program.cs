@@ -272,6 +272,9 @@ return Run("Timestamp Query", WIDTH, HEIGHT, async runContext =>
         // Try to download the time stamp.
         timestampQueryManager.TryInitiateTimestampDownload();
 
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });

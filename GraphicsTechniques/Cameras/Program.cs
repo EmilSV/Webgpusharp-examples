@@ -302,7 +302,10 @@ return Run("Cameras", WIDTH, HEIGHT, async runContext =>
 
 
         query.Submit([commandEncoder.Finish(), guiCommandBuffer]);
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });
 

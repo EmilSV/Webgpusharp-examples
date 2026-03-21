@@ -605,6 +605,9 @@ return Run("Stencil Mask", WIDTH, HEIGHT, async runContext =>
         DrawScene(encoder, loadPassDesc, stencilMaskPipeline, scene6, 6);
 
         queue.Submit([encoder.Finish()]);
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });

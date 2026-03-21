@@ -738,7 +738,10 @@ return Run("A-Buffer", WIDTH, HEIGHT, async runContext =>
 
             queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
 
-            surface.Present();
+            if (!OperatingSystem.IsBrowser())
+            {
+                surface.Present();
+            }
         };
     }
 

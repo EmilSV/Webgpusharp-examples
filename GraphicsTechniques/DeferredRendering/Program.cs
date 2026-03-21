@@ -748,7 +748,10 @@ return Run("Deferred Rendering", WIDTH, HEIGHT, async runContext =>
         }
 
         queue.Submit([commandEncoder.Finish(), guiCommanderBuffer]);
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 
 });

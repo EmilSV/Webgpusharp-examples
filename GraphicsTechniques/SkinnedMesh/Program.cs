@@ -553,7 +553,10 @@ return Run("Skinned Mesh", WIDTH, HEIGHT, async runContext =>
 
         var guiCommandBuffer = DrawGui(guiContext, queue, generalUniformsBuffer, surface, whaleScene);
         queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     }
 
     runContext.OnFrame += Frame;

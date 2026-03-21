@@ -482,6 +482,9 @@ return Run("Shadow Mapping", WIDTH, HEIGHT, async runContext =>
         }
 
         queue.Submit([commandEncoder.Finish()]);
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });

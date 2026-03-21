@@ -511,7 +511,10 @@ return Run("Particles", WIDTH, HEIGHT, async runContext =>
         var guiCommandBuffer = DrawGui(guiContext, surface);
 
         query.Submit([commandEncoder.Finish(), guiCommandBuffer]);
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     }
     configureContext();
     runContext.OnFrame += Frame;

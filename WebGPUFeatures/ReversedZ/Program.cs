@@ -832,7 +832,10 @@ return Run("Reversed Z", WIDTH, HEIGHT, async runContext =>
         var guiBuffer = settings.DrawGUI(guiContext, surface);
 
         queue.Submit([commandEncoder.Finish(), guiBuffer]);
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });
 

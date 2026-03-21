@@ -382,7 +382,10 @@ return Run("Normal Map", WIDTH, HEIGHT, async runContext =>
 
         queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
 
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });
 

@@ -577,7 +577,10 @@ return Run("Primitive Picking", WIDTH, HEIGHT, async runContext =>
         var guiCommandBuffer = DrawGui(guiContext, surface);
 
         queue.Submit([commandEncoder.Finish(), guiCommandBuffer]);
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     }
     runContext.OnFrame += Frame;
 });
