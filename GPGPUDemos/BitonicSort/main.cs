@@ -10,6 +10,7 @@ using WebGpuSharp;
 using static Setup.SetupWebGPU;
 using Buffer = WebGpuSharp.Buffer;
 using GuiSetup;
+using System.Threading.Tasks;
 
 const int WindowWidth = 1200;
 const int WindowHeight = 900;
@@ -259,7 +260,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         ],
     });
 
-    var computePipeline = device.CreateComputePipelineSync(new()
+    var computePipeline = await device.CreateComputePipelineAsync(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {
@@ -274,7 +275,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         },
     });
 
-    var atomicToZeroComputePipeline = device.CreateComputePipelineSync(new()
+    var atomicToZeroComputePipeline = await device.CreateComputePipelineAsync(new()
     {
         Layout = device.CreatePipelineLayout(new()
         {
@@ -683,7 +684,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
     int isStillExecutingFrame = 0;
 
-    void Frame()
+    async void Frame()
     {
         var previousValue = Interlocked.Exchange(ref isStillExecutingFrame, 1);
         if (previousValue == 1)
@@ -836,8 +837,10 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
             highestBlockHeight < settings.TotalElements * 4
         )
         {
-            elementsStagingBuffer.MapSync(MapMode.Read, 0, (nuint)elementBufferSize);
-            atomicSwapsStagingBuffer.MapSync(MapMode.Read, 0, sizeof(uint));
+            var elementsStagingBufferTask = elementsStagingBuffer.MapAsync(MapMode.Read, 0, (nuint)elementBufferSize);
+            var atomicSwapsStagingBufferTask = atomicSwapsStagingBuffer.MapAsync(MapMode.Read, 0, sizeof(uint));
+
+            await Task.WhenAll(elementsStagingBufferTask, atomicSwapsStagingBufferTask).ConfigureAwait(false);
 
             Buffer.DoReadWriteOperation([elementsStagingBuffer, atomicSwapsStagingBuffer], context =>
             {
@@ -857,7 +860,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
             // Handle timestamp query stuff
             if (timestampQueryAvailable)
             {
-                timestampQueryResultBuffer!.MapSync(MapMode.Read, 0, sizeof(long) * 2);
+                await timestampQueryResultBuffer!.MapAsync(MapMode.Read, 0, sizeof(long) * 2).ConfigureAwait(false);
                 timestampQueryResultBuffer.GetConstMappedRange<long>(data =>
                 {
                     // Calculate new step, sort, and average sort times
@@ -887,7 +890,10 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
         settings.ExecuteStep = false;
 
-        surface.Present();
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
         isStillExecutingFrame = 0;
     }
 

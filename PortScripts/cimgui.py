@@ -19,7 +19,7 @@ def get(ports, settings, shared):
   ports.fetch_project(port_name, URL_SOURCE, sha512hash=HASH)
 
   def create(final):
-    root_path = os.path.join(ports.get_dir(), port_name, f'cimgui-{TAG}')
+    root_path = os.path.join(ports.get_dir(), port_name)
     source_path = os.path.join(root_path, 'cimgui')
     cimgui_path = source_path
     imgui_path = os.path.join(root_path, 'imgui')

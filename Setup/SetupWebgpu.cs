@@ -89,30 +89,40 @@ public class SetupWebGPU
             await callback(runContext);
             EmscriptenInterop.emscriptenSetMainLoop(() =>
             {
-                bool shouldClose = false;
-                while (SDL_PollEvent(out var @event) != 0)
+                try
                 {
-                    bool handled = runContext.ProcessGuiEvents(@event);
-                    switch (@event.type)
+                    bool shouldClose = false;
+                    while (SDL_PollEvent(out var @event) != 0)
                     {
-                        case SDL_EventType.SDL_QUIT:
-                            shouldClose = true;
-                            break;
+                        bool handled = runContext.ProcessGuiEvents(@event);
+                        switch (@event.type)
+                        {
+                            case SDL_EventType.SDL_QUIT:
+                                shouldClose = true;
+                                break;
 
-                        default:
-                            runContext.Input.HandleEvent(@event);
-                            break;
+                            default:
+                                runContext.Input.HandleEvent(@event);
+                                break;
+                        }
                     }
+                    if (shouldClose)
+                    {
+                        EmscriptenInterop.emscripten_cancel_main_loop();
+                        SDL_DestroyWindow(window);
+                        SDL_Quit();
+                        return;
+                    }
+
+                    runContext.InvokeOnFrame();
                 }
-                if (shouldClose)
+                catch (Exception ex)
                 {
+                    Console.Error.WriteLine($"An error occurred in the main loop: {ex}");
                     EmscriptenInterop.emscripten_cancel_main_loop();
                     SDL_DestroyWindow(window);
                     SDL_Quit();
-                    return;
                 }
-
-                runContext.InvokeOnFrame();
             }, 0, 1);
         }
         catch (Exception ex)

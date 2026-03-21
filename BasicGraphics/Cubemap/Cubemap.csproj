@@ -44,4 +44,20 @@
     <PropertyGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
         <EmccFlags>--use-port=emdawnwebgpu --use-port=sdl2 --use-port="$(MSBuildThisFileDirectory)../../PortScripts/cimgui.py" -sEXPORTED_RUNTIME_METHODS=HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64 $(ExtraEmccFlags)</EmccFlags>
     </PropertyGroup>
+
+    <PropertyGroup>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
+        <TrimmerSingleWarn>false</TrimmerSingleWarn>
+        <PublishTrimmed>true</PublishTrimmed>
+        <IlcDisableReflection>true</IlcDisableReflection>
+        <DebuggerSupport>false</DebuggerSupport>
+        <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+        <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+        <EventSourceSupport>false</EventSourceSupport>
+        <Http3Support>false</Http3Support>
+        <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+        <MetricsSupport>false</MetricsSupport>
+        <StackTraceSupport>false</StackTraceSupport>
+    </PropertyGroup>
 </Project>

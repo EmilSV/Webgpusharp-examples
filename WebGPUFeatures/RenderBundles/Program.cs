@@ -464,6 +464,9 @@ return Run("Render Bundles", WIDTH, HEIGHT, async runContext =>
     fpsTimer.BeginRecording();
     runContext.OnFrame += () =>
     {
+        fpsTimer.FrameEnd();
+        frameTimeStats.EndFrame();
+
         var transformationMatrix = GetTransformationMatrix();
         queue.WriteBuffer(uniformBuffer, 0, transformationMatrix);
 
@@ -512,10 +515,11 @@ return Run("Render Bundles", WIDTH, HEIGHT, async runContext =>
         }
 
         device.GetQueue().Submit([commandEncoder.Finish(), guiCommanderBuffer]);
-        surface.Present();
 
-        fpsTimer.FrameEnd();
-        frameTimeStats.EndFrame();
+        if(!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });
 

@@ -237,8 +237,10 @@ return Run(
             );
 
             queue.Submit(commandEncoder.Finish());
-
-            surface.Present();
+            if (!OperatingSystem.IsBrowser())
+            {
+                surface.Present();
+            }
         };
     }
 );
