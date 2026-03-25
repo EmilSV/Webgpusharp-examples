@@ -1,14 +1,6 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-    <ItemGroup>
-        <ProjectReference Include="..\..\GuiSetup\GuiSetup.csproj" />
-        <ProjectReference Include="..\..\Setup\Setup.csproj"/>
-        <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj"/>
-        <EmbeddedResource Include="shaders\**\*.wgsl"/>
-        <EmbeddedResource Include="assets\**\*.png"/>
-        <EmbeddedResource Include="assets\**\*.jpg"/>
-    </ItemGroup>
-    <PropertyGroup>
+    <PropertyGroup Condition="$(RuntimeIdentifier) != 'browser-wasm'">
         <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -16,8 +8,59 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <PublishAot>true</PublishAot>
     </PropertyGroup>
+    <PropertyGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
+        <TargetFramework>net10.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <PublishTrimmed>true</PublishTrimmed>
+        <SelfContained>true</SelfContained>
+        <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
+        <WasmBuildNative>true</WasmBuildNative>
+        <WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>
+    </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2"/>
         <PackageReference Include="ppy.SDL2-CS" Version="1.0.82"/>
     </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\GuiSetup\GuiSetup.csproj"/>
+        <ProjectReference Include="..\..\Setup\Setup.csproj"/>
+        <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj"/>
+        <EmbeddedResource Include="shaders\**\*.wgsl"/>
+        <EmbeddedResource Include="assets\**\*.png"/>
+        <EmbeddedResource Include="assets\**\*.jpg"/>
+    </ItemGroup>
+    <ItemGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
+        <PackageReference Include="Microsoft.DotNet.ILCompiler.LLVM" Version="10.0.0-*"/>
+        <PackageReference Include="runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.DotNet.ILCompiler.LLVM" Version="10.0.0-*"/>
+        <DirectPInvoke Include="webgpu_dawn"/>
+        <DirectPInvoke Include="emscripten"/>
+        <DirectPInvoke Include="SDL2"/>
+        <DirectPInvoke Include="cimgui"/>
+    </ItemGroup>
+    <PropertyGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
+        <EmccFlags>--use-port=emdawnwebgpu --use-port=sdl2 --use-port="$(MSBuildThisFileDirectory)../../PortScripts/cimgui.py" -sEXPORTED_RUNTIME_METHODS=HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64 $(ExtraEmccFlags)</EmccFlags>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
+        <TrimmerSingleWarn>false</TrimmerSingleWarn>
+        <PublishTrimmed>true</PublishTrimmed>
+        <IlcDisableReflection>true</IlcDisableReflection>
+        <DebuggerSupport>false</DebuggerSupport>
+        <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+        <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+        <EventSourceSupport>false</EventSourceSupport>
+        <Http3Support>false</Http3Support>
+        <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+        <MetricsSupport>false</MetricsSupport>
+        <StackTraceSupport>false</StackTraceSupport>
+        <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+        <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
+        <OptimizationPreference>Size</OptimizationPreference>
+        <DebugType>none</DebugType>
+        <DebugSymbols>false</DebugSymbols>
+        <UseSystemResourceKeys>true</UseSystemResourceKeys>
+        <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+    </PropertyGroup>
 </Project>
