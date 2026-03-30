@@ -1,5 +1,25 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup Condition="$(RuntimeIdentifier) != 'browser-wasm'">
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <PublishAot>true</PublishAot>
+    </PropertyGroup>
+    <PropertyGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
+        <TargetFramework>net10.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <PublishTrimmed>true</PublishTrimmed>
+        <SelfContained>true</SelfContained>
+        <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
+        <WasmBuildNative>true</WasmBuildNative>
+        <WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>
+    </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="..\..\GuiSetup\GuiSetup.csproj"/>
         <ProjectReference Include="..\..\WebGPUSharp\WebGpuSharp.csproj"/>
@@ -9,14 +29,6 @@
         <EmbeddedResource Include="assets\**\*.jpg"/>
         <EmbeddedResource Include="assets\**\*.bin"/>
     </ItemGroup>
-    <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <PublishAot>true</PublishAot>
-    </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2"/>
         <PackageReference Include="ppy.SDL2-CS" Version="1.0.82"/>
