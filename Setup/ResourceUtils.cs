@@ -56,6 +56,11 @@ public static class ResourceUtils
 
     public static ImageData LoadImagePng(Stream stream)
     {
+        if(OperatingSystem.IsBrowser())
+        {
+            return StbImage.LoadImagePng(stream);
+        }
+
         return LoadImage(stream, pngDecoder);
     }
 

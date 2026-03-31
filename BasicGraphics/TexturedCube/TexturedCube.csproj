@@ -35,29 +35,9 @@
         <DirectPInvoke Include="webgpu_dawn"/>
         <DirectPInvoke Include="emscripten"/>
         <DirectPInvoke Include="SDL2"/>
-        <DirectPInvoke Include="cimgui"/>
+        <DirectPInvoke Include="stb_image"/>
     </ItemGroup>
     <PropertyGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
-        <EmccFlags>--use-port=emdawnwebgpu --use-port=sdl2 -sEXPORTED_RUNTIME_METHODS=HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64 $(ExtraEmccFlags)</EmccFlags>
-        <InvariantGlobalization>true</InvariantGlobalization>
-        <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
-        <TrimmerSingleWarn>false</TrimmerSingleWarn>
-        <PublishTrimmed>true</PublishTrimmed>
-        <IlcDisableReflection>true</IlcDisableReflection>
-        <DebuggerSupport>false</DebuggerSupport>
-        <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
-        <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
-        <EventSourceSupport>false</EventSourceSupport>
-        <Http3Support>false</Http3Support>
-        <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
-        <MetricsSupport>false</MetricsSupport>
-        <StackTraceSupport>false</StackTraceSupport>
-        <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
-        <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
-        <OptimizationPreference>Size</OptimizationPreference>
-        <DebugType>none</DebugType>
-        <DebugSymbols>false</DebugSymbols>
-        <UseSystemResourceKeys>true</UseSystemResourceKeys>
-        <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+        <EmccFlags>--use-port=emdawnwebgpu --use-port=sdl2 -sSTB_IMAGE -sEXPORTED_RUNTIME_METHODS=HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64 $(ExtraEmccFlags)</EmccFlags>
     </PropertyGroup>
 </Project>

@@ -1,7 +1,6 @@
 using System;
 using System.Text;
 using Setup;
-using Utf8StringInterpolation;
 using WebGpuSharp;
 
 namespace Cornell;
