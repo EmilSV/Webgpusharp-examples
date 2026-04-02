@@ -37,9 +37,10 @@
         <DirectPInvoke Include="webgpu_dawn"/>
         <DirectPInvoke Include="emscripten"/>
         <DirectPInvoke Include="SDL2"/>
+        <DirectPInvoke Include="stb_image"/>
     </ItemGroup>
     <PropertyGroup Condition="$(RuntimeIdentifier) == 'browser-wasm'">
-        <EmccFlags>--use-port=emdawnwebgpu --use-port=sdl2 -sEXPORTED_RUNTIME_METHODS=HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64 $(ExtraEmccFlags)</EmccFlags>
+        <EmccFlags>--use-port=emdawnwebgpu --use-port=sdl2 -sSTB_IMAGE -sEXPORTED_RUNTIME_METHODS=HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64 $(ExtraEmccFlags)</EmccFlags>
         <InvariantGlobalization>true</InvariantGlobalization>
         <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
         <TrimmerSingleWarn>false</TrimmerSingleWarn>

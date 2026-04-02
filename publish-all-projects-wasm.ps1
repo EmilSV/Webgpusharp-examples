@@ -153,6 +153,25 @@ function Get-PublishDirectory {
         Select-Object -First 1
 }
 
+function Get-PublishContentDirectory {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PublishDirectory,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectName
+    )
+
+    $childDirectories = @(Get-ChildItem -Path $PublishDirectory -Directory -Force -ErrorAction SilentlyContinue)
+    $childFiles = @(Get-ChildItem -Path $PublishDirectory -File -Force -ErrorAction SilentlyContinue)
+
+    if ($childDirectories.Count -eq 1 -and $childFiles.Count -eq 0 -and $childDirectories[0].Name -eq $ProjectName) {
+        return $childDirectories[0].FullName
+    }
+
+    return $PublishDirectory
+}
+
 function Assert-PublishArtifacts {
     param(
         [Parameter(Mandatory = $true)]
@@ -202,7 +221,7 @@ try {
     foreach ($project in $projects) {
         $normalizedProjectPath = Convert-ToPlatformPath -Path $project
         $projectPath = Join-Path $scriptDir $normalizedProjectPath
-        $projectName = [System.IO.Path]::GetFileNameWithoutExtension($project)
+        $projectName = [System.IO.Path]::GetFileNameWithoutExtension($normalizedProjectPath)
         $projectDirectory = Split-Path $projectPath -Parent
         $projectGroup = Get-ProjectGroupName -ProjectRelativePath $project
         $destinationDirectory = Join-Path (Join-Path $resolvedOutputRoot $projectGroup) $projectName
@@ -238,14 +257,16 @@ try {
             throw "Could not locate browser-wasm publish output for project: $projectName"
         }
 
-        Assert-PublishArtifacts -PublishDirectory $publishDirectory.FullName
+        $publishContentDirectory = Get-PublishContentDirectory -PublishDirectory $publishDirectory.FullName -ProjectName $projectName
+
+        Assert-PublishArtifacts -PublishDirectory $publishContentDirectory
 
         if (Test-Path $destinationDirectory) {
             Remove-Item -Path $destinationDirectory -Recurse -Force
         }
 
         New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
-        Copy-Item -Path (Join-Path $publishDirectory.FullName "*") -Destination $destinationDirectory -Recurse -Force
+        Copy-Item -Path (Join-Path $publishContentDirectory "*") -Destination $destinationDirectory -Recurse -Force
 
         Assert-PublishArtifacts -PublishDirectory $destinationDirectory
 
@@ -280,5 +301,3 @@ catch {
     Write-Host "========================================" -ForegroundColor Red
     exit 1
 }
-
-wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb

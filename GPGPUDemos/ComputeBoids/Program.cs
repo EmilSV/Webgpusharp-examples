@@ -367,7 +367,6 @@ return Run("Compute Boids", WIDTH, HEIGHT, async runContext =>
         }
 
         device.GetQueue().Submit([commandEncoder.Finish(), guiCommanderBuffer]);
-        surface.Present();
 
         if (hasTimestampQuery)
         {
@@ -410,6 +409,11 @@ return Run("Compute Boids", WIDTH, HEIGHT, async runContext =>
             });
         }
         ++t;
+
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
+        }
     };
 });
 
