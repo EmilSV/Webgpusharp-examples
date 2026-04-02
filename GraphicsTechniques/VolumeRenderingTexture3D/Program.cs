@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.IO.Compression;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -10,6 +9,7 @@ using ImGuiNET;
 using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
+using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 
 const int WIDTH = 960;
 const int HEIGHT = 540;
@@ -240,11 +240,14 @@ return Run("Volume Rendering (Texture 3D)", WIDTH, HEIGHT, async runContext =>
             return false;
         }
 
+
+
         using var compressedData = ResourceUtils.GetEmbeddedResourceStream(imageInfo.ResourceName, asm)
             ?? throw new Exception($"Missing resource '{imageInfo.ResourceName}'");
-        using var gzipStream = new GZipStream(compressedData, CompressionMode.Decompress);
+
+        using var inflater = new InflaterInputStream(compressedData);
         using var output = new MemoryStream();
-        gzipStream.CopyTo(output);
+        inflater.CopyTo(output);
         var decompressedData = output.ToArray();
 
         var blocksWide = (uint)Math.Ceiling(VOLUME_WIDTH / (double)imageInfo.BlockLength);
