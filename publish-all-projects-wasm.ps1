@@ -51,7 +51,8 @@ $graphicsTechniquesProjects = @(
     "GraphicsTechniques\SkinnedMesh\SkinnedMesh.csproj",
     "GraphicsTechniques\StencilMask\StencilMask.csproj",
     "GraphicsTechniques\TextRenderingMsdf\TextRenderingMsdf.csproj",
-    "GraphicsTechniques\VolumeRenderingTexture3D\VolumeRenderingTexture3D.csproj"
+    "GraphicsTechniques\VolumeRenderingTexture3D\VolumeRenderingTexture3D.csproj",
+    "GraphicsTechniques\Wireframe\Wireframe.csproj"
 )
 
 function Get-ScriptRoot {
