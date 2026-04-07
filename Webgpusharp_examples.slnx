@@ -43,6 +43,7 @@
         <Project Path="WebGPUFeatures/TimestampQuery/TimestampQuery.csproj" />
         <Project Path="WebGPUFeatures/OcclusionQuery/OcclusionQuery.csproj" />
         <Project Path="WebGPUFeatures/SamplerParameters/SamplerParameters.csproj" />
+        <Project Path="WebGPUFeatures/Blending/Blending.csproj" />
     </Folder>
     <Folder Name="/WebGPUSharp/" />
     <Project Path="GuiSetup/GuiSetup.csproj" />

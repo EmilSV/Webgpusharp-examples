@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Frozen;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -22,17 +23,32 @@ public static partial class ImGuiUtils
         return SentenceCaseRegex().Replace(str, m => $"{m.Value[0]} {char.ToLower(m.Value[1])}");
     }
 
+    private static string ToDisplayString<T>(string value)
+        where T : struct, Enum
+    {
+        var memberInfo = typeof(T).GetMember(value)[0];
+        var attr = memberInfo.GetCustomAttribute<ImGuiDisplayNameAttribute>();
+        if (attr != null)
+        {
+            return attr.DisplayString;
+        }
+        else
+        {
+            return value.ToSentenceCase();
+        }
+
+    }
+
     private static class EnumTypeStore<T>
         where T : struct, Enum
     {
-        public static readonly string[] Names = Enum.GetNames<T>().Select(name => name.ToSentenceCase()).ToArray();
+        public static readonly string[] Names = Enum.GetNames<T>().Select(ToDisplayString<T>).ToArray();
         public static readonly T[] Values = Enum.GetValues<T>();
         public static readonly FrozenDictionary<T, int> ValueToIndex =
             FrozenDictionary.ToFrozenDictionary(Values.Select((value, index) => KeyValuePair.Create(value, index)));
 
         public static readonly FrozenDictionary<T, string> ValueToName =
             FrozenDictionary.ToFrozenDictionary(Values.Select((value, index) => KeyValuePair.Create(value, Names[index])));
-
     }
 
     public static bool EnumDropdown<T>(ReadOnlySpan<char> label, ref T current)
