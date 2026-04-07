@@ -52,6 +52,9 @@ BlendComponent colorBlend = presets[currentPreset].Color;
 BlendComponent alphaBlend = presets[currentPreset].Alpha ?? colorBlend;
 Vector3 constantColor = new(1f, 0.5f, 0.25f);
 float constantAlpha = 1f;
+Vector3 clearColor = Vector3.Zero;
+float clearAlpha = 0f;
+bool premultiplyClearColor = true;
 TextureSetType currentTextureSet = TextureSetType.PremultipliedAlpha;
 
 void ApplyPreset()
@@ -133,6 +136,12 @@ CommandBuffer DrawGui(
 	{
 		ImGui.ColorEdit3("color##constant", ref constantColor);
 		ImGui.SliderFloat("alpha##constant", ref constantAlpha, 0f, 1f);
+	}
+	if (ImGui.CollapsingHeader("clear color", ImGuiTreeNodeFlags.DefaultOpen))
+	{
+		ImGui.Checkbox("premultiply##clear", ref premultiplyClearColor);
+		ImGui.ColorEdit3("color##clear", ref clearColor);
+		ImGui.SliderFloat("alpha##clear", ref clearAlpha, 0f, 1f);
 	}
 
 	ImGui.End();
@@ -434,6 +443,17 @@ return Run("Blending", WIDTH, HEIGHT, async runContext =>
 
 		var encoder = device.CreateCommandEncoder(new() { Label = "render quad encoder" });
 
+		Color clearValue;
+		{
+			var mult = premultiplyClearColor ? clearAlpha : 1f;
+			clearValue = new(
+				r: clearColor.X * mult,
+				g: clearColor.Y * mult,
+				b: clearColor.Z * mult,
+				a: clearAlpha
+			);
+		}
+
 		// Pass 1: render dst+src into the intermediate texture (transparent clear, isolated from background)
 		{
 			var pass = encoder.BeginRenderPass(new()
@@ -444,7 +464,7 @@ return Run("Blending", WIDTH, HEIGHT, async runContext =>
 					new()
 					{
 						View = intermediateView,
-						ClearValue = new Color(0, 0, 0, 0),
+						ClearValue = clearValue,
 						LoadOp = LoadOp.Clear,
 						StoreOp = StoreOp.Store,
 					},
