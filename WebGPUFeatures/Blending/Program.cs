@@ -9,8 +9,8 @@ using WebGpuSharp;
 using static Setup.SetupWebGPU;
 using GPUBuffer = WebGpuSharp.Buffer;
 
-const int WIDTH = 600;
-const int HEIGHT = 600;
+const int WIDTH = 750;
+const int HEIGHT = 750;
 
 var executingAssembly = Assembly.GetExecutingAssembly();
 
@@ -113,7 +113,7 @@ CommandBuffer DrawGui(
 
 	guiContext.NewFrame();
 	ImGui.SetNextWindowBgAlpha(0.85f);
-	ImGui.SetNextWindowPos(new(300, 10));
+	ImGui.SetNextWindowPos(new(410, 10));
 	ImGui.SetNextWindowSize(new(340, 0));
 	ImGui.Begin("Blending", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.AlwaysAutoResize);
 
@@ -377,7 +377,7 @@ return Run("Blending", WIDTH, HEIGHT, async runContext =>
 	var intermediateTexture = device.CreateTexture(new()
 	{
 		Format = surfaceFormat,
-		Size = new Extent3D(WIDTH, HEIGHT, 1),
+		Size = new(WIDTH, HEIGHT),
 		Usage = TextureUsage.TextureBinding | TextureUsage.RenderAttachment,
 	});
 	var intermediateUniformBuffer = CreateUniformBuffer();
