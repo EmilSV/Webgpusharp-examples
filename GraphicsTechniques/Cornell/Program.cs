@@ -8,8 +8,8 @@ using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
-const int WIDTH = 1280;
-const int HEIGHT = 720;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 
 
 var parameters = new Parameters();
@@ -19,7 +19,7 @@ CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(980, 0));
+    ImGui.SetNextWindowPos(new(300, 0));
     ImGui.SetNextWindowSize(new(300, 80));
     ImGui.Begin("Settings",
         ImGuiWindowFlags.NoMove |

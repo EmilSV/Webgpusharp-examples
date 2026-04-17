@@ -26,7 +26,7 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface, out bool fil
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
     ImGui.SetNextWindowPos(new(16, 16));
-    ImGui.SetNextWindowSize(new(280, 140));
+    ImGui.SetNextWindowSize(new(280, 90));
     ImGui.Begin("Image Blur", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse);
 
     int filterSize = settings.FilterSize;

@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using GuiSetup;
 using ImGuiNET;
@@ -14,7 +15,7 @@ const double VIEWPORT_GRID_SIZE = 4;
 double viewportGridStride = Math.Floor(VIEWPORT_SIZE / VIEWPORT_GRID_SIZE);
 uint viewportSize = (uint)(viewportGridStride - 2);
 
-const int WINDOW_WIDTH = 1100;
+const int WINDOW_WIDTH = 950;
 const int WINDOW_HEIGHT = 600;
 
 FilterMode[] filterModes = [FilterMode.Nearest, FilterMode.Linear];
@@ -46,7 +47,9 @@ SamplerDescriptorSettings initSamplerDescriptor = new()
     MaxAnisotropy = 1
 };
 
+
 SamplerDescriptorSettings samplerDescriptor = initSamplerDescriptor;
+long startTimestamp = Stopwatch.GetTimestamp();
 
 static byte[] ToBytes(Stream s)
 {
@@ -61,13 +64,13 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
     guiContext.NewFrame();
 
     ImGui.SetNextWindowPos(new(600, 0));
-    ImGui.SetNextWindowSize(new(500, 600));
+    ImGui.SetNextWindowSize(new(350, 600));
     ImGui.Begin("Sampler Parameters",
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize |
         ImGuiWindowFlags.NoCollapse
     );
-
+    ImGui.PushItemWidth(120.0f);
     if (ImGui.TreeNode("Presets"))
     {
         if (ImGui.Button("Reset to Initial"))
@@ -147,6 +150,7 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
         }
         ImGui.TreePop();
     }
+    ImGui.PopItemWidth();
     ImGui.End();
 
     guiContext.EndFrame();
@@ -424,13 +428,13 @@ return Run("Sampler Parameters", WINDOW_WIDTH, WINDOW_HEIGHT, async runContext =
 
     void UpdateConfigBuffer()
     {
-        float t = (float)(Stopwatch.GetElapsedTime(0, Stopwatch.GetTimestamp()).TotalSeconds * 0.5);
-        queue.WriteBuffer(bufConfig, 64, (
-            MathF.Cos(t) * config.Animation,
-            MathF.Sin(t) * config.Animation,
-            MathF.Pow(2, config.FlangeLogSize - 1) / 2f,
-            config.HighlightFlange ? 1f : 0f
-        ));
+        float t = (float)(Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp()).TotalSeconds * 0.5);
+        queue.WriteBuffer(bufConfig, (ulong)ShowTextureConfig.AnimationOffsetOffset, new ShowTextureConfig()
+        {
+            AnimationOffset = new((float)(MathF.Cos(t) * config.Animation), (float)(MathF.Sin(t) * config.Animation)),
+            FlangeSize = (float)(Math.Pow(2, config.FlangeLogSize - 1) / 2f),
+            HighlightFlange = config.HighlightFlange ? 1f : 0f
+        }, ShowTextureConfig.AnimationOffsetForwardRange);
     }
 
     const float cameraDist = 3;
@@ -595,4 +599,16 @@ struct SamplerDescriptorSettings
     public float LodMinClamp;
     public float LodMaxClamp;
     public ushort MaxAnisotropy;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+struct ShowTextureConfig
+{
+    public static int AnimationOffsetOffset = (int)Marshal.OffsetOf<ShowTextureConfig>(nameof(AnimationOffset));
+    public static Range AnimationOffsetForwardRange = AnimationOffsetOffset..;
+
+    public Matrix4x4 ViewProj;
+    public Vector2 AnimationOffset;
+    public float FlangeSize;
+    public float HighlightFlange;
 }

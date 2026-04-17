@@ -10,8 +10,8 @@ using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
-const int WIDTH = 640;
-const int HEIGHT = 480;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 const float ASPECT = (float)WIDTH / HEIGHT;
 
 static byte[] ToBytes(Stream s)

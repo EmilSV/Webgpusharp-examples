@@ -8,8 +8,8 @@ using static Setup.SetupWebGPU;
 using GPUBuffer = WebGpuSharp.Buffer;
 
 
-const int WIDTH = 800;
-const int HEIGHT = 800;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 int[] workgroupSizes = [4, 8, 16];
 string[] workgroupSizesNames = ["4", "8", "16"];
 bool shouldResetGameState = false;
@@ -35,13 +35,14 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface, out bool res
 
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(0, 0));
-    ImGui.SetNextWindowSize(new(350, 240));
+    ImGui.SetNextWindowPos(new(400, 0));
+    ImGui.SetNextWindowSize(new(200, 125));
     ImGui.Begin("Conways Game of Life",
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize |
         ImGuiWindowFlags.NoTitleBar
     );
+    ImGui.PushItemWidth(120.0f);
     int timestep = (int)gameOptions.TimeStep;
     if (ImGui.InputInt("timestep", ref timestep, step: 1))
     {
@@ -74,6 +75,7 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface, out bool res
         gameOptions.WorkgroupSize = (uint)workgroupSizes[currentItem];
         resetGameState = true;
     }
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
     return guiContext.Render(surface)!.Value!;

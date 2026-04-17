@@ -11,8 +11,8 @@ using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
 const int MAX_NUM_LIGHTS = 1024;
-const int WIDTH = 640;
-const int HEIGHT = 480;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 const float ASPECT = (float)WIDTH / HEIGHT;
 
 
@@ -40,7 +40,7 @@ CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool num
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(340, 0));
+    ImGui.SetNextWindowPos(new(300, 0));
     ImGui.SetNextWindowSize(new(300, 80));
     ImGui.Begin("Settings",
         ImGuiWindowFlags.NoMove |

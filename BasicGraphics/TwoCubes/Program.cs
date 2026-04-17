@@ -7,8 +7,8 @@ using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
-const int WIDTH = 640;
-const int HEIGHT = 480;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 
 var executingAssembly = Assembly.GetExecutingAssembly();
 var basicVertWgsl = ResourceUtils.GetEmbeddedResource("TwoCubes.shaders.basic.vert.wgsl", executingAssembly);

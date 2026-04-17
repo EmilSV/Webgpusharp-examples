@@ -10,8 +10,8 @@ using Setup;
 using WebGpuSharp;
 using static Setup.SetupWebGPU;
 
-const int WIDTH = 640;
-const int HEIGHT = 480;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 const float ASPECT = (float)WIDTH / HEIGHT;
 var asm = Assembly.GetExecutingAssembly();
 var settings = new GUISettings();
@@ -56,7 +56,7 @@ CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool tex
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize
     );
-
+    
     ImGuiUtils.EnumDropdown("Bump Mode", ref settings.BumpMode);
     textureChanged = ImGuiUtils.EnumDropdown("Texture", ref settings.Texture);
     if (ImGui.CollapsingHeader("Light"))

@@ -31,11 +31,13 @@ CommandBuffer DrawGui(
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
     ImGui.SetNextWindowPos(new(0, 0));
-    ImGui.SetNextWindowSize(new(350, 240));
+    ImGui.SetNextWindowSize(new(225, 150));
+
     ImGui.Begin("Skinned Mesh",
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize
     );
+    ImGui.PushItemWidth(120.0f);
 
     // Determine whether we want to render our whale or our skinned grid
     if (ImGuiUtils.EnumDropdown("Object", ref settings.ObjectType))
@@ -92,7 +94,7 @@ CommandBuffer DrawGui(
 
     ImGui.SliderFloat("Angle", ref settings.Angle, 0.05f, 0.5f);
     ImGui.SliderFloat("Speed", ref settings.Speed, 10, 100);
-
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
 

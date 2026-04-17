@@ -760,12 +760,13 @@ class Settings
         guiContext.NewFrame();
         settingsChanged = false;
         ImGui.SetNextWindowPos(new(0, 0), ImGuiCond.Always);
-        ImGui.SetNextWindowSize(new(350, 80), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(new(250, 60), ImGuiCond.Always);
         ImGui.SetNextWindowBgAlpha(0.3f);
         ImGui.Begin(
             "Settings",
             ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize
         );
+        ImGui.PushItemWidth(120.0f);
 
         if (ImGuiUtils.EnumDropdown("Memory Strategy", ref MemoryStrategy))
         {

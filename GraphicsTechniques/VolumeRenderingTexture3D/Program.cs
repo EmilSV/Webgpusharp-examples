@@ -11,8 +11,8 @@ using WebGpuSharp;
 using static Setup.SetupWebGPU;
 using ICSharpCode.SharpZipLib.GZip;
 
-const int WIDTH = 960;
-const int HEIGHT = 540;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 const uint VOLUME_WIDTH = 180;
 const uint VOLUME_HEIGHT = 216;
 const uint VOLUME_DEPTH = 180;
@@ -72,9 +72,10 @@ CommandBuffer? DrawGUI(DearImGuiContext guiContext, Surface surface, out bool cr
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
     ImGui.SetNextWindowPos(new(12, 12), ImGuiCond.Once);
-    ImGui.SetNextWindowSize(new(360, 180), ImGuiCond.Once);
+    ImGui.SetNextWindowSize(new(235, 130), ImGuiCond.Once);
 
     ImGui.Begin("Settings", ImGuiWindowFlags.NoResize);
+    ImGui.PushItemWidth(120.0f);
     ImGui.Checkbox("rotateCamera", ref rotateCamera);
     if (ImGui.SliderFloat("near", ref near, 2.0f, 7.0f))
     {
@@ -107,7 +108,7 @@ CommandBuffer? DrawGUI(DearImGuiContext guiContext, Surface surface, out bool cr
         ImGui.Spacing();
         ImGui.TextColored(new Vector4(1f, 0.4f, 0.4f, 1f), statusText);
     }
-
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
     return guiContext.Render(surface);

@@ -9,8 +9,8 @@ using WebGpuSharp;
 using static Setup.SetupWebGPU;
 using GPUBuffer = WebGpuSharp.Buffer;
 
-const int WIDTH = 750;
-const int HEIGHT = 750;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 
 var executingAssembly = Assembly.GetExecutingAssembly();
 

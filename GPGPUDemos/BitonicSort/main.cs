@@ -12,8 +12,8 @@ using Buffer = WebGpuSharp.Buffer;
 using GuiSetup;
 using System.Threading.Tasks;
 
-const int WindowWidth = 1200;
-const int WindowHeight = 900;
+const int WindowWidth = 600;
+const int WindowHeight = 600;
 
 var assembly = Assembly.GetExecutingAssembly();
 var atomicToZeroWGSL = ResourceUtils.GetEmbeddedResource("BitonicSort.shaders.atomicToZero.wgsl", assembly);
@@ -34,7 +34,6 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
     var adapter = await instance.RequestAdapterAsync(new()
     {
         FeatureLevel = FeatureLevel.Compatibility,
-        BackendType = BackendType.Vulkan,
         CompatibleSurface = surface
     });
 
@@ -450,6 +449,8 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
         autoSortTimer = null;
     }
 
+    string? openSection = null;
+
     void StartSortTimer()
     {
         var currentTimerSpeed = settings.AutoSortSpeedMs;
@@ -490,15 +491,35 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
 
     CommandBuffer DrawImGui(Surface surface)
     {
+        bool DrawExclusiveHeader(string label)
+        {
+            ImGui.SetNextItemOpen(openSection == label, ImGuiCond.Always);
+            var isOpen = ImGui.CollapsingHeader(label);
+            if (isOpen)
+            {
+                openSection = label;
+            }
+            else if (openSection == label && ImGui.IsItemClicked())
+            {
+                openSection = null;
+            }
+
+            return isOpen;
+        }
+
         guiContext.NewFrame();
 
-        ImGui.SetNextWindowBgAlpha(0.9f);
-        ImGui.SetNextWindowPos(new(0, 0), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSize(new(325, 600), ImGuiCond.FirstUseEver);
-
-        if (ImGui.Begin("Bitonic Sort"))
+        ImGui.SetNextWindowBgAlpha(0.75f);
+        ImGui.SetNextWindowPos(new(325, 0), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSize(new(275, 275), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowCollapsed(true, ImGuiCond.FirstUseEver);
+        if (ImGui.Begin("Bitonic Sort",
+            ImGuiWindowFlags.NoMove |
+            ImGuiWindowFlags.NoResize
+        ))
         {
-            if (ImGui.CollapsingHeader("Compute Resources", ImGuiTreeNodeFlags.DefaultOpen))
+            ImGui.PushItemWidth(120.0f);
+            if (DrawExclusiveHeader("Compute Resources"))
             {
                 // Total Elements
                 if (ImGui.Combo("Total Elements", ref totalElementsIndex, totalElementLabels, totalElementLabels.Length))
@@ -552,7 +573,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
                 ImGui.EndDisabled();
             }
 
-            if (ImGui.CollapsingHeader("Sort Controls", ImGuiTreeNodeFlags.DefaultOpen))
+            if (DrawExclusiveHeader("Sort Controls"))
             {
                 // Execute Sort Step
                 if (ImGui.Button("Execute Sort Step", new Vector2(-1, 0)))
@@ -589,7 +610,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
                 ImGui.SliderInt("Auto Sort Speed (ms)", ref settings.AutoSortSpeedMs, 50, 1000);
             }
 
-            if (ImGui.CollapsingHeader("Grid Information", ImGuiTreeNodeFlags.DefaultOpen))
+            if (DrawExclusiveHeader("Grid Information"))
             {
                 // Display Mode
                 ImGuiUtils.EnumDropdown("Display Mode", ref settings.DisplayMode);
@@ -613,7 +634,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
                 ImGui.EndDisabled();
             }
 
-            if (ImGui.CollapsingHeader("Execution Information", ImGuiTreeNodeFlags.DefaultOpen))
+            if (DrawExclusiveHeader("Execution Information"))
             {
                 // Current Step (readonly)
                 ImGui.BeginDisabled();
@@ -652,7 +673,7 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
                 ImGui.EndDisabled();
             }
 
-            if (ImGui.CollapsingHeader("Timestamp Info", ImGuiTreeNodeFlags.DefaultOpen))
+            if (DrawExclusiveHeader("Timestamp Info"))
             {
                 // Step Time (readonly)
                 ImGui.BeginDisabled();
@@ -673,8 +694,9 @@ return Run("Bitonic Sort", WindowWidth, WindowHeight, async runContext =>
                 ImGui.EndDisabled();
             }
 
-            ImGui.End();
+            ImGui.PopItemWidth();
         }
+        ImGui.End();
 
         guiContext.EndFrame();
         return guiContext.Render(surface)!.Value!;

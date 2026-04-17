@@ -23,8 +23,8 @@ static uint ToUniformBufferSize(uint originalSize)
 }
 
 
-const int WIDTH = 640;
-const int HEIGHT = 480;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 const float ASPECT = (float)WIDTH / HEIGHT;
 
 const int NUM_PARTICLES = 50000;
@@ -42,7 +42,7 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(340, 0));
+    ImGui.SetNextWindowPos(new(300, 0));
     ImGui.SetNextWindowSize(new(300, 80));
     ImGui.Begin("Particles",
         ImGuiWindowFlags.NoMove |
@@ -50,7 +50,9 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
     );
 
     ImGui.Checkbox("Simulate", ref simulationParams.Simulate);
+    ImGui.PushItemWidth(80.0f);
     ImGui.InputFloat("Delta Time", ref simulationParams.DeltaTime);
+    ImGui.PopItemWidth();
 
     ImGui.End();
     guiContext.EndFrame();

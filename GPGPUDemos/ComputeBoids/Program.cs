@@ -12,8 +12,8 @@ using static Setup.SetupWebGPU;
 using GPUBuffer = WebGpuSharp.Buffer;
 
 
-const int WIDTH = 1280;
-const int HEIGHT = 720;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 
 string perfDisplayText = "";
 var asm = Assembly.GetExecutingAssembly();

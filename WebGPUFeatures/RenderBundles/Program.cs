@@ -10,8 +10,8 @@ using static Setup.SetupWebGPU;
 using System.Runtime.InteropServices;
 using GuiSetup;
 
-const int WIDTH = 1280;
-const int HEIGHT = 720;
+const int WIDTH = 600;
+const int HEIGHT = 600;
 const float ASPECT = WIDTH / (float)HEIGHT;
 
 bool useRenderBundles = true;
