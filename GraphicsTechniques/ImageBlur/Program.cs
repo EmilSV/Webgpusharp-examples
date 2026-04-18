@@ -25,14 +25,14 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface, out bool fil
 
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(16, 16));
-    ImGui.SetNextWindowSize(new(280, 90));
-    ImGui.Begin("Image Blur", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse);
-
+    ImGui.SetNextWindowPos(new(0, 0));
+    ImGui.SetNextWindowSize(new(215, 80));
+    ImGui.Begin("Image Blur", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
+    ImGui.PushItemWidth(120.0f);
     int filterSize = settings.FilterSize;
     filterSizeChanged = ImGui.SliderInt("Filter Size", ref settings.FilterSize, 1, 33);
     ImGui.SliderInt("Iterations", ref settings.Iterations, 1, 10);
-
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
 

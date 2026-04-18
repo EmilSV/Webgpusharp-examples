@@ -40,16 +40,16 @@ CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool num
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(300, 0));
-    ImGui.SetNextWindowSize(new(300, 80));
+    ImGui.SetNextWindowPos(new(400, 0));
+    ImGui.SetNextWindowSize(new(200, 80));
     ImGui.Begin("Settings",
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize
     );
-
+    ImGui.PushItemWidth(120.0f);
     ImGuiUtils.EnumDropdown("mode", ref settings.Mode);
     numLightsChanged = ImGui.SliderInt("numLights", ref settings.NumLights, 1, MAX_NUM_LIGHTS);
-
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
     return guiContext.Render(surface)!.Value!;

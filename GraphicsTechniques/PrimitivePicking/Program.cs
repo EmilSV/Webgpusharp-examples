@@ -36,16 +36,16 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(340, 0));
-    ImGui.SetNextWindowSize(new(300, 80));
+    ImGui.SetNextWindowPos(new(400, 0));
+    ImGui.SetNextWindowSize(new(200, 80));
     ImGui.Begin("Primitive Picking",
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize
     );
-
+    ImGui.PushItemWidth(150.0f);
     ImGuiUtils.EnumDropdown("Mode", ref settings.Mode);
     ImGui.Checkbox("Rotate", ref settings.Rotate);
-
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
     return guiContext.Render(surface)!.Value!;

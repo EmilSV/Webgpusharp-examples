@@ -760,19 +760,19 @@ class Settings
         guiContext.NewFrame();
         settingsChanged = false;
         ImGui.SetNextWindowPos(new(0, 0), ImGuiCond.Always);
-        ImGui.SetNextWindowSize(new(250, 60), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(new(275, 60), ImGuiCond.Always);
         ImGui.SetNextWindowBgAlpha(0.3f);
         ImGui.Begin(
             "Settings",
             ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize
         );
-        ImGui.PushItemWidth(120.0f);
+        ImGui.PushItemWidth(150.0f);
 
         if (ImGuiUtils.EnumDropdown("Memory Strategy", ref MemoryStrategy))
         {
             settingsChanged = true;
         }
-
+        ImGui.PopItemWidth();
         ImGui.End();
         guiContext.EndFrame();
         return guiContext.Render(surface)!.Value;

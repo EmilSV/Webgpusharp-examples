@@ -62,17 +62,17 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(340, 0));
-    ImGui.SetNextWindowSize(new(300, 100));
+    ImGui.SetNextWindowPos(new(430, 0));
+    ImGui.SetNextWindowSize(new(170, 100));
     ImGui.Begin("Points",
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize
     );
-
+    ImGui.PushItemWidth(120.0f);
     ImGui.Checkbox("fixedSize", ref settings.FixedSize);
     ImGui.Checkbox("textured", ref settings.Textured);
     ImGui.SliderFloat("size", ref settings.Size, 0.0f, 80.0f);
-
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
     return guiContext.Render(surface)!.Value!;

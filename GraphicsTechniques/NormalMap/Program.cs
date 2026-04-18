@@ -51,12 +51,12 @@ CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool tex
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
     ImGui.SetNextWindowPos(new(340, 0));
-    ImGui.SetNextWindowSize(new(300, 260));
+    ImGui.SetNextWindowSize(new(260, 270));
     ImGui.Begin("Normal Map",
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize
     );
-    
+    ImGui.PushItemWidth(120.0f);
     ImGuiUtils.EnumDropdown("Bump Mode", ref settings.BumpMode);
     textureChanged = ImGuiUtils.EnumDropdown("Texture", ref settings.Texture);
     if (ImGui.CollapsingHeader("Light"))
@@ -72,7 +72,7 @@ CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface, out bool tex
         ClampInput("depthScale", ref settings.DepthScale, 0, 0.1f, 0.01f);
         ClampInput("depthLayers", ref settings.DepthLayers, 1, 32, 1f);
     }
-
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
     return guiContext.Render(surface)!.Value!;

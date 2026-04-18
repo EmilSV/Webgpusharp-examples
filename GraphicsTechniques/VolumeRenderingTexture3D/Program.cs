@@ -71,11 +71,11 @@ CommandBuffer? DrawGUI(DearImGuiContext guiContext, Surface surface, out bool cr
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(12, 12), ImGuiCond.Once);
-    ImGui.SetNextWindowSize(new(235, 130), ImGuiCond.Once);
+    ImGui.SetNextWindowPos(new(0, 0), ImGuiCond.Once);
+    ImGui.SetNextWindowSize(new(245, 125), ImGuiCond.Once);
 
     ImGui.Begin("Settings", ImGuiWindowFlags.NoResize);
-    ImGui.PushItemWidth(120.0f);
+    ImGui.PushItemWidth(135.0f);
     ImGui.Checkbox("rotateCamera", ref rotateCamera);
     if (ImGui.SliderFloat("near", ref near, 2.0f, 7.0f))
     {

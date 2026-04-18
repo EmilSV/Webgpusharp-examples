@@ -19,16 +19,16 @@ CommandBuffer DrawGUI(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(300, 0));
-    ImGui.SetNextWindowSize(new(300, 80));
+    ImGui.SetNextWindowPos(new(400, 0));
+    ImGui.SetNextWindowSize(new(200, 80));
     ImGui.Begin("Settings",
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize
     );
-
+    ImGui.PushItemWidth(120.0f);
     ImGuiUtils.EnumDropdown("renderer", ref parameters.Renderer);
     ImGui.Checkbox("rotateCamera", ref parameters.RotateCamera);
-
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
     return guiContext.Render(surface)!.Value!;

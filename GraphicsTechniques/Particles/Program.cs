@@ -42,15 +42,15 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
 {
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.75f);
-    ImGui.SetNextWindowPos(new(300, 0));
-    ImGui.SetNextWindowSize(new(300, 80));
+    ImGui.SetNextWindowPos(new(425, 0));
+    ImGui.SetNextWindowSize(new(175, 80));
     ImGui.Begin("Particles",
         ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.NoResize
     );
 
-    ImGui.Checkbox("Simulate", ref simulationParams.Simulate);
     ImGui.PushItemWidth(80.0f);
+    ImGui.Checkbox("Simulate", ref simulationParams.Simulate);
     ImGui.InputFloat("Delta Time", ref simulationParams.DeltaTime);
     ImGui.PopItemWidth();
 

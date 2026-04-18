@@ -32,8 +32,10 @@ CommandBuffer DrawGUI(
 
     guiContext.NewFrame();
     ImGui.SetNextWindowBgAlpha(0.3f);
-    ImGui.Begin("Settings", ImGuiWindowFlags.NoCollapse);
-
+    ImGui.SetNextWindowPos(new(0, 0), ImGuiCond.Always);
+    ImGui.SetNextWindowSize(new(275, 175), ImGuiCond.Always);
+    ImGui.Begin("Settings", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize);
+    ImGui.PushItemWidth(120.0f);
     var barycentricModeChanged = ImGui.Checkbox("barycentricCoordinatesBased", ref settings.BarycentricCoordinatesBased);
     ImGui.Checkbox("lines", ref settings.Lines);
     ImGui.Checkbox("models", ref settings.Models);
@@ -54,7 +56,7 @@ CommandBuffer DrawGUI(
     {
         updateThickness = true;
     }
-
+    ImGui.PopItemWidth();
     ImGui.End();
     guiContext.EndFrame();
     return guiContext.Render(surface)!.Value!;
