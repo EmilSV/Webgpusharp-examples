@@ -23,7 +23,8 @@ $webGPUFeaturesProjects = @(
     "WebGPUFeatures\RenderBundles\RenderBundles.csproj",
     "WebGPUFeatures\OcclusionQuery\OcclusionQuery.csproj",
     "WebGPUFeatures\SamplerParameters\SamplerParameters.csproj",
-    "WebGPUFeatures\TimestampQuery\TimestampQuery.csproj"
+    "WebGPUFeatures\TimestampQuery\TimestampQuery.csproj",
+    "WebGPUFeatures\Blending\Blending.csproj"
 )
 
 
@@ -47,7 +48,7 @@ $graphicsTechniquesProjects = @(
     "GraphicsTechniques\SkinnedMesh\SkinnedMesh.csproj",
     "GraphicsTechniques\StencilMask\StencilMask.csproj",
     "GraphicsTechniques\TextRenderingMsdf\TextRenderingMsdf.csproj",
-    "GraphicsTechniques\VolumeRenderingTexture3D\VolumeRenderingTexture3D.csproj"
+    "GraphicsTechniques\VolumeRenderingTexture3D\VolumeRenderingTexture3D.csproj",
     "GraphicsTechniques\Wireframe\Wireframe.csproj"
 )
 

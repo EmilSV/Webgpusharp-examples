@@ -28,7 +28,8 @@ $webGPUFeaturesProjects = @(
     "WebGPUFeatures\RenderBundles\RenderBundles.csproj",
     "WebGPUFeatures\OcclusionQuery\OcclusionQuery.csproj",
     "WebGPUFeatures\SamplerParameters\SamplerParameters.csproj",
-    "WebGPUFeatures\TimestampQuery\TimestampQuery.csproj"
+    "WebGPUFeatures\TimestampQuery\TimestampQuery.csproj",
+    "WebGPUFeatures\Blending\Blending.csproj"
 )
 
 $gpgpuDemosProjects = @(
