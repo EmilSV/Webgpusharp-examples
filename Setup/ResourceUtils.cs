@@ -22,22 +22,19 @@ public static class ResourceUtils
         return ms.ToArray();
     }
 
-    public static byte[] GetEmbeddedResource(string resourceName, Assembly? assembly = null)
+    public static byte[] GetEmbeddedResource(string resourceName, Assembly assembly)
     {
-        var executingAssembly = assembly ?? Assembly.GetCallingAssembly();
-        return ToByteArray(executingAssembly.GetManifestResourceStream(resourceName)!)!;
+        return ToByteArray(assembly.GetManifestResourceStream(resourceName)!)!;
     }
 
-    public static Stream? GetEmbeddedResourceStream(string resourceName, Assembly? assembly = null)
+    public static Stream? GetEmbeddedResourceStream(string resourceName, Assembly assembly)
     {
-        var executingAssembly = assembly ?? Assembly.GetCallingAssembly();
-        return executingAssembly.GetManifestResourceStream(resourceName)!;
+        return assembly.GetManifestResourceStream(resourceName)!;
     }
 
-    public static async Task<byte[]> GetEmbeddedResourceAsync(string resourceName, Assembly? assembly = null)
+    public static async Task<byte[]> GetEmbeddedResourceAsync(string resourceName, Assembly assembly)
     {
-        var executingAssembly = assembly ?? Assembly.GetCallingAssembly();
-        return await ToByteArrayAsync(executingAssembly.GetManifestResourceStream(resourceName)!);
+        return await ToByteArrayAsync(assembly.GetManifestResourceStream(resourceName)!);
     }
 
     public static ImageData LoadImagePngFromManifestResource(Assembly assembly, string resourceName)

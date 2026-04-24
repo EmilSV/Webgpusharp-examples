@@ -2,6 +2,7 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 using System.Numerics;
 using System.Text;
 using Setup;
@@ -62,13 +63,14 @@ var depthClearValues = FrozenDictionary.ToFrozenDictionary<DepthBufferMode, floa
 ]);
 
 var startTimeStamp = Stopwatch.GetTimestamp();
-var vertexWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertex.wgsl");
-var fragmentWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragment.wgsl");
-var vertexDepthPrePassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexDepthPrePass.wgsl");
-var vertexTextureQuadWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexTextureQuad.wgsl");
-var fragmentTextureQuadWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragmentTextureQuad.wgsl");
-var vertexPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexPrecisionErrorPass.wgsl");
-var fragmentPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragmentPrecisionErrorPass.wgsl");
+var asm = Assembly.GetExecutingAssembly();
+var vertexWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertex.wgsl",asm);
+var fragmentWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragment.wgsl",asm);
+var vertexDepthPrePassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexDepthPrePass.wgsl",asm);
+var vertexTextureQuadWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexTextureQuad.wgsl",asm);
+var fragmentTextureQuadWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragmentTextureQuad.wgsl",asm);
+var vertexPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.vertexPrecisionErrorPass.wgsl",asm);
+var fragmentPrecisionErrorPassWGSL = ResourceUtils.GetEmbeddedResource("ReversedZ.shaders.fragmentPrecisionErrorPass.wgsl",asm);
 
 
 const int WIDTH = 600;

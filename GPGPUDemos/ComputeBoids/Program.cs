@@ -17,8 +17,8 @@ const int HEIGHT = 600;
 
 string perfDisplayText = "";
 var asm = Assembly.GetExecutingAssembly();
-var spriteWGSL = ResourceUtils.GetEmbeddedResource("ComputeBoids.shaders.sprite.wgsl")!;
-var updateSpritesWGSL = ResourceUtils.GetEmbeddedResource("ComputeBoids.shaders.updateSprites.wgsl")!;
+var spriteWGSL = ResourceUtils.GetEmbeddedResource("ComputeBoids.shaders.sprite.wgsl", asm)!;
+var updateSpritesWGSL = ResourceUtils.GetEmbeddedResource("ComputeBoids.shaders.updateSprites.wgsl", asm)!;
 
 CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface, ref SimParams simParams, out bool simParamsChanged)
 {

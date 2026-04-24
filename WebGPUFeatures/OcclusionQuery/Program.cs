@@ -401,7 +401,6 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async runContext =>
         var guiCommanderBuffer = DrawGui(guiContext, surface);
 
         queue.Submit([encoder.Finish(), guiCommanderBuffer]);
-        surface.Present();
 
         if (resultBuf.GetMapState() == BufferMapState.Unmapped)
         {

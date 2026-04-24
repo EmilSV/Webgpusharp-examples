@@ -9,7 +9,7 @@ using WebGpuSharp;
 using static Setup.SetupWebGPU;
 using GPUBuffer = WebGpuSharp.Buffer;
 
-const int WIDTH = 600;
+const int WIDTH = 700;
 const int HEIGHT = 600;
 
 var executingAssembly = Assembly.GetExecutingAssembly();
@@ -113,8 +113,8 @@ CommandBuffer DrawGui(
 
 	guiContext.NewFrame();
 	ImGui.SetNextWindowBgAlpha(0.85f);
-	ImGui.SetNextWindowPos(new(410, 10));
-	ImGui.SetNextWindowSize(new(340, 0));
+	ImGui.SetNextWindowPos(new(380, 0));
+	ImGui.SetNextWindowSize(new(320, 0));
 	ImGui.Begin("Blending", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.AlwaysAutoResize);
 
 	if (ImGuiUtils.EnumDropdown("preset", ref currentPreset))
