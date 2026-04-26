@@ -1,0 +1,11 @@
+{
+    "name": "Hello Triangle",
+    "description": [
+        "Shows rendering a basic triangle."
+    ],
+    "sources": [
+        {
+            "path": "Program.cs"
+        }
+    ]
+}

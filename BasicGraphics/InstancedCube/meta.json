@@ -1,0 +1,20 @@
+{
+    "name": "Instanced Cube",
+    "description": [
+        "This example shows the use of instancing."
+    ],
+    "sources": [
+        {
+            "path": "Cube.cs"
+        },
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "./shaders/basic.vert.wgsl"
+        },
+        {
+            "path": "./shaders/vertexPositionColor.frag.wgsl"
+        }
+    ]
+}

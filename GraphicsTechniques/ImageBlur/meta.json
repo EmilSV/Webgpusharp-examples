@@ -1,0 +1,17 @@
+{
+    "name": "Image Blur",
+    "description": [
+        "This example shows how to blur an image using a WebGPU compute shader."
+    ],
+    "sources": [
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "./shaders/blur.wgsl"
+        },
+        {
+            "path": "./shaders/fullscreenTexturedQuad.wgsl"
+        }
+    ]
+}

@@ -1,0 +1,50 @@
+{
+    "name": "Cornell box",
+    "description": [
+        "A classic Cornell box, using a lightmap generated using software ray-tracing."
+    ],
+    "sources": [
+        {
+            "path": "Common.cs"
+        },
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "Quad.cs"
+        },
+        {
+            "path": "Radiosity.cs"
+        },
+        {
+            "path": "RadiosityUniform.cs"
+        },
+        {
+            "path": "Rasterizer.cs"
+        },
+        {
+            "path": "Raytracer.cs"
+        },
+        {
+            "path": "Scene.cs"
+        },
+        {
+            "path": "Tonemapper.cs"
+        },
+        {
+            "path": "./shaders/common.wgsl"
+        },
+        {
+            "path": "./shaders/radiosity.wgsl"
+        },
+        {
+            "path": "./shaders/rasterizer.wgsl"
+        },
+        {
+            "path": "./shaders/raytracer.wgsl"
+        },
+        {
+            "path": "./shaders/tonemapper.wgsl"
+        }
+    ]
+}

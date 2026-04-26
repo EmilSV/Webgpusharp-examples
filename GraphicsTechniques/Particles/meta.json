@@ -1,0 +1,17 @@
+{
+    "name": "Particles (HDR)",
+    "description": [
+        "This example demonstrates rendering of particles (using HDR capabilities when possible) simulated with compute shaders."
+    ],
+    "sources": [
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "./shaders/particle.wgsl"
+        },
+        {
+            "path": "./shaders/probabilityMap.wgsl"
+        }
+    ]
+}

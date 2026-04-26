@@ -1,0 +1,17 @@
+{
+    "name": "Hello Triangle MSAA",
+    "description": [
+        "Shows multisampled rendering a basic triangle."
+    ],
+    "sources": [
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "./shaders/red.frag.wgsl"
+        },
+        {
+            "path": "./shaders/triangle.vert.wgsl"
+        }
+    ]
+}

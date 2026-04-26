@@ -1,0 +1,23 @@
+{
+    "name": "Cameras",
+    "description": [
+        "This example provides example camera implementations"
+    ],
+    "sources": [
+        {
+            "path": "Camera.cs"
+        },
+        {
+            "path": "Cube.cs"
+        },
+        {
+            "path": "Input.cs"
+        },
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "./shaders/cube.wgsl"
+        }
+    ]
+}

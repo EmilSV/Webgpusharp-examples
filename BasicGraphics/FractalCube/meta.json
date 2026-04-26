@@ -1,0 +1,20 @@
+{
+    "name": "Fractal Cube",
+    "description": [
+        "This example uses the previous frame's rendering result as the source texture for the next frame."
+    ],
+    "sources": [
+        {
+            "path": "Cube.cs"
+        },
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "./shaders/basic.vert.wgsl"
+        },
+        {
+            "path": "./shaders/sampleSelf.frag.wgsl"
+        }
+    ]
+}

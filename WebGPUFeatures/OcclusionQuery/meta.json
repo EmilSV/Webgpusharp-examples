@@ -1,0 +1,14 @@
+{
+    "name": "Occlusion Query",
+    "description": [
+        "This example demonstrates using Occlusion Queries."
+    ],
+    "sources": [
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "./shaders/solidColorLit.wgsl"
+        }
+    ]
+}

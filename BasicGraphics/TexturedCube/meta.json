@@ -1,0 +1,20 @@
+{
+    "name": "Textured Cube",
+    "description": [
+        "This example shows how to bind and sample textures."
+    ],
+    "sources": [
+        {
+            "path": "Cube.cs"
+        },
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "./shaders/basic.vert.wgsl"
+        },
+        {
+            "path": "./shaders/sampleTextureMixColor.frag.wgsl"
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "name": "Rotating Cube",
+    "description": [
+        "This example shows how to upload uniform data every frame to render a rotating object."
+    ],
+    "sources": [
+        {
+            "path": "Cube.cs"
+        },
+        {
+            "path": "Program.cs"
+        },
+        {
+            "path": "./shaders/basic.vert.wgsl"
+        },
+        {
+            "path": "./shaders/vertexPositionColor.frag.wgsl"
+        }
+    ]
+}
