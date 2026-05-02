@@ -3,15 +3,16 @@
     "description": [
         "Shows multisampled rendering a basic triangle."
     ],
+    "fileName": "BasicGraphics/HelloTriangleMSAA",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "BasicGraphics/HelloTriangleMSAA/Program.cs"
         },
         {
-            "path": "./shaders/red.frag.wgsl"
+            "path": "BasicGraphics/HelloTriangleMSAA/shaders/red.frag.wgsl"
         },
         {
-            "path": "./shaders/triangle.vert.wgsl"
+            "path": "BasicGraphics/HelloTriangleMSAA/shaders/triangle.vert.wgsl"
         }
     ]
 }

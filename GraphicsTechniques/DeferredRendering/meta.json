@@ -9,30 +9,31 @@
         "We also update light position in a compute shader, where further operations like tile/cluster culling could happen.",
         "The debug view shows the depth buffer on the left (flipped and scaled a bit to make it more visible), the normal G buffer in the middle, and the albedo G-buffer on the right side of the screen."
     ],
+    "fileName": "GraphicsTechniques/DeferredRendering",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/DeferredRendering/Program.cs"
         },
         {
-            "path": "StanfordDragon.cs"
+            "path": "GraphicsTechniques/DeferredRendering/StanfordDragon.cs"
         },
         {
-            "path": "./shaders/fragmentDeferredRendering.wgsl"
+            "path": "GraphicsTechniques/DeferredRendering/shaders/fragmentDeferredRendering.wgsl"
         },
         {
-            "path": "./shaders/fragmentGBuffersDebugView.wgsl"
+            "path": "GraphicsTechniques/DeferredRendering/shaders/fragmentGBuffersDebugView.wgsl"
         },
         {
-            "path": "./shaders/fragmentWriteGBuffers.wgsl"
+            "path": "GraphicsTechniques/DeferredRendering/shaders/fragmentWriteGBuffers.wgsl"
         },
         {
-            "path": "./shaders/lightUpdate.wgsl"
+            "path": "GraphicsTechniques/DeferredRendering/shaders/lightUpdate.wgsl"
         },
         {
-            "path": "./shaders/vertexTextureQuad.wgsl"
+            "path": "GraphicsTechniques/DeferredRendering/shaders/vertexTextureQuad.wgsl"
         },
         {
-            "path": "./shaders/vertexWriteGBuffers.wgsl"
+            "path": "GraphicsTechniques/DeferredRendering/shaders/vertexWriteGBuffers.wgsl"
         }
     ]
 }

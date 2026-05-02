@@ -5,48 +5,49 @@
         "Both use the vertex and index buffers as storage buffers and the use `@builtin(vertex_index)` to index the vertex data. One method generates 6 vertices per triangle and uses line-list to draw lines.",
         "The other method draws triangles with a fragment shader that uses barycentric coordinates to draw edges as detailed [here](https://web.archive.org/web/20130424093557/http://codeflow.org/entries/2012/aug/02/easy-wireframe-display-with-barycentric-coordinates/)."
     ],
+    "fileName": "GraphicsTechniques/Wireframe",
     "sources": [
         {
-            "path": "LineUniforms.cs"
+            "path": "GraphicsTechniques/Wireframe/LineUniforms.cs"
         },
         {
-            "path": "Model.cs"
+            "path": "GraphicsTechniques/Wireframe/Model.cs"
         },
         {
-            "path": "ModelGeometry.cs"
+            "path": "GraphicsTechniques/Wireframe/ModelGeometry.cs"
         },
         {
-            "path": "Models.cs"
+            "path": "GraphicsTechniques/Wireframe/Models.cs"
         },
         {
-            "path": "ObjectInfo.cs"
+            "path": "GraphicsTechniques/Wireframe/ObjectInfo.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/Wireframe/Program.cs"
         },
         {
-            "path": "Settings.cs"
+            "path": "GraphicsTechniques/Wireframe/Settings.cs"
         },
         {
-            "path": "SphereMesh.cs"
+            "path": "GraphicsTechniques/Wireframe/SphereMesh.cs"
         },
         {
-            "path": "Teapot.cs"
+            "path": "GraphicsTechniques/Wireframe/Teapot.cs"
         },
         {
-            "path": "Triangleindices.cs"
+            "path": "GraphicsTechniques/Wireframe/Triangleindices.cs"
         },
         {
-            "path": "Uniforms.cs"
+            "path": "GraphicsTechniques/Wireframe/Uniforms.cs"
         },
         {
-            "path": "Vertex.cs"
+            "path": "GraphicsTechniques/Wireframe/Vertex.cs"
         },
         {
-            "path": "./shaders/solidColorLit.wgsl"
+            "path": "GraphicsTechniques/Wireframe/shaders/solidColorLit.wgsl"
         },
         {
-            "path": "./shaders/wireframe.wgsl"
+            "path": "GraphicsTechniques/Wireframe/shaders/wireframe.wgsl"
         }
     ]
 }

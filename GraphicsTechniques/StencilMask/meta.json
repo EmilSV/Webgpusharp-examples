@@ -3,39 +3,40 @@
     "description": [
         "This example shows using the stencil buffer for masking. It draws 6 planes, forming a cube, each plane with a different stencil value. It then draws 7 scenes of moving objects, each set to only draw when the stencilReference value matches the value in the stencil buffer."
     ],
+    "fileName": "GraphicsTechniques/StencilMask",
     "sources": [
         {
-            "path": "Geometry.cs"
+            "path": "GraphicsTechniques/StencilMask/Geometry.cs"
         },
         {
-            "path": "ObjectInfo.cs"
+            "path": "GraphicsTechniques/StencilMask/ObjectInfo.cs"
         },
         {
-            "path": "Primitives.cs"
+            "path": "GraphicsTechniques/StencilMask/Primitives.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/StencilMask/Program.cs"
         },
         {
-            "path": "Scene.cs"
+            "path": "GraphicsTechniques/StencilMask/Scene.cs"
         },
         {
-            "path": "SharedUniforms.cs"
+            "path": "GraphicsTechniques/StencilMask/SharedUniforms.cs"
         },
         {
-            "path": "TriangleIndices.cs"
+            "path": "GraphicsTechniques/StencilMask/TriangleIndices.cs"
         },
         {
-            "path": "Uniform.cs"
+            "path": "GraphicsTechniques/StencilMask/Uniform.cs"
         },
         {
-            "path": "Vertex.cs"
+            "path": "GraphicsTechniques/StencilMask/Vertex.cs"
         },
         {
-            "path": "VertexData.cs"
+            "path": "GraphicsTechniques/StencilMask/VertexData.cs"
         },
         {
-            "path": "./shaders/simple-lighting.wgsl"
+            "path": "GraphicsTechniques/StencilMask/shaders/simple-lighting.wgsl"
         }
     ]
 }

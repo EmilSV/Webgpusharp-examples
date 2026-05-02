@@ -3,18 +3,19 @@
     "description": [
         "This example uses the previous frame's rendering result as the source texture for the next frame."
     ],
+    "fileName": "BasicGraphics/FractalCube",
     "sources": [
         {
-            "path": "Cube.cs"
+            "path": "BasicGraphics/FractalCube/Cube.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "BasicGraphics/FractalCube/Program.cs"
         },
         {
-            "path": "./shaders/basic.vert.wgsl"
+            "path": "BasicGraphics/FractalCube/shaders/basic.vert.wgsl"
         },
         {
-            "path": "./shaders/sampleSelf.frag.wgsl"
+            "path": "BasicGraphics/FractalCube/shaders/sampleSelf.frag.wgsl"
         }
     ]
 }

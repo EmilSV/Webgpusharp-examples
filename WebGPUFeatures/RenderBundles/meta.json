@@ -3,15 +3,16 @@
     "description": [
         "This example shows how to use render bundles. It renders a large number of meshes individually as a proxy for a more complex scene in order to demonstrate the reduction in JavaScript time spent to issue render commands. (Typically a scene like this would make use of instancing to reduce draw overhead.)"
     ],
+    "fileName": "WebGPUFeatures/RenderBundles",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "WebGPUFeatures/RenderBundles/Program.cs"
         },
         {
-            "path": "SphereMesh.cs"
+            "path": "WebGPUFeatures/RenderBundles/SphereMesh.cs"
         },
         {
-            "path": "./shaders/mesh.wgsl"
+            "path": "WebGPUFeatures/RenderBundles/shaders/mesh.wgsl"
         }
     ]
 }

@@ -3,12 +3,13 @@
     "description": [
         "This example demonstrates using Occlusion Queries."
     ],
+    "fileName": "WebGPUFeatures/OcclusionQuery",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "WebGPUFeatures/OcclusionQuery/Program.cs"
         },
         {
-            "path": "./shaders/solidColorLit.wgsl"
+            "path": "WebGPUFeatures/OcclusionQuery/shaders/solidColorLit.wgsl"
         }
     ]
 }

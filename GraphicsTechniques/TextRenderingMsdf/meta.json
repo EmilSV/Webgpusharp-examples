@@ -4,57 +4,58 @@
         "This example uses multichannel signed distance fields (MSDF) to render text. MSDF fonts are more complex to implement than using Canvas 2D to generate text, but the resulting text looks smoother while using less memory than the Canvas 2D approach, especially at high zoom levels. They can be used to render larger amounts of text efficiently.",
         "The font texture is generated using [Don McCurdy's MSDF font generation tool](https://msdf-bmfont.donmccurdy.com/), which is built on [Viktor Chlumský's msdfgen library](https://github.com/Chlumsky/msdfgen)."
     ],
+    "fileName": "GraphicsTechniques/TextRenderingMsdf",
     "sources": [
         {
-            "path": "CameraUniform.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/CameraUniform.cs"
         },
         {
-            "path": "Cube.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/Cube.cs"
         },
         {
-            "path": "FormattedTextStorage.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/FormattedTextStorage.cs"
         },
         {
-            "path": "MsdfChar.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfChar.cs"
         },
         {
-            "path": "MsdfCommon.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfCommon.cs"
         },
         {
-            "path": "MsdfFont.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfFont.cs"
         },
         {
-            "path": "MsdfFontJson.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfFontJson.cs"
         },
         {
-            "path": "MsdfKerning.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfKerning.cs"
         },
         {
-            "path": "MsdfText.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfText.cs"
         },
         {
-            "path": "MsdfTextFormattingOptions.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfTextFormattingOptions.cs"
         },
         {
-            "path": "MsdfTextJsonContext.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfTextJsonContext.cs"
         },
         {
-            "path": "MsdfTextMeasurements.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfTextMeasurements.cs"
         },
         {
-            "path": "MsdfTextRenderer.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/MsdfTextRenderer.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/TextRenderingMsdf/Program.cs"
         },
         {
-            "path": "./shaders/basic.vert.wgsl"
+            "path": "GraphicsTechniques/TextRenderingMsdf/shaders/basic.vert.wgsl"
         },
         {
-            "path": "./shaders/msdfText.wgsl"
+            "path": "GraphicsTechniques/TextRenderingMsdf/shaders/msdfText.wgsl"
         },
         {
-            "path": "./shaders/vertexPositionColor.frag.wgsl"
+            "path": "GraphicsTechniques/TextRenderingMsdf/shaders/vertexPositionColor.frag.wgsl"
         }
     ]
 }

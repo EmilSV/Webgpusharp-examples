@@ -3,18 +3,19 @@
     "description": [
         "Visualizes what all the sampler parameters do. Shows a textured plane at various scales (rotated, head-on, in perspective, and in vanishing perspective). The bottom-right view shows the raw contents of the 4 mipmap levels of the test texture (16x16, 8x8, 4x4, and 2x2)."
     ],
+    "fileName": "WebGPUFeatures/SamplerParameters",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "WebGPUFeatures/SamplerParameters/Program.cs"
         },
         {
-            "path": "./shaders/pixelBlitNearest.wgsl"
+            "path": "WebGPUFeatures/SamplerParameters/shaders/pixelBlitNearest.wgsl"
         },
         {
-            "path": "./shaders/showTexture.wgsl"
+            "path": "WebGPUFeatures/SamplerParameters/shaders/showTexture.wgsl"
         },
         {
-            "path": "./shaders/texturedSquare.wgsl"
+            "path": "WebGPUFeatures/SamplerParameters/shaders/texturedSquare.wgsl"
         }
     ]
 }

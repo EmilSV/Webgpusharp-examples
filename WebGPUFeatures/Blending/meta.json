@@ -6,12 +6,13 @@
         "See [this article](https://webgpufundamentals.org/webgpu/lessons/webgpu-transparency.html) for a more detailed explanation.",
         "The presets are equivalent to the 2d canvas context's [`globalCompositingOperation`](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation)."
     ],
+    "fileName": "WebGPUFeatures/Blending",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "WebGPUFeatures/Blending/Program.cs"
         },
         {
-            "path": "./shaders/texturedQuad.wgsl"
+            "path": "WebGPUFeatures/Blending/shaders/texturedQuad.wgsl"
         }
     ]
 }

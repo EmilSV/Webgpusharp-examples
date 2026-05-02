@@ -3,63 +3,64 @@
     "description": [
         "A demonstration of basic gltf loading and mesh skinning, ported from <https://webgl2fundamentals.org/webgl/lessons/webgl-skinning.html>. Mesh data, per vertex attributes, and skin inverseBindMatrices are taken from the json parsed from the binary output of the .glb file. Animations are generated progrmatically, with animated joint matrices updated and passed to shaders per frame via uniform buffers."
     ],
+    "fileName": "GraphicsTechniques/SkinnedMesh",
     "sources": [
         {
-            "path": "BaseTransformation.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/BaseTransformation.cs"
         },
         {
-            "path": "GlbParser.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GlbParser.cs"
         },
         {
-            "path": "GLTFAccessor.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFAccessor.cs"
         },
         {
-            "path": "GLTFBufferView.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFBufferView.cs"
         },
         {
-            "path": "GLTFDataComponentType.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFDataComponentType.cs"
         },
         {
-            "path": "GLTFDataStructureType.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFDataStructureType.cs"
         },
         {
-            "path": "GltfJsonContext.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GltfJsonContext.cs"
         },
         {
-            "path": "GLTFMesh.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFMesh.cs"
         },
         {
-            "path": "GLTFNode.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFNode.cs"
         },
         {
-            "path": "GLTFPrimitive.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFPrimitive.cs"
         },
         {
-            "path": "GLTFRenderMode.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFRenderMode.cs"
         },
         {
-            "path": "GLTFScene.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFScene.cs"
         },
         {
-            "path": "GLTFSkin.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GLTFSkin.cs"
         },
         {
-            "path": "GltfTypes.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GltfTypes.cs"
         },
         {
-            "path": "GridData.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GridData.cs"
         },
         {
-            "path": "GridUtils.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/GridUtils.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/SkinnedMesh/Program.cs"
         },
         {
-            "path": "./shaders/gltf.wgsl"
+            "path": "GraphicsTechniques/SkinnedMesh/shaders/gltf.wgsl"
         },
         {
-            "path": "./shaders/grid.wgsl"
+            "path": "GraphicsTechniques/SkinnedMesh/shaders/grid.wgsl"
         }
     ]
 }

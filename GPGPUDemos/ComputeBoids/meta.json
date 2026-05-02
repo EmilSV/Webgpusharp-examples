@@ -3,15 +3,16 @@
     "description": [
         "A GPU compute particle simulation that mimics the flocking behavior of birds. A compute shader updates two ping-pong buffers which store particle data. The data is used to draw instanced particles."
     ],
+    "fileName": "GPGPUDemos/ComputeBoids",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "GPGPUDemos/ComputeBoids/Program.cs"
         },
         {
-            "path": "./shaders/sprite.wgsl"
+            "path": "GPGPUDemos/ComputeBoids/shaders/sprite.wgsl"
         },
         {
-            "path": "./shaders/updateSprites.wgsl"
+            "path": "GPGPUDemos/ComputeBoids/shaders/updateSprites.wgsl"
         }
     ]
 }

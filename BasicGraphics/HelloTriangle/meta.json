@@ -3,9 +3,10 @@
     "description": [
         "Shows rendering a basic triangle."
     ],
+    "fileName": "BasicGraphics/HelloTriangle",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "BasicGraphics/HelloTriangle/Program.cs"
         }
     ]
 }

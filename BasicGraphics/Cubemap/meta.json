@@ -5,18 +5,19 @@
         "See [this article](https://webgpufundamentals.org/webgpu/lessons/webgpu-skybox.html) for more details.",
         "Cubemap image available under a Creative Commons Attribution 3.0 Unported License at <https://www.humus.name/index.php?page=Textures&ID=58>"
     ],
+    "fileName": "BasicGraphics/Cubemap",
     "sources": [
         {
-            "path": "Cube.cs"
+            "path": "BasicGraphics/Cubemap/Cube.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "BasicGraphics/Cubemap/Program.cs"
         },
         {
-            "path": "./shaders/basic.vert.wgsl"
+            "path": "BasicGraphics/Cubemap/shaders/basic.vert.wgsl"
         },
         {
-            "path": "./shaders/sampleCubemap.frag.wgsl"
+            "path": "BasicGraphics/Cubemap/shaders/sampleCubemap.frag.wgsl"
         }
     ]
 }

@@ -3,18 +3,19 @@
     "description": [
         "This example shows how to make Conway's game of life. First, use compute shader to calculate how cells grow or die. Then use render pipeline to draw cells by using instance mesh."
     ],
+    "fileName": "GPGPUDemos/ConwaysGameOfLife",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "GPGPUDemos/ConwaysGameOfLife/Program.cs"
         },
         {
-            "path": "./shaders/compute.wgsl"
+            "path": "GPGPUDemos/ConwaysGameOfLife/shaders/compute.wgsl"
         },
         {
-            "path": "./shaders/frag.wgsl"
+            "path": "GPGPUDemos/ConwaysGameOfLife/shaders/frag.wgsl"
         },
         {
-            "path": "./shaders/vert.wgsl"
+            "path": "GPGPUDemos/ConwaysGameOfLife/shaders/vert.wgsl"
         }
     ]
 }

@@ -3,15 +3,16 @@
     "description": [
         "This example demonstrates rendering of particles (using HDR capabilities when possible) simulated with compute shaders."
     ],
+    "fileName": "GraphicsTechniques/Particles",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/Particles/Program.cs"
         },
         {
-            "path": "./shaders/particle.wgsl"
+            "path": "GraphicsTechniques/Particles/shaders/particle.wgsl"
         },
         {
-            "path": "./shaders/probabilityMap.wgsl"
+            "path": "GraphicsTechniques/Particles/shaders/probabilityMap.wgsl"
         }
     ]
 }

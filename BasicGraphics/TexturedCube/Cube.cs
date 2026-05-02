@@ -6,6 +6,7 @@ public static class Cube
     public const int CubeUVOffset = 4 * 8;
     public const int CubeVertexCount = 36;
 
+    
     public static float[] CubeVertices = [
         // float4 position, float4 color, float2 uv,
         1, -1, 1, 1,   1, 0, 1, 1,  0, 1,

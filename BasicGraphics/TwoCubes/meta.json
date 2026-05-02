@@ -3,18 +3,19 @@
     "description": [
         "This example shows some of the alignment requirements involved when updating and binding multiple slices of a uniform buffer. It renders two rotating cubes which have transform matrices at different offsets in a uniform buffer."
     ],
+    "fileName": "BasicGraphics/TwoCubes",
     "sources": [
         {
-            "path": "Cube.cs"
+            "path": "BasicGraphics/TwoCubes/Cube.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "BasicGraphics/TwoCubes/Program.cs"
         },
         {
-            "path": "./shaders/basic.vert.wgsl"
+            "path": "BasicGraphics/TwoCubes/shaders/basic.vert.wgsl"
         },
         {
-            "path": "./shaders/vertexPositionColor.frag.wgsl"
+            "path": "BasicGraphics/TwoCubes/shaders/vertexPositionColor.frag.wgsl"
         }
     ]
 }

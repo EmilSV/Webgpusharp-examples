@@ -3,24 +3,25 @@
     "description": [
         "This example shows how to use timestamp queries to measure render pass duration."
     ],
+    "fileName": "WebGPUFeatures/TimestampQuery",
     "sources": [
         {
-            "path": "Cube.cs"
+            "path": "WebGPUFeatures/TimestampQuery/Cube.cs"
         },
         {
-            "path": "PerfCounter.cs"
+            "path": "WebGPUFeatures/TimestampQuery/PerfCounter.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "WebGPUFeatures/TimestampQuery/Program.cs"
         },
         {
-            "path": "TimestampQueryManager.cs"
+            "path": "WebGPUFeatures/TimestampQuery/TimestampQueryManager.cs"
         },
         {
-            "path": "./shaders/basic.vert.wgsl"
+            "path": "WebGPUFeatures/TimestampQuery/shaders/basic.vert.wgsl"
         },
         {
-            "path": "./shaders/black.frag.wgsl"
+            "path": "WebGPUFeatures/TimestampQuery/shaders/black.frag.wgsl"
         }
     ]
 }

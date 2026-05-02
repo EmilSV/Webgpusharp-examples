@@ -4,21 +4,22 @@
         "This example shows how to render points of various sizes using a quad and instancing.",
         "You can read more details [here](https://webgpufundamentals.org/webgpu/lessons/webgpu-points.html)."
     ],
+    "fileName": "GraphicsTechniques/Points",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/Points/Program.cs"
         },
         {
-            "path": "./shaders/distance-sized-points.vert.wgsl"
+            "path": "GraphicsTechniques/Points/shaders/distance-sized-points.vert.wgsl"
         },
         {
-            "path": "./shaders/fixed-size-points.vert.wgsl"
+            "path": "GraphicsTechniques/Points/shaders/fixed-size-points.vert.wgsl"
         },
         {
-            "path": "./shaders/orange.frag.wgsl"
+            "path": "GraphicsTechniques/Points/shaders/orange.frag.wgsl"
         },
         {
-            "path": "./shaders/textured.frag.wgsl"
+            "path": "GraphicsTechniques/Points/shaders/textured.frag.wgsl"
         }
     ]
 }

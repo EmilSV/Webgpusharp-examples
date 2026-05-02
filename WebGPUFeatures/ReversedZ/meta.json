@@ -10,30 +10,31 @@
         "- <https://developer.nvidia.com/content/depth-precision-visualized>",
         "- <https://iolite-engine.com/blog_posts/reverse_z_cheatsheet>"
     ],
+    "fileName": "WebGPUFeatures/ReversedZ",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "WebGPUFeatures/ReversedZ/Program.cs"
         },
         {
-            "path": "./shaders/fragment.wgsl"
+            "path": "WebGPUFeatures/ReversedZ/shaders/fragment.wgsl"
         },
         {
-            "path": "./shaders/fragmentPrecisionErrorPass.wgsl"
+            "path": "WebGPUFeatures/ReversedZ/shaders/fragmentPrecisionErrorPass.wgsl"
         },
         {
-            "path": "./shaders/fragmentTextureQuad.wgsl"
+            "path": "WebGPUFeatures/ReversedZ/shaders/fragmentTextureQuad.wgsl"
         },
         {
-            "path": "./shaders/vertex.wgsl"
+            "path": "WebGPUFeatures/ReversedZ/shaders/vertex.wgsl"
         },
         {
-            "path": "./shaders/vertexDepthPrePass.wgsl"
+            "path": "WebGPUFeatures/ReversedZ/shaders/vertexDepthPrePass.wgsl"
         },
         {
-            "path": "./shaders/vertexPrecisionErrorPass.wgsl"
+            "path": "WebGPUFeatures/ReversedZ/shaders/vertexPrecisionErrorPass.wgsl"
         },
         {
-            "path": "./shaders/vertexTextureQuad.wgsl"
+            "path": "WebGPUFeatures/ReversedZ/shaders/vertexTextureQuad.wgsl"
         }
     ]
 }

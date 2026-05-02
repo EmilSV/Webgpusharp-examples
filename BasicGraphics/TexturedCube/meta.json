@@ -3,18 +3,19 @@
     "description": [
         "This example shows how to bind and sample textures."
     ],
+    "fileName": "BasicGraphics/TexturedCube",
     "sources": [
         {
-            "path": "Cube.cs"
+            "path": "BasicGraphics/TexturedCube/Cube.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "BasicGraphics/TexturedCube/Program.cs"
         },
         {
-            "path": "./shaders/basic.vert.wgsl"
+            "path": "BasicGraphics/TexturedCube/shaders/basic.vert.wgsl"
         },
         {
-            "path": "./shaders/sampleTextureMixColor.frag.wgsl"
+            "path": "BasicGraphics/TexturedCube/shaders/sampleTextureMixColor.frag.wgsl"
         }
     ]
 }

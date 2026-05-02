@@ -3,21 +3,22 @@
     "description": [
         "This example provides example camera implementations"
     ],
+    "fileName": "GraphicsTechniques/Cameras",
     "sources": [
         {
-            "path": "Camera.cs"
+            "path": "GraphicsTechniques/Cameras/Camera.cs"
         },
         {
-            "path": "Cube.cs"
+            "path": "GraphicsTechniques/Cameras/Cube.cs"
         },
         {
-            "path": "Input.cs"
+            "path": "GraphicsTechniques/Cameras/Input.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/Cameras/Program.cs"
         },
         {
-            "path": "./shaders/cube.wgsl"
+            "path": "GraphicsTechniques/Cameras/shaders/cube.wgsl"
         }
     ]
 }

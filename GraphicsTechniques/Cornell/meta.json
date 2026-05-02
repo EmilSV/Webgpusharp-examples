@@ -3,48 +3,49 @@
     "description": [
         "A classic Cornell box, using a lightmap generated using software ray-tracing."
     ],
+    "fileName": "GraphicsTechniques/Cornell",
     "sources": [
         {
-            "path": "Common.cs"
+            "path": "GraphicsTechniques/Cornell/Common.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/Cornell/Program.cs"
         },
         {
-            "path": "Quad.cs"
+            "path": "GraphicsTechniques/Cornell/Quad.cs"
         },
         {
-            "path": "Radiosity.cs"
+            "path": "GraphicsTechniques/Cornell/Radiosity.cs"
         },
         {
-            "path": "RadiosityUniform.cs"
+            "path": "GraphicsTechniques/Cornell/RadiosityUniform.cs"
         },
         {
-            "path": "Rasterizer.cs"
+            "path": "GraphicsTechniques/Cornell/Rasterizer.cs"
         },
         {
-            "path": "Raytracer.cs"
+            "path": "GraphicsTechniques/Cornell/Raytracer.cs"
         },
         {
-            "path": "Scene.cs"
+            "path": "GraphicsTechniques/Cornell/Scene.cs"
         },
         {
-            "path": "Tonemapper.cs"
+            "path": "GraphicsTechniques/Cornell/Tonemapper.cs"
         },
         {
-            "path": "./shaders/common.wgsl"
+            "path": "GraphicsTechniques/Cornell/shaders/common.wgsl"
         },
         {
-            "path": "./shaders/radiosity.wgsl"
+            "path": "GraphicsTechniques/Cornell/shaders/radiosity.wgsl"
         },
         {
-            "path": "./shaders/rasterizer.wgsl"
+            "path": "GraphicsTechniques/Cornell/shaders/rasterizer.wgsl"
         },
         {
-            "path": "./shaders/raytracer.wgsl"
+            "path": "GraphicsTechniques/Cornell/shaders/raytracer.wgsl"
         },
         {
-            "path": "./shaders/tonemapper.wgsl"
+            "path": "GraphicsTechniques/Cornell/shaders/tonemapper.wgsl"
         }
     ]
 }

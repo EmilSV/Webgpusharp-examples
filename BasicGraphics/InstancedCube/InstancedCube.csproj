@@ -56,5 +56,6 @@
         <DebugSymbols>false</DebugSymbols>
         <UseSystemResourceKeys>true</UseSystemResourceKeys>
         <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+        <AssemblyName Condition="$(CustomHtmlFileName) != ''">$(CustomHtmlFileName)</AssemblyName>
     </PropertyGroup>
 </Project>

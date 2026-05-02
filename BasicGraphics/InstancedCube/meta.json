@@ -3,18 +3,19 @@
     "description": [
         "This example shows the use of instancing."
     ],
+    "fileName": "BasicGraphics/InstancedCube",
     "sources": [
         {
-            "path": "Cube.cs"
+            "path": "BasicGraphics/InstancedCube/Cube.cs"
         },
         {
-            "path": "Program.cs"
+            "path": "BasicGraphics/InstancedCube/Program.cs"
         },
         {
-            "path": "./shaders/basic.vert.wgsl"
+            "path": "BasicGraphics/InstancedCube/shaders/basic.vert.wgsl"
         },
         {
-            "path": "./shaders/vertexPositionColor.frag.wgsl"
+            "path": "BasicGraphics/InstancedCube/shaders/vertexPositionColor.frag.wgsl"
         }
     ]
 }

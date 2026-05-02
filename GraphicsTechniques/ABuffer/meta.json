@@ -3,21 +3,22 @@
     "description": [
         "Demonstrates order independent transparency using a per-pixel linked-list of translucent fragments. Provides a choice for limiting memory usage (when required)."
     ],
+    "fileName": "GraphicsTechniques/ABuffer",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/ABuffer/Program.cs"
         },
         {
-            "path": "Teapot.cs"
+            "path": "GraphicsTechniques/ABuffer/Teapot.cs"
         },
         {
-            "path": "./shaders/composite.wgsl"
+            "path": "GraphicsTechniques/ABuffer/shaders/composite.wgsl"
         },
         {
-            "path": "./shaders/opaque.wgsl"
+            "path": "GraphicsTechniques/ABuffer/shaders/opaque.wgsl"
         },
         {
-            "path": "./shaders/translucent.wgsl"
+            "path": "GraphicsTechniques/ABuffer/shaders/translucent.wgsl"
         }
     ]
 }

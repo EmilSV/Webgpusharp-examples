@@ -3,21 +3,22 @@
     "description": [
         "This example shows how to sample from a depth texture to render shadows."
     ],
+    "fileName": "GraphicsTechniques/ShadowMapping",
     "sources": [
         {
-            "path": "Program.cs"
+            "path": "GraphicsTechniques/ShadowMapping/Program.cs"
         },
         {
-            "path": "StanfordDragon.cs"
+            "path": "GraphicsTechniques/ShadowMapping/StanfordDragon.cs"
         },
         {
-            "path": "./shaders/fragment.wgsl"
+            "path": "GraphicsTechniques/ShadowMapping/shaders/fragment.wgsl"
         },
         {
-            "path": "./shaders/vertex.wgsl"
+            "path": "GraphicsTechniques/ShadowMapping/shaders/vertex.wgsl"
         },
         {
-            "path": "./shaders/vertexShadow.wgsl"
+            "path": "GraphicsTechniques/ShadowMapping/shaders/vertexShadow.wgsl"
         }
     ]
 }
