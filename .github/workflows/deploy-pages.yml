@@ -22,7 +22,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
+          lfs: true
           submodules: recursive
+
+      - name: Pull Git LFS assets
+        shell: bash
+        run: git lfs pull --recurse-submodules
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
