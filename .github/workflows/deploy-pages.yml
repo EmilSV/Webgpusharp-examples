@@ -27,7 +27,10 @@ jobs:
 
       - name: Pull Git LFS assets
         shell: bash
-        run: git lfs pull --recurse-submodules
+        run: |
+          set -euo pipefail
+          git lfs pull
+          git submodule foreach --recursive 'git lfs pull'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
