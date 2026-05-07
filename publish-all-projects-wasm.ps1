@@ -9,6 +9,12 @@ param(
     [string]$OutputRoot = "wasm-publish",
 
     [Parameter(Mandatory = $false)]
+    [string]$CustomHtmlFileName,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$CopySourcesFromMetaJson,
+
+    [Parameter(Mandatory = $false)]
     [switch]$Clean
 )
 
@@ -96,6 +102,28 @@ function Get-AbsolutePath {
     return Join-Path $BasePath $Path
 }
 
+function Get-NormalizedPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    return $Path -replace '\\', '/'
+}
+
+function Remove-CurrentDirectoryPrefix {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if ($Path.StartsWith('./')) {
+        return $Path.Substring(2)
+    }
+
+    return $Path
+}
+
 function Convert-ToPlatformPath {
     param(
         [Parameter(Mandatory = $true)]
@@ -134,6 +162,26 @@ function Get-ProjectGroupName {
     )
 
     return ($ProjectRelativePath -split '[\\/]')[0]
+}
+
+function Get-PublishedSourceRelativePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SamplePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath
+    )
+
+    $normalizedSamplePath = Remove-CurrentDirectoryPrefix -Path (Get-NormalizedPath -Path $SamplePath)
+    $normalizedSourcePath = Remove-CurrentDirectoryPrefix -Path (Get-NormalizedPath -Path $SourcePath)
+    $samplePrefix = "$normalizedSamplePath/"
+
+    if ($normalizedSourcePath.StartsWith($samplePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $normalizedSourcePath.Substring($samplePrefix.Length)
+    }
+
+    return $normalizedSourcePath
 }
 
 function Get-PublishDirectory {
@@ -194,6 +242,59 @@ function Assert-PublishArtifacts {
     }
 }
 
+function Copy-SourcesFromMetaJson {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptDirectory,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectRelativePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectDirectory,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationDirectory
+    )
+
+    $metaPath = Join-Path $ProjectDirectory "meta.json"
+    if (-not (Test-Path $metaPath)) {
+        throw "meta.json was not found for project: $ProjectRelativePath"
+    }
+
+    $meta = Get-Content -Path $metaPath -Raw | ConvertFrom-Json
+    if (-not $meta.sources) {
+        return @()
+    }
+
+    $copiedSources = @()
+    foreach ($source in $meta.sources) {
+        if (-not $source.path) {
+            continue
+        }
+
+        $sourceRelativePath = Remove-CurrentDirectoryPrefix -Path (Get-NormalizedPath -Path $source.path)
+        $sourceFullPath = Get-AbsolutePath -BasePath $ScriptDirectory -Path (Convert-ToPlatformPath -Path $sourceRelativePath)
+
+        if (-not (Test-Path $sourceFullPath)) {
+            throw "Source declared in meta.json was not found: $sourceRelativePath"
+        }
+
+        $publishedRelativePath = Get-PublishedSourceRelativePath -SamplePath $meta.fileName -SourcePath $sourceRelativePath
+        $publishedPath = Join-Path $DestinationDirectory (Convert-ToPlatformPath -Path $publishedRelativePath)
+        $publishedParent = Split-Path $publishedPath -Parent
+
+        if ($publishedParent) {
+            New-Item -ItemType Directory -Path $publishedParent -Force | Out-Null
+        }
+
+        Copy-Item -Path $sourceFullPath -Destination $publishedPath -Recurse -Force
+        $copiedSources += $publishedRelativePath
+    }
+
+    return $copiedSources
+}
+
 $ErrorActionPreference = "Stop"
 
 try {
@@ -215,6 +316,10 @@ try {
     Write-Host "Category: $Category" -ForegroundColor Cyan
     Write-Host "Total projects: $($projects.Count)" -ForegroundColor Cyan
     Write-Host "Output root: $resolvedOutputRoot" -ForegroundColor Cyan
+    if (-not [string]::IsNullOrWhiteSpace($CustomHtmlFileName)) {
+        Write-Host "Custom HTML file name: $CustomHtmlFileName" -ForegroundColor Cyan
+    }
+    Write-Host "Copy sources from meta.json: $CopySourcesFromMetaJson" -ForegroundColor Cyan
     Write-Host ""
 
     $successCount = 0
@@ -239,7 +344,19 @@ try {
         Write-Host "========================================" -ForegroundColor Yellow
         Write-Host ""
 
-        dotnet publish $projectPath -r browser-wasm -c Release
+        $publishArguments = @(
+            $projectPath,
+            "-r",
+            "browser-wasm",
+            "-c",
+            "Release"
+        )
+
+        if (-not [string]::IsNullOrWhiteSpace($CustomHtmlFileName)) {
+            $publishArguments += "-p:CustomHtmlFileName=$CustomHtmlFileName"
+        }
+
+        dotnet publish @publishArguments
 
         if ($LASTEXITCODE -ne 0) {
             Write-Host "" 
@@ -270,6 +387,10 @@ try {
         New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
         Copy-Item -Path (Join-Path $publishContentDirectory "*") -Destination $destinationDirectory -Recurse -Force
 
+        if ($CopySourcesFromMetaJson) {
+            $copiedSourcePaths = Copy-SourcesFromMetaJson -ScriptDirectory $scriptDir -ProjectRelativePath $project -ProjectDirectory $projectDirectory -DestinationDirectory $destinationDirectory
+        }
+
         Assert-PublishArtifacts -PublishDirectory $destinationDirectory
 
         $successCount++
@@ -282,6 +403,12 @@ try {
         Write-Host ""
         Write-Host "Publish completed successfully ($successCount/$($projects.Count))" -ForegroundColor Green
         Write-Host "Copied output to: $destinationDirectory" -ForegroundColor Green
+        if ($CopySourcesFromMetaJson -and $copiedSourcePaths.Count -gt 0) {
+            Write-Host "Copied sources declared in meta.json:" -ForegroundColor Green
+            foreach ($copiedSourcePath in $copiedSourcePaths) {
+                Write-Host "  - $copiedSourcePath" -ForegroundColor Gray
+            }
+        }
         Write-Host ""
     }
 

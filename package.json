@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@replit/codemirror-lang-csharp": "^6.2.0"
+  }
+}

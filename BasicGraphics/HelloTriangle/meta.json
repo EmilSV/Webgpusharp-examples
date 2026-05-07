@@ -6,7 +6,7 @@
     "fileName": "BasicGraphics/HelloTriangle",
     "sources": [
         {
-            "path": "BasicGraphics/HelloTriangle/Program.cs"
+            "path": "./BasicGraphics/HelloTriangle/Program.cs"
         }
     ]
 }

@@ -70,6 +70,22 @@ function normalizePathSegments(filePath: string)
   return filePath.replaceAll('\\', '/');
 }
 
+function trimCurrentDirectoryPrefix(filePath: string)
+{
+  return filePath.startsWith('./') ? filePath.slice(2) : filePath;
+}
+
+function toPublishedSourcePath(samplePath: string, sourcePath: string)
+{
+  const normalizedSamplePath = trimCurrentDirectoryPrefix(normalizePathSegments(samplePath));
+  const normalizedSourcePath = trimCurrentDirectoryPrefix(normalizePathSegments(sourcePath));
+  const samplePrefix = `${normalizedSamplePath}/`;
+
+  return normalizedSourcePath.startsWith(samplePrefix)
+    ? normalizedSourcePath.slice(samplePrefix.length)
+    : normalizedSourcePath;
+}
+
 function toDescriptionText(description: string | string[])
 {
   return Array.isArray(description) ? description.join('\n') : description;
@@ -85,9 +101,10 @@ function makeSampleInfo(
     filename: meta.fileName,
     sources: meta.sources.map(({ path }) =>
     {
-      const relativePath = normalizePathSegments(path);
+      const relativePath = trimCurrentDirectoryPrefix(normalizePathSegments(path));
       return {
-        path: relativePath
+        path: relativePath,
+        url: toPublishedSourcePath(meta.fileName, relativePath)
       };
     }),
   };

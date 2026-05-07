@@ -5,7 +5,7 @@ import { githubLight } from '@uiw/codemirror-theme-github';
 import { EditorView } from '@codemirror/view';
 import { EditorState, Compartment } from '@codemirror/state';
 import { search } from '@codemirror/search';
-import { javascript } from '@codemirror/lang-javascript';
+import { csharp } from "@replit/codemirror-lang-csharp";
 import { basicSetup } from 'codemirror';
 import { Converter } from 'showdown';
 
@@ -65,7 +65,7 @@ async function makeCodeMirrorEditor(parent: HTMLElement, filename: string) {
       basicSetup,
       themeConfig.of([getCodeMirrorTheme()]),
       EditorView.lineWrapping,
-      javascript(),
+      csharp(),
       search({ top: true }),
       readOnly,
     ],
@@ -209,7 +209,7 @@ function setSampleIFrame(
     } else {
       // For local samples, generate a link to the source in this repo.
       githubElem.href = `https://github.com/EmilSV/Webgpusharp-examples/tree/main/${filename}`;
-      standaloneElem.href = `${filename}.html`;
+      standaloneElem.href = filename;
     }
 
     // hide intro and show sample
@@ -227,7 +227,7 @@ function setSampleIFrame(
   sourcesElem.style.display = sources.length > 0 ? '' : 'none';
   codeMirrorEditors.length = 0;
   sources.forEach((source, i) => {
-    const { path } = source;
+    const { path, url } = source;
     const active = (i === 0).toString();
     const name = basename(source.path);
     codeTabsElem.appendChild(
@@ -253,8 +253,10 @@ function setSampleIFrame(
       },
     });
     sourcesElem.appendChild(elem);
-    const url = isSameDomain(path) ? `${filename}/${path}` : source.path;
-    codeMirrorEditors.push(makeCodeMirrorEditor(elem, url));
+    const sourceUrl = isSameDomain(path)
+      ? `${filename}/${url ?? path}`
+      : source.path;
+    codeMirrorEditors.push(makeCodeMirrorEditor(elem, sourceUrl));
   });
 }
 
@@ -328,7 +330,7 @@ function renderSampleList() {
     if (filteredSamples.length === 0) continue;
 
     for (const [key, sampleInfo] of filteredSamples) {
-      samplesByKey.set(key, sampleInfo);
+      samplesByKey.set(key.toLowerCase(), sampleInfo);
     }
 
     sampleListElem.appendChild(
@@ -410,12 +412,12 @@ function parseURL() {
 
   const sample = url.searchParams.get('sample') || '';
   const sampleUrl = new URL(sample, location.href);
-  const sampleInfo = samplesByKey.get(basename(sampleUrl.pathname));
+  const sampleInfo = samplesByKey.get(basename(sampleUrl.pathname)?.toLowerCase());
   setSampleIFrame(sampleInfo, sampleUrl.search);
   if (sampleInfo) {
-    const hash = basename(url.hash.substring(1));
+    const hash = basename(url.hash.substring(1)).toLowerCase();
     const sourceInfo =
-      sampleInfo.sources.find(({ path }) => basename(path) === hash) ||
+      sampleInfo.sources.find(({ path }) => basename(path).toLowerCase() === hash) ||
       sampleInfo.sources[0];
     setSourceTab(sourceInfo);
   }
