@@ -6,13 +6,13 @@
     "fileName": "WebGPUFeatures/TimestampQuery",
     "sources": [
         {
+            "path": "WebGPUFeatures/TimestampQuery/Program.cs"
+        },
+        {
             "path": "WebGPUFeatures/TimestampQuery/Cube.cs"
         },
         {
             "path": "WebGPUFeatures/TimestampQuery/PerfCounter.cs"
-        },
-        {
-            "path": "WebGPUFeatures/TimestampQuery/Program.cs"
         },
         {
             "path": "WebGPUFeatures/TimestampQuery/TimestampQueryManager.cs"

@@ -6,13 +6,13 @@
     "fileName": "GraphicsTechniques/NormalMap",
     "sources": [
         {
+            "path": "GraphicsTechniques/NormalMap/Program.cs"
+        },
+        {
             "path": "GraphicsTechniques/NormalMap/Box.cs"
         },
         {
             "path": "GraphicsTechniques/NormalMap/Mesh.cs"
-        },
-        {
-            "path": "GraphicsTechniques/NormalMap/Program.cs"
         },
         {
             "path": "GraphicsTechniques/NormalMap/Utils.cs"
