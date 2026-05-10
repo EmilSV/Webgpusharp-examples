@@ -8,6 +8,9 @@
     "fileName": "GraphicsTechniques/Wireframe",
     "sources": [
         {
+            "path": "GraphicsTechniques/Wireframe/Program.cs"
+        },
+        {
             "path": "GraphicsTechniques/Wireframe/LineUniforms.cs"
         },
         {
@@ -21,9 +24,6 @@
         },
         {
             "path": "GraphicsTechniques/Wireframe/ObjectInfo.cs"
-        },
-        {
-            "path": "GraphicsTechniques/Wireframe/Program.cs"
         },
         {
             "path": "GraphicsTechniques/Wireframe/Settings.cs"

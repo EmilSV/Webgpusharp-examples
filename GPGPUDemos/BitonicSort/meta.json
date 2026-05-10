@@ -6,6 +6,9 @@
     "fileName": "GPGPUDemos/BitonicSort",
     "sources": [
         {
+            "path": "GPGPUDemos/BitonicSort/Program.cs"
+        },
+        {
             "path": "GPGPUDemos/BitonicSort/BitonicCompute.cs"
         },
         {
@@ -22,9 +25,6 @@
         },
         {
             "path": "GPGPUDemos/BitonicSort/FragmentUniforms.cs"
-        },
-        {
-            "path": "GPGPUDemos/BitonicSort/main.cs"
         },
         {
             "path": "GPGPUDemos/BitonicSort/ManagedRenderPassDescriptor.cs"

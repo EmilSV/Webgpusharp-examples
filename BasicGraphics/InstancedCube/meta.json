@@ -6,10 +6,10 @@
     "fileName": "BasicGraphics/InstancedCube",
     "sources": [
         {
-            "path": "BasicGraphics/InstancedCube/Cube.cs"
+            "path": "BasicGraphics/InstancedCube/Program.cs"
         },
         {
-            "path": "BasicGraphics/InstancedCube/Program.cs"
+            "path": "BasicGraphics/InstancedCube/Cube.cs"
         },
         {
             "path": "BasicGraphics/InstancedCube/shaders/basic.vert.wgsl"

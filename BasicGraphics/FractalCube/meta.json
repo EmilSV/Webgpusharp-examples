@@ -6,10 +6,10 @@
     "fileName": "BasicGraphics/FractalCube",
     "sources": [
         {
-            "path": "BasicGraphics/FractalCube/Cube.cs"
+            "path": "BasicGraphics/FractalCube/Program.cs"
         },
         {
-            "path": "BasicGraphics/FractalCube/Program.cs"
+            "path": "BasicGraphics/FractalCube/Cube.cs"
         },
         {
             "path": "BasicGraphics/FractalCube/shaders/basic.vert.wgsl"

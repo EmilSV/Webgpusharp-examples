@@ -6,10 +6,10 @@
     "fileName": "BasicGraphics/TwoCubes",
     "sources": [
         {
-            "path": "BasicGraphics/TwoCubes/Cube.cs"
+            "path": "BasicGraphics/TwoCubes/Program.cs"
         },
         {
-            "path": "BasicGraphics/TwoCubes/Program.cs"
+            "path": "BasicGraphics/TwoCubes/Cube.cs"
         },
         {
             "path": "BasicGraphics/TwoCubes/shaders/basic.vert.wgsl"

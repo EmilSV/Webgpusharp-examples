@@ -6,6 +6,9 @@
     "fileName": "GraphicsTechniques/StencilMask",
     "sources": [
         {
+            "path": "GraphicsTechniques/StencilMask/Program.cs"
+        },
+        {
             "path": "GraphicsTechniques/StencilMask/Geometry.cs"
         },
         {
@@ -13,9 +16,6 @@
         },
         {
             "path": "GraphicsTechniques/StencilMask/Primitives.cs"
-        },
-        {
-            "path": "GraphicsTechniques/StencilMask/Program.cs"
         },
         {
             "path": "GraphicsTechniques/StencilMask/Scene.cs"

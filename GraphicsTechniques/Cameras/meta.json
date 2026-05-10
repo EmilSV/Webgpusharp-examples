@@ -6,6 +6,9 @@
     "fileName": "GraphicsTechniques/Cameras",
     "sources": [
         {
+            "path": "GraphicsTechniques/Cameras/Program.cs"
+        },
+        {
             "path": "GraphicsTechniques/Cameras/Camera.cs"
         },
         {
@@ -13,9 +16,6 @@
         },
         {
             "path": "GraphicsTechniques/Cameras/Input.cs"
-        },
-        {
-            "path": "GraphicsTechniques/Cameras/Program.cs"
         },
         {
             "path": "GraphicsTechniques/Cameras/shaders/cube.wgsl"

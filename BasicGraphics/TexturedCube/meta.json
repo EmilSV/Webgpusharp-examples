@@ -6,10 +6,10 @@
     "fileName": "BasicGraphics/TexturedCube",
     "sources": [
         {
-            "path": "BasicGraphics/TexturedCube/Cube.cs"
+            "path": "BasicGraphics/TexturedCube/Program.cs"
         },
         {
-            "path": "BasicGraphics/TexturedCube/Program.cs"
+            "path": "BasicGraphics/TexturedCube/Cube.cs"
         },
         {
             "path": "BasicGraphics/TexturedCube/shaders/basic.vert.wgsl"

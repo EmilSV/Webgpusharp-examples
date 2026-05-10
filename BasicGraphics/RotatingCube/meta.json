@@ -6,10 +6,10 @@
     "fileName": "BasicGraphics/RotatingCube",
     "sources": [
         {
-            "path": "BasicGraphics/RotatingCube/Cube.cs"
+            "path": "BasicGraphics/RotatingCube/Program.cs"
         },
         {
-            "path": "BasicGraphics/RotatingCube/Program.cs"
+            "path": "BasicGraphics/RotatingCube/Cube.cs"
         },
         {
             "path": "BasicGraphics/RotatingCube/shaders/basic.vert.wgsl"

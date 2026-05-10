@@ -8,10 +8,10 @@
     "fileName": "BasicGraphics/Cubemap",
     "sources": [
         {
-            "path": "BasicGraphics/Cubemap/Cube.cs"
+            "path": "BasicGraphics/Cubemap/Program.cs"
         },
         {
-            "path": "BasicGraphics/Cubemap/Program.cs"
+            "path": "BasicGraphics/Cubemap/Cube.cs"
         },
         {
             "path": "BasicGraphics/Cubemap/shaders/basic.vert.wgsl"

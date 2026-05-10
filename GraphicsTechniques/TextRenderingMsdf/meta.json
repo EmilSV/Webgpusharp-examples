@@ -7,6 +7,9 @@
     "fileName": "GraphicsTechniques/TextRenderingMsdf",
     "sources": [
         {
+            "path": "GraphicsTechniques/TextRenderingMsdf/Program.cs"
+        },
+        {
             "path": "GraphicsTechniques/TextRenderingMsdf/CameraUniform.cs"
         },
         {
@@ -44,9 +47,6 @@
         },
         {
             "path": "GraphicsTechniques/TextRenderingMsdf/MsdfTextRenderer.cs"
-        },
-        {
-            "path": "GraphicsTechniques/TextRenderingMsdf/Program.cs"
         },
         {
             "path": "GraphicsTechniques/TextRenderingMsdf/shaders/basic.vert.wgsl"
