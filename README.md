@@ -1,8 +1,3 @@
-Some examples for using WebgpuSharp
+Samples showing how to use [WebGPUSharp](https://github.com/EmilSV/WebGPUSharp) you can run them locally on your machine using webgpu native or in the [browser](https://emilsv.github.io/Webgpusharp-examples/)
 
-## GitHub Pages
-
-The static examples site is deployed by GitHub Actions from `Site/out`.
-The deployment workflow runs only on pushes to `main` and uses the existing `build-site-and-publish-wasm.ps1` entrypoint.
-
-To enable publishing in GitHub, set the repository Pages source to `GitHub Actions`.
+All samples are direct port of the [official WebGPU samples](https://github.com/webgpu/webgpu-samples) repository.
