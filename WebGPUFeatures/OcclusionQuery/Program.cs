@@ -61,6 +61,7 @@ ushort[] indices = [
 
 
 bool settingsIsAnimated = true;
+Lock cubeVisibilityLock = new();
 List<Vector4> cubeVisibility = [];
 
 static byte[] ToBytes(Stream s)
@@ -119,12 +120,15 @@ CommandBuffer DrawGui(DearImGuiContext guiContext, Surface surface)
     ImGui.Separator();
     ImGui.Text("Visible Cubes:");
 
-    for (int i = 0; i < cubeVisibility.Count; i++)
+    lock (cubeVisibilityLock)
     {
-        var cube = cubeVisibility[i];
+        for (int i = 0; i < cubeVisibility.Count; i++)
+        {
+            var cube = cubeVisibility[i];
 
-        ImGui.ColorButton($"##cube{i}", cube, ImGuiColorEditFlags.NoTooltip, new Vector2(20, 20));
-        ImGui.SameLine();
+            ImGui.ColorButton($"##cube{i}", cube, ImGuiColorEditFlags.NoTooltip, new Vector2(20, 20));
+            ImGui.SameLine();
+        }
     }
 
     ImGui.End();
@@ -277,6 +281,7 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async runContext =>
         Usage = BufferUsage.QueryResolve | BufferUsage.CopySrc
     });
 
+    int resultBufOpState = 0; // 0 = unmapped, 1 = mapping
     var resultBuf = device.CreateBuffer(new()
     {
         Label = "resultBuffer",
@@ -402,25 +407,34 @@ return Run("Occlusion Query", WIDTH, HEIGHT, async runContext =>
 
         queue.Submit([encoder.Finish(), guiCommanderBuffer]);
 
-        if (resultBuf.GetMapState() == BufferMapState.Unmapped)
+        if (resultBuf.GetMapState() == BufferMapState.Unmapped && Interlocked.CompareExchange(ref resultBufOpState, 1, 0) == 0)
         {
             resultBuf.MapAsync(MapMode.Read).ContinueWith(status =>
             {
                 resultBuf.GetConstMappedRange<ulong>(data =>
                 {
-                    cubeVisibility.Clear();
-                    for (int i = 0; i < objectInfos.Count; i++)
+                    lock (cubeVisibilityLock)
                     {
-                        var objectInfo = objectInfos[i];
-                        var visible = data[i] > 0;
-                        if (visible)
+                        cubeVisibility.Clear();
+                        for (int i = 0; i < objectInfos.Count; i++)
                         {
-                            cubeVisibility.Add(objectInfo.Uniforms.ColorValue);
+                            var objectInfo = objectInfos[i];
+                            var visible = data[i] > 0;
+                            if (visible)
+                            {
+                                cubeVisibility.Add(objectInfo.Uniforms.ColorValue);
+                            }
                         }
                     }
                 });
                 resultBuf.Unmap();
+                Interlocked.Exchange(ref resultBufOpState, 0);
             });
+        }
+
+        if (!OperatingSystem.IsBrowser())
+        {
+            surface.Present();
         }
     };
 });
